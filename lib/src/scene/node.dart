@@ -44,7 +44,7 @@ class Node extends Spatial {
     transforms.ForceUniform(uNormalMatrix, _normMatrix);
   }
 
-  VM.Matrix4 UpdateModelMatrix(final VM.Matrix4 parent) {
+  VM.Matrix4 UpdateModelMatrix(VM.Matrix4 parent) {
     // copy the mvMatrix, so we don't change the original
     _modelMatrix.setFrom(parent);
     _modelMatrix.multiply(transform);

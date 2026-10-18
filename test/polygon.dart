@@ -6,7 +6,7 @@ import 'package:vector_math/vector_math.dart' as VM;
 import 'polygon_data.dart' as DATA;
 
 double getTrianguatedArea(
-    final List<int> triangles, final List<VM.Vector2> data) {
+    List<int> triangles, List<VM.Vector2> data) {
   double area = 0.0;
   for (int i = 0; i < triangles.length; i += 3) {
     area += GetSignedArea(

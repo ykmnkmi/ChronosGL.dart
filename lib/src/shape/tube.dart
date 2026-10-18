@@ -1,7 +1,7 @@
 part of shape;
 
 // modified from vectormath's version to not use arbitrary thresholds
-void buildPlaneVectors(final VM.Vector3 planeNormal, VM.Vector3 u,
+void buildPlaneVectors(VM.Vector3 planeNormal, VM.Vector3 u,
     VM.Vector3 v) {
   if (planeNormal.x.abs() > 0) {
     // choose u in x-y plane

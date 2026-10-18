@@ -35,7 +35,7 @@ class Scene extends NamedEntity {
   }
 }
 
-void drawRecursively(RenderProgram prog, Node node, final VM.Matrix4 parent, List<DrawStats>? stats,
+void drawRecursively(RenderProgram prog, Node node, VM.Matrix4 parent, List<DrawStats>? stats,
     List<UniformGroup> uniforms) {
   if (!node.enabled) return;
   // m is read-only!
