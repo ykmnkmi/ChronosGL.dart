@@ -1,0 +1,105 @@
+# Rendering golden tests
+
+These PNGs capture ChronosGL's current rendering before further package updates.
+The test harness uses the existing Dart `test` runner and Chrome. PNG encoding
+and decoding use browser canvas APIs. A small VM isolate reads and writes files
+through `package:test`'s hybrid-test channel. `stream_channel` is declared as a
+direct dev dependency; it was already a transitive dependency of the test runner.
+No Node.js packages, Playwright, Docker, or external image tools are needed.
+
+## Run
+
+From the package root, with Dart 3.13.5 and Chrome installed:
+
+```sh
+dart pub get --enforce-lockfile
+dart run tool/goldens.dart
+```
+
+To run all 15 existing checks plus the new golden and comparison tests:
+
+```sh
+dart test -P all
+```
+
+The `all` preset lists the old test files explicitly because their filenames do
+not follow the default `*_test.dart` discovery pattern. The obsolete Dartium
+extension diagnostic and interactive contour demo are not part of this suite.
+The `goldens` preset is also available directly as `dart test -P goldens`.
+
+## Update and review
+
+```sh
+dart run tool/goldens.dart --update
+```
+
+This deliberately overwrites the references and records the rendering environment
+in `environment.json`. Inspect the changed PNGs, then commit them together with
+the relevant code change. Ordinary runs never create or update reference PNGs;
+a missing reference is a test failure. Updates are refused in GitHub Actions.
+
+On a mismatch, `build/golden_failures/<scene>/` contains:
+
+- `expected.png`: the reference image;
+- `actual.png`: the newly rendered image;
+- `diff.png`: changed pixels in magenta over a darkened current image;
+- `result.json`: dimensions, mismatch counts, and rendering environment details.
+
+A missing reference produces `actual.png` and `result.json`. Passing tests clear
+their own previous failure files. The entire `build/` directory is gitignored.
+
+To verify that a real rendering regression is detected:
+
+```sh
+dart run tool/goldens.dart --self-check
+```
+
+The self-check changes the geometry scene's red cube to green in memory, expects
+the golden test to fail, and verifies that all three diagnostic PNGs were written.
+The command succeeds only when that intentional mismatch is detected. It never
+changes the reference image or source files. A later normal run clears its images.
+
+## Scenes and comparison
+
+| Reference | Coverage |
+| --- | --- |
+| `geometry.png` | Cube, wedge, subdivided icosahedron, parent/child transforms |
+| `perspective.png` | Perspective projection, view matrix, different object depths |
+| `orthographic.png` | The same objects with orthographic projection |
+| `texture.png` | Asymmetric generated texture, UV orientation, nearest filtering |
+| `depth.png` | Overlapping surfaces submitted out of depth order |
+| `blending.png` | Overlapping half-transparent materials and an opaque background |
+| `lighting.png` | Blinn-Phong shader, normals, directional lights, specular highlight |
+
+Each scene is 256 x 256, has a fixed camera, and uses no animation, random values,
+input listeners, fonts, or network assets. Rendering goes into an RGBA8 framebuffer
+with antialiasing and dithering disabled. Readback flips WebGL's bottom-up rows to
+PNG's top-down order. Before clearing each frame, the fixture restores depth
+writes because transparent materials leave that mask disabled.
+
+Each scene must produce foreground and background pixels, render identically
+across three repeated frames, and match an independently created WebGL context
+byte for byte. Reference comparison decodes the PNG and compares all RGBA pixels:
+up to 2/255 difference per channel is allowed for rounding; zero pixels may exceed
+that bound. Image dimensions must match. Separate tests check PNG orientation,
+color preservation, tolerance boundaries, and dimension changes.
+
+## Reproducible environment and CI
+
+The initial references were captured on Windows with Dart 3.13.5 and
+Chrome 155.0.8059.80. `dart_test.yaml` defines `golden_chrome`, which forces ANGLE
+SwiftShader, and the rendering tests verify that SwiftShader is actually active.
+`environment.json` records the browser user agent (which reports a reduced Chrome
+version), renderer, WebGL version, host OS, and Dart version for diagnosis.
+
+Chrome can be selected with the standard `CHROME_EXECUTABLE` environment variable.
+Use the same Chrome version and rendering configuration when updating references.
+Other operating systems and browser versions have not been validated against
+these references. When changing the reference environment, review the images
+explicitly rather than automatically accepting differences.
+
+The prepared GitHub Actions workflow uses Windows, pins Dart and Chrome to the
+versions above, runs the full suite and regression self-check, and uploads genuine
+failure images as an artifact. It does not regenerate references. The workflow
+must run on GitHub to validate the hosted runner environment; local checks cannot
+verify that environment.

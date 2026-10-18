@@ -56,3 +56,24 @@ If you need to import `dart:html`, do so as follows:
 import 'dart:html' as HTML;
 ```
 This will avoid a naming conflict for `Node`.
+
+## Tests and rendering goldens
+
+Run the existing unit/browser tests and the rendering goldens with:
+
+```sh
+dart pub get --enforce-lockfile
+dart test -P all
+```
+
+Golden tests use Dart and Chrome with SwiftShader; no Node.js packages,
+Playwright, or Docker are required. To compare or explicitly update the PNGs:
+
+```sh
+dart run tool/goldens.dart
+dart run tool/goldens.dart --update
+```
+
+Review changed PNGs before committing updates. See
+[the golden test guide](test/goldens/README.md) for scenes, failure images,
+environment details, and the regression self-check.

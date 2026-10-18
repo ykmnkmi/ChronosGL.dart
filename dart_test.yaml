@@ -1,0 +1,26 @@
+define_platforms:
+  golden_chrome:
+    name: Chrome with SwiftShader
+    extends: chrome
+    settings:
+      arguments: >-
+        --use-gl=angle
+        --use-angle=swiftshader
+        --enable-unsafe-swiftshader
+
+presets:
+  goldens:
+    platforms: [golden_chrome]
+    paths: [test/render_golden_test.dart, test/golden_comparison_test.dart]
+    concurrency: 1
+    timeout: 60s
+  all:
+    platforms: [vm, golden_chrome]
+    paths:
+      - test/polygon.dart
+      - test/geometry.dart
+      - test/shader_syntax.dart
+      - test/render_golden_test.dart
+      - test/golden_comparison_test.dart
+    concurrency: 1
+    timeout: 60s
