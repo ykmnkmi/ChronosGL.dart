@@ -1,5 +1,7 @@
 // This is not really a test
 @TestOn("dartium")
+library;
+
 import 'dart:html' as HTML;
 import 'dart:web_gl' as WEBGL;
 
@@ -8,8 +10,8 @@ import "package:test/test.dart";
 
 void main() {
   test("show_extensions", () {
-    HTML.CanvasElement canvas = new HTML.CanvasElement(width: 200, height: 200);
-    ChronosGL chronosGL = new ChronosGL(canvas);
+    HTML.CanvasElement canvas = HTML.CanvasElement(width: 200, height: 200);
+    ChronosGL chronosGL = ChronosGL(canvas);
     List<String> exts = chronosGL.getSupportedExtensions();
     for (var e in exts) {
       print(e);

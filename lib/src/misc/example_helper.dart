@@ -1,4 +1,4 @@
-part of misc;
+part of 'lib.dart';
 
 class Utils {
   /*
@@ -60,7 +60,7 @@ class Utils {
     int numPoints,
     double dimension,
   ) {
-    final String name = 'stars_${numPoints}';
+    final String name = 'stars_$numPoints';
     Float32List pos = Float32List(numPoints * 3);
     for (var i = 0; i < numPoints * 3; i++) {
       pos[i] = (rand.nextDouble() - 0.5) * dimension;
@@ -145,7 +145,7 @@ MeshData ShapeCylinder(
     radialSubdivisions,
     computeNormals,
   );
-  return GeometryBuilderToMeshData("cylinder-${radialSubdivisions}", prog, gb);
+  return GeometryBuilderToMeshData("cylinder-$radialSubdivisions", prog, gb);
 }
 
 MeshData ShapeIcosahedron(
@@ -159,7 +159,7 @@ MeshData ShapeIcosahedron(
     scale: scale,
     computeNormals: computeNormals,
   );
-  return GeometryBuilderToMeshData("icosahedron-${subdivisions}", prog, gb);
+  return GeometryBuilderToMeshData("icosahedron-$subdivisions", prog, gb);
 }
 
 MeshData ShapeTorusKnot(
@@ -239,11 +239,11 @@ final VM.Vector3 ColorLiteCyan = VM.Vector3(0.0, 0.5, 0.5);
 /// This assumes that the canvas is always "full screen".
 class RenderPhaseResizeAware extends RenderPhase {
   RenderPhaseResizeAware(
-    String name,
-    ChronosGL cgl,
+    super.name,
+    super.cgl,
     this._canvas,
     this._perspective,
-  ) : super(name, cgl) {
+  ) {
     resolutionChange(null);
     HTML.window.onResize.listen(resolutionChange);
   }

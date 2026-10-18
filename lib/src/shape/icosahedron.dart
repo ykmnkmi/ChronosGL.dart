@@ -1,4 +1,4 @@
-part of shape;
+part of 'lib.dart';
 
 double getU2(double z, double x) {
   return 0.5 * (1.0 + Math.atan2(z, x) * (1 / Math.pi));

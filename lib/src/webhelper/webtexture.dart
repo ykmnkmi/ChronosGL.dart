@@ -1,4 +1,4 @@
-part of webhelper;
+part of 'lib.dart';
 
 Future<HTML.VideoElement?> MakeVideoElementFromCamera() {
   LogWarn("VideoElement/Camera requested");
@@ -13,7 +13,7 @@ Future<HTML.VideoElement?> MakeVideoElementFromCamera() {
         video.srcObject = stream;
       })
       .catchError((Object error) {
-        LogError("Camera open error ${error}");
+        LogError("Camera open error $error");
         c.complete(null);
       });
   return c.future;

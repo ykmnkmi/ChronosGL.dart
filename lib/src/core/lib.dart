@@ -1,4 +1,4 @@
-library core;
+library;
 
 // This library does not depend on "dart:html"
 // It would be nice if we could also break the dependency on dart:web_gl
@@ -57,7 +57,7 @@ typedef GlShader = WEBGL.Shader;
 int gLogLevel = 0;
 
 void LogInfo(String s) {
-  if (gLogLevel > 0) print("I: " + s);
+  if (gLogLevel > 0) print("I: $s");
 }
 
 void LogDebug(String s) {
@@ -65,9 +65,9 @@ void LogDebug(String s) {
 }
 
 void LogError(String s) {
-  print("E:" + s);
+  print("E:$s");
 }
 
 void LogWarn(String s) {
-  print("W:" + s);
+  print("W:$s");
 }

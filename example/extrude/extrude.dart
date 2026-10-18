@@ -72,17 +72,17 @@ void main() {
     ..SetUniform(uColor, ColorYellow)
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     // For simplicity we create a new mesh every frame.
     MeshData wire = MakeBevelMesh(prog);
     orbit.animate(elapsed);
     prog.Draw(wire, [perspective, matWire]);
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

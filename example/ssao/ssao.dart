@@ -69,10 +69,10 @@ void main() {
     ..SetUniform(uColor, ColorGray8)
     ..SetUniform(uModelMatrix, VM.Matrix4.identity()..rotateX(Math.pi / 2));
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     if (gSSAO.checked!) {
@@ -85,7 +85,7 @@ void main() {
     }
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   Future.wait(gLoadables).then((list) {

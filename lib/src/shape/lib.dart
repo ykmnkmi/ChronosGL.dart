@@ -1,4 +1,4 @@
-library shape;
+library;
 
 import 'dart:math' as Math;
 

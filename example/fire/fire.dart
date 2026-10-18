@@ -30,30 +30,30 @@ final ShaderObject fireFragmentShader = ShaderObject("fireShaderF")
 float rand(vec2 xy){
     return fract(sin(dot(xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
-    
+
 float get(vec2 xy) {
-    vec2 DIM = vec2(textureSize(${uTexture}, 0));  
-    return texture(${uTexture}, xy / DIM).r;
+    vec2 DIM = vec2(textureSize($uTexture, 0));
+    return texture($uTexture, xy / DIM).r;
 }
 
 float NextValue(vec2 xy) {
     if (xy.y < 1.0) {
-        float r = rand(vec2(${uRandomSeed}, xy.x));
-        return get(xy) + (r - 0.5) * ${uFlameTurbulence}; 
+        float r = rand(vec2($uRandomSeed, xy.x));
+        return get(xy) + (r - 0.5) * $uFlameTurbulence;
     }
-    
-    float height = ${uFlameHeight};
-    float width =  ${uFlameWidth};
+
+    float height = $uFlameHeight;
+    float width =  $uFlameWidth;
     return (4.0 * get(xy) +
             get(xy + vec2(0.0, -height)) +
             get(xy + vec2(-width,  -height)) +
             get(xy + vec2(width,  -height)) +
-            get(xy + vec2(0.0, -2.0 * height))) * ${uFlameThrottle} * 0.5;
+            get(xy + vec2(0.0, -2.0 * height))) * $uFlameThrottle * 0.5;
 }
 
 void main() {
     float v = NextValue(gl_FragCoord.xy);
-    ${oFragColor}.r = v;
+    $oFragColor.r = v;
 }
 """,
   ]);
@@ -62,16 +62,16 @@ final ShaderObject colorFragmentShader = ShaderObject("colorShaderF")
   ..AddUniformVars([uTexture])
   ..SetBody([
     ColorFunctions,
-    """ 
+    """
 float get(vec2 xy) {
-    vec2 DIM = vec2(textureSize(${uTexture}, 0));  
-    return texture(${uTexture}, xy / DIM).r;
+    vec2 DIM = vec2(textureSize($uTexture, 0));
+    return texture($uTexture, xy / DIM).r;
 }
 
 void main() {
     float v  = get(gl_FragCoord.xy);
     vec3 hsl = vec3(v / 3.0, 1.0, clamp(2.0 * v, 0.0, 1.0));
-    ${oFragColor}.rgb = HSLtoRGB(hsl);
+    $oFragColor.rgb = HSLtoRGB(hsl);
 }
 """,
   ]);
@@ -156,7 +156,7 @@ void main() {
       HTML.InputElement input = e.target as HTML.InputElement;
       if (input.type == "range") {
         HTML.OutputElement output =
-            HTML.document.getElementById(input.id + "2") as HTML.OutputElement;
+            HTML.document.getElementById("${input.id}2") as HTML.OutputElement;
         ug.ForceUniform(input.id, double.parse(input.value!));
         output.value = input.value;
       }
@@ -169,31 +169,31 @@ void main() {
     input.dispatchEvent(HTML.Event("change"));
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   int frame = 0;
   void animate(num timeMs) {
-    _lastTimeMs = timeMs + 0.0;
+    lastTimeMs = timeMs + 0.0;
     frame++;
-    ug.ForceUniform(uRandomSeed, _lastTimeMs);
+    ug.ForceUniform(uRandomSeed, lastTimeMs);
 
     if (frame % 2 == 0) {
       fb1.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug..ForceUniform(uTexture, t2);
+      ug.ForceUniform(uTexture, t2);
       programFire.Draw(unit, [ug]);
       screen.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug..ForceUniform(uTexture, t1);
+      ug.ForceUniform(uTexture, t1);
       programColor.Draw(unit, [ug]);
     } else {
       fb2.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug..ForceUniform(uTexture, t1);
+      ug.ForceUniform(uTexture, t1);
       programFire.Draw(unit, [ug]);
       screen.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug..ForceUniform(uTexture, t2);
+      ug.ForceUniform(uTexture, t2);
       programColor.Draw(unit, [ug]);
     }
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs, "${frame}");
+    fps.UpdateFrameCount(lastTimeMs, "$frame");
   }
 
   animate(0.0);

@@ -23,8 +23,9 @@ void main() {
       for (var offset = 0; offset < image.rgba.length; offset += 4) {
         if (image.rgba[offset] != 0 ||
             image.rgba[offset + 1] != 0 ||
-            image.rgba[offset + 2] != 0)
+            image.rgba[offset + 2] != 0) {
           foregroundPixels++;
+        }
       }
       expect(
         foregroundPixels,

@@ -6,8 +6,8 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as VM;
 
 const String dir = "../asset/leeperrysmith/";
-const String modelFile = dir + "LeePerrySmith.js";
-const String bumpmapFile = dir + "Infinite-Level_02_Disp_NoSmoothUV-4096.jpg";
+const String modelFile = "${dir}LeePerrySmith.js";
+const String bumpmapFile = "${dir}Infinite-Level_02_Disp_NoSmoothUV-4096.jpg";
 
 final ShaderObject vertexShader = ShaderObject("LightBlinnPhongFancyV")
   ..AddAttributeVars([aPosition, aNormal, aTexUV])
@@ -16,11 +16,11 @@ final ShaderObject vertexShader = ShaderObject("LightBlinnPhongFancyV")
   ..SetBody([
     """
 void main() {
-    vec4 pos = ${uModelMatrix} * vec4(${aPosition}, 1.0);
-    gl_Position = ${uPerspectiveViewMatrix} * pos;
-    ${vPosition} = pos.xyz;
-    ${vTexUV} = ${aTexUV};
-    ${vNormal} = ${uNormalMatrix} * ${aNormal};
+    vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
+    gl_Position = $uPerspectiveViewMatrix * pos;
+    $vPosition = pos.xyz;
+    $vTexUV = $aTexUV;
+    $vNormal = $uNormalMatrix * $aNormal;
 }
 """,
   ]);
@@ -34,19 +34,19 @@ final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongFancyF")
     [
       """
 void main() {
-   vec3 normal = normalize(${vNormal});
-   vec2 uv = dHdxy_fwd(${vTexUV}, ${uBumpScale}, ${uBumpMap});
-   normal = perturbNormalArb(${vPosition}, normal, uv);
-   ColorComponents acc = CombinedLight(${vPosition} - ${uEyePosition},
+   vec3 normal = normalize($vNormal);
+   vec2 uv = dHdxy_fwd($vTexUV, $uBumpScale, $uBumpMap);
+   normal = perturbNormalArb($vPosition, normal, uv);
+   ColorComponents acc = CombinedLight($vPosition - $uEyePosition,
                                     normal,
-                                    ${uEyePosition},
-                                    ${uLightDescs},
-                                    ${uLightTypes},
-                                    ${uShininess});
-    ${oFragColor}.rgb = acc.diffuse 
+                                    $uEyePosition,
+                                    $uLightDescs,
+                                    $uLightTypes,
+                                    $uShininess);
+    $oFragColor.rgb = acc.diffuse
                     + acc.specular
                     + uColor;
-   ${oFragColor}.a = 1.0;
+   $oFragColor.a = 1.0;
 }
 """,
     ],
@@ -101,16 +101,16 @@ void main() {
   );
   phase.add(sceneMain);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.Draw();
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   List<Future<Object>> futures = [LoadJson(modelFile), LoadImage(bumpmapFile)];

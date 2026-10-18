@@ -11,7 +11,7 @@
 
 */
 
-part of animation;
+part of 'lib.dart';
 
 ///  the basic unit of a skeleton. Bones form a tree structure and have
 ///  a parent bone.
@@ -34,9 +34,9 @@ class Bone {
 
   @override
   String toString() {
-    return "BONE[${boneIndex}] (${parentNum}) ${boneName}\n"
-        "trans:\n${localTransform}"
-        "offset:\n${offsetTransform}";
+    return "BONE[$boneIndex] ($parentNum) $boneName\n"
+        "trans:\n$localTransform"
+        "offset:\n$offsetTransform";
   }
 }
 
@@ -101,7 +101,7 @@ void UpdateAnimatedSkeleton(
     // TODO: use "multiply into" if available
     t.setFrom(globalOffsetTransform);
     t.multiply(posedSkeleton.globalTransforms[i]);
-    t..multiply(skeleton[i].offsetTransform);
+    t.multiply(skeleton[i].offsetTransform);
   }
 }
 
@@ -127,7 +127,9 @@ Float32List CreateAnimationTable(
       t,
     );
     for (VM.Matrix4 m in posedSkeleton.skinningTransforms) {
-      for (int i = 0; i < 16; ++i) data[pos + i] = m[i];
+      for (int i = 0; i < 16; ++i) {
+        data[pos + i] = m[i];
+      }
       pos += 16;
     }
   }
@@ -147,24 +149,24 @@ class BoneAnimation {
     this._scaleTimes,
     this._scaleValues,
   ) {
-    if (_positionTimes.length == 0) {
+    if (_positionTimes.isEmpty) {
       _positionTimes = [0.0];
       _positionValues = [VM.Vector3(0.0, 0.0, 0.0)];
     }
 
-    if (_rotationTimes.length == 0) {
+    if (_rotationTimes.isEmpty) {
       _rotationTimes = [0.0];
       _rotationValues = [VM.Quaternion(0.0, 0.0, 0.0, 1.0)];
     }
 
-    if (_scaleTimes.length == 0) {
+    if (_scaleTimes.isEmpty) {
       _scaleTimes = [0.0];
       _scaleValues = [VM.Vector3(1.0, 1.0, 1.0)];
     }
 
-    assert(_rotationTimes.length > 0);
-    assert(_positionTimes.length > 0);
-    assert(_scaleTimes.length > 0);
+    assert(_rotationTimes.isNotEmpty);
+    assert(_positionTimes.isNotEmpty);
+    assert(_scaleTimes.isNotEmpty);
     assert(_rotationTimes.length == _rotationValues.length);
     assert(_positionTimes.length == _positionValues.length);
     assert(_scaleTimes.length == _scaleValues.length);
@@ -207,10 +209,10 @@ class BoneAnimation {
   String toString() {
     List<String> s = [];
     //s.add("${bone.boneName} [${bone.boneIndex}]");
-    s.add("${bone.boneName}");
-    s.add("${_positionTimes.length}: ${_positionValues}");
-    s.add("${_rotationTimes.length}: ${_rotationValues}");
-    s.add("${_scaleTimes.length}: ${_scaleValues}");
+    s.add(bone.boneName);
+    s.add("${_positionTimes.length}: $_positionValues");
+    s.add("${_rotationTimes.length}: $_rotationValues");
+    s.add("${_scaleTimes.length}: $_scaleValues");
     return s.join("\n");
   }
 }
@@ -231,6 +233,6 @@ class SkeletalAnimation {
 
   @override
   String toString() {
-    return "SkeletalAnimation[${name}, duration: ${duration}, frames: ${animList.length}]";
+    return "SkeletalAnimation[$name, duration: $duration, frames: ${animList.length}]";
   }
 }

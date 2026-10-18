@@ -1,4 +1,4 @@
-part of shape;
+part of 'lib.dart';
 
 final List<VM.Vector3> _CubeNormals = [
   // Front face

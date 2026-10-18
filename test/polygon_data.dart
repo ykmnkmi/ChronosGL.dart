@@ -1,4 +1,4 @@
-library polygon_data;
+library;
 
 import 'package:vector_math/vector_math.dart' as VM;
 

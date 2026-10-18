@@ -1,4 +1,4 @@
-part of misc;
+part of 'lib.dart';
 
 List<VM.Vector3> BonePosFromSkeleton(List<Bone> bones) {
   List<VM.Vector3> out = [];
@@ -49,10 +49,10 @@ class BoneVisualizer {
     mesh = Node(_mdWire.name, _mdWire, mat);
   }
 
-  VM.Matrix4 _globalOffsetTransform = VM.Matrix4.identity();
+  final VM.Matrix4 _globalOffsetTransform = VM.Matrix4.identity();
   late MeshData _mdWire;
-  List<Bone> _skeleton;
-  SkeletalAnimation _anim;
+  final List<Bone> _skeleton;
+  final SkeletalAnimation _anim;
   late AnimatedSkeleton _animatedSkeleton;
 
   late Node mesh;

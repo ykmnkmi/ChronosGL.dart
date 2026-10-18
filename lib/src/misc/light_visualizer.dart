@@ -1,4 +1,4 @@
-part of misc;
+part of 'lib.dart';
 
 MeshData EmptyLightVisualizer(RenderProgram prog, String name) {
   MeshData md = prog.MakeMeshData(name, GL_LINES);

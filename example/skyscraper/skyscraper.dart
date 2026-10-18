@@ -10,9 +10,9 @@ final ShaderObject skyScraperVertexShader = ShaderObject("SkyScraperV")
   ..SetBody([
     """
 void main() {     
-    ${StdVertexBody}
-    ${vPosition} = ${aPosition};
-    ${vTexUV} = ${aTexUV};
+    $StdVertexBody
+    $vPosition = $aPosition;
+    $vTexUV = $aTexUV;
 }
 """,
   ]);
@@ -26,11 +26,11 @@ void main() {
       // multiplying the tex coord with 11 gives it a black column on the right side but with artifacts
       // multiplying the tex coord with 10.9 gives it a black column on the right side WITHOUT the
       // artifacts on the right side
-      float s1 = step(mod(${vTexUV}.x*11.+1., 2.), 1.);
-      float s2 = step(mod(${vTexUV}.y*21.+1., 2.), 1.);
+      float s1 = step(mod($vTexUV.x*11.+1., 2.), 1.);
+      float s2 = step(mod($vTexUV.y*21.+1., 2.), 1.);
       float s3 = step( s1+s2, 1.1);
 
-      ${oFragColor} = vec4( 1.-s3, 1.-s3, 1.-s3, 1. );
+      $oFragColor = vec4( 1.-s3, 1.-s3, 1.-s3, 1. );
 
       //gl_FragColor = vec4( mod(vPosition.x*10.0,2.0) ,
       //                       mod(vPosition.y*20.0,2.0),
@@ -119,15 +119,15 @@ void main() {
     }
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.Draw();
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

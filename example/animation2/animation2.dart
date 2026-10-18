@@ -26,21 +26,21 @@ mat4 adjustMatrix(sampler2D table, vec4 weights, ivec4 indices, int time) {
 }
 
 void main() {
-   mat4 skinMat = uModelMatrix * adjustMatrix(${uAnimationTable},
-                                              ${aBoneWeight},
-                                              ivec4(${aBoneIndex}),
-                                              int(${uTime}));
-   vec4 pos = skinMat * vec4(${aPosition}, 1.0);
+   mat4 skinMat = uModelMatrix * adjustMatrix($uAnimationTable,
+                                              $aBoneWeight,
+                                              ivec4($aBoneIndex),
+                                              int($uTime));
+   vec4 pos = skinMat * vec4($aPosition, 1.0);
    // vPosition = pos.xyz;
    // This is not quite accurate
-   //${vNormal} = normalize(mat3(skinMat) * aNormal);
-   gl_Position = ${uPerspectiveViewMatrix} * pos;
+   //$vNormal = normalize(mat3(skinMat) * aNormal);
+   gl_Position = $uPerspectiveViewMatrix * pos;
 
 
-   ${vColor} = vec3( sin(${aPosition}.x)/2.0+0.5,
-                      cos(${aPosition}.y)/2.0+0.5,
-                      sin(${aPosition}.z)/2.0+0.5);
-   //vTexUV = ${aTexUV};
+   $vColor = vec3( sin($aPosition.x)/2.0+0.5,
+                      cos($aPosition.y)/2.0+0.5,
+                      sin($aPosition.z)/2.0+0.5);
+   //vTexUV = $aTexUV;
 }
 
 """;
@@ -48,7 +48,7 @@ void main() {
 const String skinningFragmentShader =
     """
 void main() {
-  ${oFragColor}.rgb = ${vColor};
+  $oFragColor.rgb = $vColor;
 }
 """;
 
@@ -156,18 +156,18 @@ void main() {
     input.dispatchEvent(HTML.Event("change"));
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   mat.ForceUniform(uTime, 0.0);
 
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.Draw([]);
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
 
     int step =
         ((timeMs / 1000.0) / kAnimTimeStep).floor() % animationSteps.length;

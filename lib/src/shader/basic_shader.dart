@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 //  Gouraud shading - most action happens in vertext shader - cheaper
 final ShaderObject lightVertexShaderGourad = ShaderObject("LightGouradV")
@@ -11,18 +11,18 @@ final ShaderObject lightVertexShaderGourad = ShaderObject("LightGouradV")
     [
       """
 void main() {
-    vec4 pos = ${uModelMatrix} * vec4(${aPosition}, 1.0);
-    gl_Position = ${uPerspectiveViewMatrix} * pos;
-    vec3 normal = ${uNormalMatrix} * ${aNormal};
+    vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
+    gl_Position = $uPerspectiveViewMatrix * pos;
+    vec3 normal = $uNormalMatrix * $aNormal;
 
-    ColorComponents acc = CombinedLight(pos.xyz, normal, ${uEyePosition},
-                  ${uLightDescs},
-                  ${uLightTypes},
-                  ${uShininess});
+    ColorComponents acc = CombinedLight(pos.xyz, normal, $uEyePosition,
+                  $uLightDescs,
+                  $uLightTypes,
+                  $uShininess);
 
-     ${vColor} = acc.diffuse +
+     $vColor = acc.diffuse +
                  acc.specular +
-                 texture(${uTexture}, ${aTexUV}).rgb;
+                 texture($uTexture, $aTexUV).rgb;
 }
         """,
     ],
@@ -31,7 +31,7 @@ void main() {
 
 final ShaderObject lightFragmentShaderGourad = ShaderObject("LightGrouradV")
   ..AddVaryingVars([vColor])
-  ..SetBodyWithMain(["${oFragColor} = vec4(${vColor}, 1.0 );"]);
+  ..SetBodyWithMain(["$oFragColor = vec4($vColor, 1.0 );"]);
 
 // Phong shader - most action happens in fragment shader - expensive
 // Light Matrix m organization:
@@ -45,11 +45,11 @@ final ShaderObject lightVertexShaderBlinnPhong =
       ..SetBody([
         """
 void main() {
-    vec4 pos = ${uModelMatrix} * vec4(${aPosition}, 1.0);
-    gl_Position = ${uPerspectiveViewMatrix} * pos;
-    ${vPosition} = pos.xyz;
-    ${vTexUV} = ${aTexUV};
-    ${vNormal} = ${uNormalMatrix} * ${aNormal};
+    vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
+    gl_Position = $uPerspectiveViewMatrix * pos;
+    $vPosition = pos.xyz;
+    $vTexUV = $aTexUV;
+    $vNormal = $uNormalMatrix * $aNormal;
 }
 """,
       ]);
@@ -61,17 +61,17 @@ final ShaderObject lightFragmentShaderBlinnPhong =
       ..SetBodyWithMain(
         [
           """
-ColorComponents acc = CombinedLight(${vPosition},
-                                    ${vNormal},
-                                    ${uEyePosition},
-                                    ${uLightDescs},
-                                    ${uLightTypes},
-                                    ${uShininess});
+ColorComponents acc = CombinedLight($vPosition,
+                                    $vNormal,
+                                    $uEyePosition,
+                                    $uLightDescs,
+                                    $uLightTypes,
+                                    $uShininess);
 
-${oFragColor}.rgb = acc.diffuse +
+$oFragColor.rgb = acc.diffuse +
                     acc.specular +
-                    texture(${uTexture}, ${vTexUV}).rgb;
-${oFragColor}.a = 1.0;
+                    texture($uTexture, $vTexUV).rgb;
+$oFragColor.a = 1.0;
 """,
         ],
         prolog: [StdLibShader],

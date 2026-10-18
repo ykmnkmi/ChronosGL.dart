@@ -269,26 +269,26 @@ void main() {
   final SceneWireframe sceneTriangle = SceneWireframe.Triangle(cgl);
   final SceneWireframe sceneHexagon = SceneWireframe.Hexagon(cgl);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    _lastTimeMs = timeMs.toDouble();
+    lastTimeMs = timeMs.toDouble();
 
-    tkc.animate(_lastTimeMs);
+    tkc.animate(lastTimeMs);
 
-    sceneStars.Draw(cgl, _lastTimeMs, perspective);
+    sceneStars.Draw(cgl, lastTimeMs, perspective);
 
     switch (modeInput.value) {
       case "texture":
-        sceneTextures.Draw(cgl, _lastTimeMs, perspective);
+        sceneTextures.Draw(cgl, lastTimeMs, perspective);
         break;
       case "rectangles":
-        sceneQuad.Draw(cgl, _lastTimeMs, perspective);
+        sceneQuad.Draw(cgl, lastTimeMs, perspective);
         break;
       case "triangles":
-        sceneTriangle.Draw(cgl, _lastTimeMs, perspective);
+        sceneTriangle.Draw(cgl, lastTimeMs, perspective);
         break;
       case "hexagons":
-        sceneHexagon.Draw(cgl, _lastTimeMs, perspective);
+        sceneHexagon.Draw(cgl, lastTimeMs, perspective);
         break;
       default:
         print("unexpected mode ${modeInput.value}");

@@ -1,4 +1,6 @@
 @TestOn("chrome")
+library;
+
 import 'package:chronosgl/src/core/lib.dart';
 import 'package:chronosgl/src/shape/lib.dart';
 import "package:test/test.dart";

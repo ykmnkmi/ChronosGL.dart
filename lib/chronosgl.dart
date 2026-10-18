@@ -1,4 +1,4 @@
-library chronosgl;
+library;
 
 export 'src/core/lib.dart';
 export 'src/shape/lib.dart';

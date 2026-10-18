@@ -30,26 +30,26 @@ String shader =
                       float baseAmpl, float ampls[D]) {
        float total = 0.0;
        for(int i = 0; i < D; i++) {
-           total += baseAmpl * ampls[i] * snoise3(vec3(xy * baseFreq * freqs[i], ${uTime} * ${uSpeed}));
+           total += baseAmpl * ampls[i] * snoise3(vec3(xy * baseFreq * freqs[i], $uTime * $uSpeed));
        }             
        return total;
    }
    
    float Standard(vec2 xy) {
-       float ampls[D] = float[](${uAmpl1}, ${uAmpl2}, ${uAmpl3});
-       return ComplexNoise(xy, ${uFreqMul}, freqs, ${uAmplMul}, ampls);
+       float ampls[D] = float[]($uAmpl1, $uAmpl2, $uAmpl3);
+       return ComplexNoise(xy, $uFreqMul, freqs, $uAmplMul, ampls);
    }
  
    float Marble(vec2 xy) {
-       float ampls[D] = float[](${uAmpl1}, ${uAmpl2}, ${uAmpl3});
-       float n = ComplexNoise(xy, ${uFreqMul}, freqs, ${uAmplMul}, ampls);
+       float ampls[D] = float[]($uAmpl1, $uAmpl2, $uAmpl3);
+       float n = ComplexNoise(xy, $uFreqMul, freqs, $uAmplMul, ampls);
        return abs(cos(xy.x * 0.008 + xy.y * 0.008 + 4.0 * n)); 
    }
    
    float Wood(vec2 xy) {
-       float ampls[D] = float[](${uAmpl1}, ${uAmpl2}, ${uAmpl3});
+       float ampls[D] = float[]($uAmpl1, $uAmpl2, $uAmpl3);
        vec2 p = xy / 40.0;
-       float n = ComplexNoise(xy, ${uFreqMul}, freqs, ${uAmplMul}, ampls);
+       float n = ComplexNoise(xy, $uFreqMul, freqs, $uAmplMul, ampls);
        return cos((length(p) + n) * 4.0); 
    
        //float n = 0.4 * snoise2(xy * 0.005);   
@@ -57,24 +57,24 @@ String shader =
    }  
 
    vec3 Cloud(vec2 xy) {
-       float ampls[D] = float[](${uAmpl1}, ${uAmpl2}, ${uAmpl3});
-       float n = ComplexNoise(xy, ${uFreqMul}, freqs, ${uAmplMul}, ampls);
+       float ampls[D] = float[]($uAmpl1, $uAmpl2, $uAmpl3);
+       float n = ComplexNoise(xy, $uFreqMul, freqs, $uAmplMul, ampls);
        return HSLtoRGB(vec3(0.66, 1.0, 0.75 + n / 4.0));
    }  
    
    void main() {
        // This are pixel coordinates  0, 0 being lowel left
-       vec2 xy = gl_FragCoord.xy - 0.5 * ${uCanvasSize};
+       vec2 xy = gl_FragCoord.xy - 0.5 * $uCanvasSize;
        
        // see simple_noise.html for mode coding 
-       if (${uMode} == 4.0) {
-           ${oFragColor}.g = Marble(xy);
-       } else if (${uMode} == 3.0) {
-           ${oFragColor}.rgb = Cloud(xy);
-       } else if (${uMode} == 2.0) {
-           ${oFragColor}.g = Wood(xy);
+       if ($uMode == 4.0) {
+           $oFragColor.g = Marble(xy);
+       } else if ($uMode == 3.0) {
+           $oFragColor.rgb = Cloud(xy);
+       } else if ($uMode == 2.0) {
+           $oFragColor.g = Wood(xy);
        } else {
-           ${oFragColor}.g =  Standard(xy);
+           $oFragColor.g =  Standard(xy);
        }
    }
  """;
@@ -158,15 +158,15 @@ void main() {
     input.dispatchEvent(HTML.Event("change"));
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    _lastTimeMs = timeMs + 0.0;
+    lastTimeMs = timeMs + 0.0;
 
     uniforms.ForceUniform(uTime, timeMs / 1000.0);
     programPerlin.Draw(quad, [uniforms]);
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

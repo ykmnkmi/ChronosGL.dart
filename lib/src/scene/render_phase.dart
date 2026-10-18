@@ -1,4 +1,4 @@
-part of scene;
+part of 'lib.dart';
 
 ///  represents a simple scene graph.
 ///  Each scene is rendered by multiple invocation of a single RenderProgram
@@ -10,9 +10,8 @@ class Scene extends NamedEntity {
   /// @param name
   /// @param this.program
   /// @param unis
-  Scene(String name, this.program, [List<UniformGroup>? unis])
-    : uniforms = unis == null ? <UniformGroup>[] : unis,
-      super(name);
+  Scene(super.name, this.program, [List<UniformGroup>? unis])
+    : uniforms = unis ?? <UniformGroup>[];
 
   final RenderProgram program;
   final List<UniformGroup> uniforms;
@@ -23,7 +22,9 @@ class Scene extends NamedEntity {
   }
 
   void addAll(List<Node> nodes) {
-    for (Node node in nodes) add(node);
+    for (Node node in nodes) {
+      add(node);
+    }
   }
 
   void remove(Node n) {
@@ -46,7 +47,7 @@ void drawRecursively(
   // m is read-only!
   final VM.Matrix4 m = node.UpdateModelMatrix(parent);
   if (node.SomethingToDraw()) {
-    LogDebug("drawing: ${node}");
+    LogDebug("drawing: $node");
     node.UpdateTransforms(uniforms.last);
     uniforms.add(node.material);
     prog.Draw(node.meshData, uniforms, stats);
@@ -59,11 +60,10 @@ void drawRecursively(
 
 /// represents a sequence of Scenes.
 class RenderPhase extends NamedEntity {
-  RenderPhase(String name, ChronosGL cgl, [Framebuffer? framebuffer])
-    : _framebuffer = framebuffer ?? Framebuffer.Screen(cgl),
-      super(name);
+  RenderPhase(super.name, ChronosGL cgl, [Framebuffer? framebuffer])
+    : _framebuffer = framebuffer ?? Framebuffer.Screen(cgl);
 
-  late Framebuffer _framebuffer;
+  late final Framebuffer _framebuffer;
   final List<Scene> _scenes = <Scene>[];
   int _clear_mode = GL_CLEAR_ALL;
 
@@ -74,25 +74,28 @@ class RenderPhase extends NamedEntity {
 
   Framebuffer get framebuffer => _framebuffer;
 
-  void set clearColorBuffer(bool clear) {
-    if (clear)
+  set clearColorBuffer(bool clear) {
+    if (clear) {
       _clear_mode |= GL_COLOR_BUFFER_BIT;
-    else
+    } else {
       _clear_mode &= ~GL_COLOR_BUFFER_BIT;
+    }
   }
 
-  void set clearDepthBuffer(bool clear) {
-    if (clear)
+  set clearDepthBuffer(bool clear) {
+    if (clear) {
       _clear_mode |= GL_DEPTH_BUFFER_BIT;
-    else
+    } else {
       _clear_mode &= ~GL_DEPTH_BUFFER_BIT;
+    }
   }
 
-  void set clearStencilBuffer(bool clear) {
-    if (clear)
+  set clearStencilBuffer(bool clear) {
+    if (clear) {
       _clear_mode |= GL_STENCIL_BUFFER_BIT;
-    else
+    } else {
       _clear_mode &= ~GL_STENCIL_BUFFER_BIT;
+    }
   }
 
   void add(Scene s) {

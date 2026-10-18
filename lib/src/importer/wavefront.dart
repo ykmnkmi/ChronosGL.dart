@@ -1,4 +1,4 @@
-part of importer;
+part of 'lib.dart';
 
 // https://en.wikipedia.org/wiki/Wavefront_.obj_file
 
@@ -34,8 +34,8 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
     // ignore comments
     if (line.isEmpty || line[0] == "#") continue;
     List<String> array = line.split(sep);
-    assert(!array.isEmpty);
-    assert(!array.last.isEmpty);
+    assert(array.isNotEmpty);
+    assert(array.last.isNotEmpty);
 
     //print("### ${array}");
 
@@ -62,7 +62,7 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
     } else if (array[0] == "f") {
       // face
       if (array.length != 4 && array.length != 5) {
-        print("*** Error: face '" + line + "' not handled");
+        print("*** Error: face '$line' not handled");
         continue;
       }
 
@@ -73,8 +73,10 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
       for (int i = 1; i < array.length; ++i) {
         // add a new entry to the map and arrays
         List<String> f = array[i].split("/");
-        assert(f.length > 0);
-        while (f.length < 3) f.add("");
+        assert(f.isNotEmpty);
+        while (f.length < 3) {
+          f.add("");
+        }
 
         // TODO: support negative indices
         final int vtx = int.parse(f[0]) - 1;
@@ -87,20 +89,20 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
           faceVertices.add(VM.Vector3.zero());
         }
 
-        if (uvs.length == 0) {
+        if (uvs.isEmpty) {
           faceUvs.add(VM.Vector2.zero());
         } else if (tex != -1 && tex < uvs.length) {
           faceUvs.add(uvs[tex]);
         } else {
-          LogWarn("problem uv $i ${tex}");
+          LogWarn("problem uv $i $tex");
           faceUvs.add(VM.Vector2.zero());
         }
-        if (normals.length == 0) {
+        if (normals.isEmpty) {
           faceNormal.add(VM.Vector3.zero());
         } else if (nor != -1 && nor < normals.length) {
           faceNormal.add(normals[nor]);
         } else {
-          LogWarn("problem normals $i ${nor}");
+          LogWarn("problem normals $i $nor");
           faceNormal.add(VM.Vector3.zero());
         }
       }
@@ -114,6 +116,6 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
     }
   }
   final Duration delta = DateTime.now().difference(start);
-  LogInfo("Wavefront loaded in (${delta}) ${gb}");
+  LogInfo("Wavefront loaded in ($delta) $gb");
   return gb;
 }

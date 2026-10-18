@@ -56,16 +56,16 @@ vec3 NewPos(vec3 orig, vec3 last, float t) {
 }
 
 void main() {
-    vec3 pos = NewPos(${aPosition}, ${aCurrentPosition}, ${uTime});
+    vec3 pos = NewPos($aPosition, $aCurrentPosition, $uTime);
     // new current pos for next run
-    ${tPosition} = pos;
+    $tPosition = pos;
 
-    gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(pos, 1.0);
+    gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4(pos, 1.0);
                   
-    gl_PointSize = ${uPointSize} / gl_Position.z;
-    ${vColor}.r = sin(${aPosition}.x)/2.0+0.5;
-    ${vColor}.g = cos(${aPosition}.y)/2.0+0.5;
-    ${vColor}.b = sin(${aPosition}.z)/2.0+0.5;
+    gl_PointSize = $uPointSize / gl_Position.z;
+    $vColor.r = sin($aPosition.x)/2.0+0.5;
+    $vColor.g = cos($aPosition.y)/2.0+0.5;
+    $vColor.b = sin($aPosition.z)/2.0+0.5;
 }
 """,
   ]);
@@ -75,7 +75,7 @@ final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
   ..SetBody([
     """
 void main() {  
-    ${oFragColor}.rgb = ${vColor};
+    $oFragColor.rgb = $vColor;
 }
     """,
   ]);
@@ -138,10 +138,10 @@ void main() {
     out0.GetBuffer(aPosition),
   );
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     // animate the camera a little
     orbit.azimuth += 0.003;
     // allow the camera to also reflect mouse movement.

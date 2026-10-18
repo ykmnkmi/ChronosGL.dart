@@ -13,14 +13,14 @@ final ShaderObject stencilFragmentShader = ShaderObject("stencilF")
   ..SetBody([
     """
 void main() {
-   float radius = ${uTime} * max(${uCanvasSize}.x, ${uCanvasSize}.y);
-   vec2 center = vec2(${uCanvasSize}.x, ${uCanvasSize}.y) * 0.5;
+   float radius = $uTime * max($uCanvasSize.x, $uCanvasSize.y);
+   vec2 center = vec2($uCanvasSize.x, $uCanvasSize.y) * 0.5;
    if (distance(center, gl_FragCoord.xy) > radius) {
       // It does not really matter what we write.
       // Any write will set the stencil buffer to 1
-      ${oFragColor} = vec4(1.0);   
+      $oFragColor = vec4(1.0);
    } else {
-      // do not set color and hence do not change stencil buffer 
+      // do not set color and hence do not change stencil buffer
       discard;
    }
 }
@@ -153,10 +153,10 @@ void main() {
     );
   }
   orbit.azimuth = 1.1;
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
@@ -171,7 +171,7 @@ void main() {
     }
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs, out.join("<br>"));
+    fps.UpdateFrameCount(lastTimeMs, out.join("<br>"));
   }
 
   animate(0.0);

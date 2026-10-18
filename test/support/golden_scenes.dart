@@ -240,7 +240,7 @@ class GoldenScene {
     );
     final fragment = ShaderObject('half-alpha')
       ..AddUniformVars([uColor])
-      ..SetBodyWithMain(['${oFragColor} = vec4(${uColor}, 0.5);']);
+      ..SetBodyWithMain(['$oFragColor = vec4($uColor, 0.5);']);
     final program = RenderProgram(
       'alpha',
       cgl,

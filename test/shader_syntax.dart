@@ -1,4 +1,6 @@
 @TestOn("chrome")
+library;
+
 import 'dart:html' as HTML;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -17,7 +19,7 @@ void main() {
       texturedVertexShader,
       texturedFragmentShader,
     );
-    print("${program}");
+    print("$program");
     phase.add(Scene("scene", program));
 
     program = RenderProgram(
@@ -26,7 +28,7 @@ void main() {
       lightVertexShaderGourad,
       lightFragmentShaderGourad,
     );
-    print("${program}");
+    print("$program");
 
     program = RenderProgram(
       "prog",
@@ -34,7 +36,7 @@ void main() {
       lightVertexShaderBlinnPhong,
       lightFragmentShaderBlinnPhong,
     );
-    print("${program}");
+    print("$program");
     /*
     program = phase.createProgram(createLightShaderBlinnPhongWithShadow());
     print("${program}");
@@ -42,10 +44,10 @@ void main() {
     print("${program}");
     */
     program = RenderProgram("prog", cgl, copyVertexShader, copyFragmentShader);
-    print("${program}");
+    print("$program");
 
     program = RenderProgram("prog", cgl, ssaoVertexShader, ssaoFragmentShader);
-    print("${program}");
+    print("$program");
 
     program = RenderProgram(
       "prog",
@@ -53,7 +55,7 @@ void main() {
       sobelVertexShader,
       sobelFragmentShader,
     );
-    print("${program}");
+    print("$program");
   });
 
   print("PASS");

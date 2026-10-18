@@ -1,7 +1,7 @@
-part of core;
+part of 'lib.dart';
 
 Float32List FlattenVector3List(List<VM.Vector3> v, [Float32List? data]) {
-  if (data == null) data = Float32List(v.length * 3);
+  data ??= Float32List(v.length * 3);
   for (int i = 0; i < v.length; ++i) {
     data[i * 3 + 0] = v[i].x;
     data[i * 3 + 1] = v[i].y;
@@ -11,7 +11,7 @@ Float32List FlattenVector3List(List<VM.Vector3> v, [Float32List? data]) {
 }
 
 Float32List FlattenVector2List(List<VM.Vector2> v, [Float32List? data]) {
-  if (data == null) data = Float32List(v.length * 2);
+  data ??= Float32List(v.length * 2);
   for (int i = 0; i < v.length; ++i) {
     data[i * 2 + 0] = v[i].x;
     data[i * 2 + 1] = v[i].y;
@@ -20,7 +20,7 @@ Float32List FlattenVector2List(List<VM.Vector2> v, [Float32List? data]) {
 }
 
 Float32List FlattenVector4List(List<VM.Vector4> v, [Float32List? data]) {
-  if (data == null) data = Float32List(v.length * 4);
+  data ??= Float32List(v.length * 4);
   for (int i = 0; i < v.length; ++i) {
     data[i * 4 + 0] = v[i].x;
     data[i * 4 + 1] = v[i].y;
@@ -31,7 +31,7 @@ Float32List FlattenVector4List(List<VM.Vector4> v, [Float32List? data]) {
 }
 
 Uint32List FlattenUvec4List(List<List<int>> v, [Uint32List? data]) {
-  if (data == null) data = Uint32List(v.length * 4);
+  data ??= Uint32List(v.length * 4);
   for (int i = 0; i < v.length; ++i) {
     data[i * 4 + 0] = v[i][0];
     data[i * 4 + 1] = v[i][1];
@@ -42,10 +42,12 @@ Uint32List FlattenUvec4List(List<List<int>> v, [Uint32List? data]) {
 }
 
 Float32List FlattenMatrix4List(List<VM.Matrix4> v, [Float32List? data]) {
-  if (data == null) data = Float32List(v.length * 16);
+  data ??= Float32List(v.length * 16);
   for (int i = 0; i < v.length; ++i) {
     VM.Matrix4 m = v[i];
-    for (int j = 0; j < 16; ++j) data[i * 16 + j] = m[j];
+    for (int j = 0; j < 16; ++j) {
+      data[i * 16 + j] = m[j];
+    }
   }
   return data;
 }
@@ -61,7 +63,7 @@ Float32List FlattenMatrix4List(List<VM.Matrix4> v, [Float32List? data]) {
 class MeshData extends NamedEntity {
   MeshData(String name, this._cgl, this._drawMode, this._locationMap)
     : _vao = _cgl.createVertexArray(),
-      super("meshdata:" + name);
+      super("meshdata:$name");
 
   final ChronosGL _cgl;
   final GlVertexArrayObject _vao;
@@ -74,7 +76,7 @@ class MeshData extends NamedEntity {
 
   late Float32List _vertices;
   List<int>? _faces;
-  Map<String, List<num>> _attributes = {};
+  final Map<String, List<num>> _attributes = {};
 
   void clearData() {
     for (String canonical in _buffers.keys) {
@@ -86,16 +88,13 @@ class MeshData extends NamedEntity {
   }
 
   void ChangeAttributeData(String canonical, List<num> data, int width) {
-    if (debug) print("ChangeBuffer ${canonical} ${data.length}");
+    if (debug) print("ChangeBuffer $canonical ${data.length}");
     if (canonical.codeUnitAt(0) == prefixInstancer) {
-      assert(
-        data.length ~/ width == _instances,
-        "ChangeAttribute ${_instances}",
-      );
+      assert(data.length ~/ width == _instances, "ChangeAttribute $_instances");
     } else {
       assert(
         data.length ~/ width == _vertices.length ~/ 3,
-        "wrong size for attribute: ${canonical} expected: ${_vertices.length ~/ 3} got: ${data.length ~/ width}",
+        "wrong size for attribute: $canonical expected: ${_vertices.length ~/ 3} got: ${data.length ~/ width}",
       );
     }
     _attributes[canonical] = data;
@@ -200,19 +199,19 @@ class MeshData extends NamedEntity {
   @override
   String toString() {
     int nf = _faces == null ? 0 : _faces!.length;
-    List<String> lst = ["Faces:${nf}"];
+    List<String> lst = ["Faces:$nf"];
     for (String c in _attributes.keys) {
-      lst.add("${c}:${_attributes[c]!.length}");
+      lst.add("$c:${_attributes[c]!.length}");
     }
 
-    return "MESH[${name}] " + lst.join("  ");
+    return "MESH[$name] ${lst.join("  ")}";
   }
 }
 
 void _GeometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
   for (String canonical in gb.attributes.keys) {
     if (!md.SupportsAttribute(canonical)) {
-      LogInfo("Dropping unnecessary attribute: ${canonical}");
+      LogInfo("Dropping unnecessary attribute: $canonical");
       continue;
     }
     List<Object> lst = gb.attributes[canonical]!;
@@ -254,7 +253,7 @@ void _GeometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
       default:
         assert(
           false,
-          "unknown type for ${canonical} [${lst[0].runtimeType}] [${lst.runtimeType}] ${lst}",
+          "unknown type for $canonical [${lst[0].runtimeType}] [${lst.runtimeType}] $lst",
         );
     }
   }
@@ -274,7 +273,7 @@ MeshData GeometryBuilderToMeshData(
   if (!gb.pointsOnly) md.AddFaces(gb.GenerateFaceIndices());
   _GeometryBuilderAttributesToMeshData(gb, md);
   final Duration delta = DateTime.now().difference(start);
-  LogInfo("GeometryBuilderToMeshData took (${delta}) ${md}");
+  LogInfo("GeometryBuilderToMeshData took ($delta) $md");
   return md;
 }
 
@@ -400,7 +399,9 @@ List<double> _GetMeshFaceAreas(List<int> faces, Float32List verts) {
 double GetMeshFaceArea(MeshData md) {
   List<double> areas = _GetMeshFaceAreas(md._faces!, md._vertices);
   double total_area = 0.0;
-  areas.forEach((d) => total_area += d);
+  for (var d in areas) {
+    total_area += d;
+  }
   return total_area;
 }
 
@@ -466,9 +467,11 @@ MeshData ExtractPointCloud(
 
   List<double> areas = _GetMeshFaceAreas(faces, verts);
   double total_area = 0.0;
-  areas.forEach((d) => total_area += d);
+  for (var d in areas) {
+    total_area += d;
+  }
   print(
-    "vertices: ${md._vertices.length ~/ 3}  faces: ${faces.length}  total: ${total_area}",
+    "vertices: ${md._vertices.length ~/ 3}  faces: ${faces.length}  total: $total_area",
   );
   final double area_per_point = total_area / num_points;
   double ceiling = 0.0;

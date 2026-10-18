@@ -1,4 +1,4 @@
-part of shape;
+part of 'lib.dart';
 
 // single color cylinder
 // uv mapping is weird to help with debugging

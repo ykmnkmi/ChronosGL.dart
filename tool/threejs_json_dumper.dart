@@ -99,11 +99,11 @@ void DumpFaces(Map<String, Object?> json, bool verbose) {
     }
   }
 
-  print("processed faces: ${count}");
-  print("max Material: ${mMat}");
-  print("max Vertex: ${mVertex}");
-  print("max UV: ${mUv}");
-  print("max Normal: ${mNormal}");
+  print("processed faces: $count");
+  print("max Material: $mMat");
+  print("max Vertex: $mVertex");
+  print("max UV: $mUv");
+  print("max Normal: $mNormal");
 }
 
 void ShowInfo(Map<String, Object?> json) {
@@ -127,7 +127,7 @@ void ShowInfo(Map<String, Object?> json) {
   final animation = json["animation"] as Map<String, Object?>;
   final metadata = json["metadata"];
 
-  print("meta: ${metadata}");
+  print("meta: $metadata");
   print("materials: ${materials.length}");
   print("vertices: ${vertices.length}  ${vertices.length ~/ 3}");
   print("normals: ${normals.length} ${normals.length ~/ 3}");
@@ -146,15 +146,15 @@ void ShowInfo(Map<String, Object?> json) {
 }
 
 void main(List<String> arguments) {
-  final parser = new ArgParser()..addFlag("faces", negatable: false, abbr: 'f');
+  final parser = ArgParser()..addFlag("faces", negatable: false, abbr: 'f');
 
   ArgResults argResults = parser.parse(arguments);
   List<String> paths = argResults.rest;
   for (var p in paths) {
-    print("reading  ${p}");
+    print("reading  $p");
 
-    print("reading mesh from: ${p}");
-    var meshData = new File(p).readAsStringSync();
+    print("reading mesh from: $p");
+    var meshData = File(p).readAsStringSync();
     final jsonData = json.decode(meshData) as Map<String, Object?>;
     ShowInfo(jsonData);
     DumpFaces(jsonData, argResults['faces'] as bool);
@@ -178,9 +178,9 @@ void main(List<String> arguments) {
       print(ba);
     }
 
-    VM.Matrix4 globalOffsetTransform = new VM.Matrix4.identity();
+    VM.Matrix4 globalOffsetTransform = VM.Matrix4.identity();
 
-    AnimatedSkeleton animatedSkeleton = new AnimatedSkeleton(skeleton.length);
+    AnimatedSkeleton animatedSkeleton = AnimatedSkeleton(skeleton.length);
     UpdateAnimatedSkeleton(
       skeleton,
       globalOffsetTransform,

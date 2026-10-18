@@ -88,10 +88,10 @@ void main2(HTML.VideoElement? video) {
   final Node cubeNode = cubeScene.nodes[0];
   phase.add(cubeScene);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.animate(elapsed);
     cubeNode.rotX(0.01);
     cubeNode.rotY(0.01);
@@ -108,7 +108,7 @@ void main2(HTML.VideoElement? video) {
       out.add(d.toString());
     }
 
-    fps.UpdateFrameCount(_lastTimeMs, out.join("<br>"));
+    fps.UpdateFrameCount(lastTimeMs, out.join("<br>"));
 
     HTML.window.animationFrame.then(animate);
   }
@@ -118,8 +118,6 @@ void main2(HTML.VideoElement? video) {
 
 void main() {
   MakeVideoElementFromCamera().then(main2).catchError((Object error) {
-    HTML.window.alert(
-      "Camera error ${error}: - do you have a camera installed?",
-    );
+    HTML.window.alert("Camera error $error: - do you have a camera installed?");
   });
 }

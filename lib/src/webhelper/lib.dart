@@ -1,4 +1,4 @@
-library webhelper;
+library;
 
 import 'dart:html' as HTML;
 import "dart:async";

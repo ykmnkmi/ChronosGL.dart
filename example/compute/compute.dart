@@ -13,9 +13,9 @@ final ShaderObject computeFragmentShader = ShaderObject("computeFragmentShader")
   ..SetBody([
     """
 void main() { 
-    ${oFragColor}.b = gl_FragCoord.x / ${kDim}.0;
-    ${oFragColor}.g = gl_FragCoord.y / ${kDim}.0;
-    ${oFragColor}.r = 0.0;
+    $oFragColor.b = gl_FragCoord.x / $kDim.0;
+    $oFragColor.g = gl_FragCoord.y / $kDim.0;
+    $oFragColor.r = 0.0;
 }
     """,
   ]);
@@ -23,7 +23,7 @@ void main() {
 String ExtractAndSummarizeBytes(Framebuffer fb, int w, int h) {
   Uint8List buf = fb.ExtractByteData(null, 0, 0, w, h);
   int channels = buf.length ~/ (w * h);
-  print("Buffer length: ${buf.length} channels: ${channels}");
+  print("Buffer length: ${buf.length} channels: $channels");
   int r = 0;
   int g = 0;
   int b = 0;
@@ -38,7 +38,7 @@ String ExtractAndSummarizeBytes(Framebuffer fb, int w, int h) {
 String ExtractAndSummarizeFloat(Framebuffer fb, int w, int h) {
   Float32List buf = fb.ExtractFloatData(null, 0, 0, w, h);
   int channels = buf.length ~/ (w * h);
-  print("Buffer length: ${buf.length} channels: ${channels}");
+  print("Buffer length: ${buf.length} channels: $channels");
   double r = 0.0;
   double g = 0.0;
   double b = 0.0;
@@ -79,21 +79,20 @@ void main() {
     final Framebuffer fb = Framebuffer.Default(cgl, kDim, kDim);
 
     results.innerHtml =
-        results.innerHtml! + "<h3>Drawing into default format FB</h3>";
+        "${results.innerHtml!}<h3>Drawing into default format FB</h3>";
     fb.Activate(GL_CLEAR_ALL, 0, 0, kDim, kDim);
     program.Draw(unitQuad, []);
     results.innerHtml =
-        results.innerHtml! + ExtractAndSummarizeBytes(fb, kDim, kDim) + "\n";
+        "${results.innerHtml!}${ExtractAndSummarizeBytes(fb, kDim, kDim)}\n";
   }
 
   {
     results.innerHtml =
-        results.innerHtml! + "<h3>Drawing into float format FB</h3>";
+        "${results.innerHtml!}<h3>Drawing into float format FB</h3>";
     var ext = cgl.getExtension("EXT_color_buffer_float");
     if (ext == null) {
       results.innerHtml =
-          results.innerHtml! +
-          "extension not available: EXT_color_buffer_float";
+          "${results.innerHtml!}extension not available: EXT_color_buffer_float";
     }
     TypedTexture tex = TypedTexture(
       cgl,
@@ -108,6 +107,6 @@ void main() {
     fb.Activate(GL_CLEAR_ALL, 0, 0, kDim, kDim);
     program.Draw(unitQuad, []);
     results.innerHtml =
-        results.innerHtml! + ExtractAndSummarizeFloat(fb, kDim, kDim) + "\n";
+        "${results.innerHtml!}${ExtractAndSummarizeFloat(fb, kDim, kDim)}\n";
   }
 }

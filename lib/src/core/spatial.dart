@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 final int RIGHTX = 0, RIGHTY = 4, RIGHTZ = 8;
 final int UPX = 1, UPY = 5, UPZ = 9;
@@ -8,7 +8,7 @@ final int POSX = 12, POSY = 13, POSZ = 14;
 /// is a base class for object that need to be transformed, e.g.
 /// moved, scaled, rotated. It is also used as a Camera abstraction.
 class Spatial extends NamedEntity {
-  Spatial(String name) : super(name);
+  Spatial(super.name);
   // position and rotation
   // the idea to use a matrix4 for this might be problematic,
   // as the values degenerate over time.
@@ -181,7 +181,7 @@ class Spatial extends NamedEntity {
   }
 
   void lookAt(VM.Vector3 target, [VM.Vector3? up]) {
-    if (up == null) up = VM.Vector3(0.0, 1.0, 0.0);
+    up ??= VM.Vector3(0.0, 1.0, 0.0);
     VM.setViewMatrix(transform, getPos(), target, up);
   }
 }

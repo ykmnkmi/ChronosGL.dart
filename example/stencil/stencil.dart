@@ -17,13 +17,13 @@ final ShaderObject stencilFragmentShader = ShaderObject("stencilF")
   ..SetBody([
     """
 void main() {
-   vec4 p = texture(${uTexture}, ${vTexUV});
+   vec4 p = texture($uTexture, $vTexUV);
    if (p.r > 0.0 || p.g >  0.0 || p.b > 0.0) {
       // It does not really matter what we write.
       // Any write will set the stencil buffer to 1
-      ${oFragColor} = vec4(1.0, 1.0, 0.0, 1.0);   
+      $oFragColor = vec4(1.0, 1.0, 0.0, 1.0);
    } else {
-      // do not set color and hence do not change stencil buffer 
+      // do not set color and hence do not change stencil buffer
       discard;
    }
 }
@@ -187,10 +187,10 @@ void main() {
     );
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
@@ -212,7 +212,7 @@ void main() {
     }
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs, out.join("<br>"));
+    fps.UpdateFrameCount(lastTimeMs, out.join("<br>"));
   }
 
   animate(0.0);

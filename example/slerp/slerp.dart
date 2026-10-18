@@ -122,7 +122,7 @@ void main() {
       time = 0.0;
       double angle;
       if (rng.nextBool()) {
-        axis..setValues(rng.nextDouble(), rng.nextDouble(), rng.nextDouble());
+        axis.setValues(rng.nextDouble(), rng.nextDouble(), rng.nextDouble());
         axis.normalize();
         angle = 2 * Math.pi * rng.nextDouble();
       } else {
@@ -130,16 +130,16 @@ void main() {
         axis.setValues(1.0, 0.0, 0.0);
         angle = 0.0;
       }
-      print("new rotation axis: " + axis.toString());
+      print("new rotation axis: $axis");
       start.setFromRotation(node.transform.getRotation());
       end.setAxisAngle(axis, angle);
     }
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     animateNode(elapsed);

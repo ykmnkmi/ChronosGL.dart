@@ -1,4 +1,4 @@
-part of webhelper;
+part of 'lib.dart';
 
 class MidiInput {
   MidiInput() {

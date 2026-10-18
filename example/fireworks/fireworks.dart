@@ -11,15 +11,15 @@ final ShaderObject fireworksVertexShader = ShaderObject("FireWorksV")
   ..SetBody([
     """
 void main() {
-    float t = mod(${uTime}, 5.0);
-    vec3 vp = ${aPosition};
+    float t = mod($uTime, 5.0);
+    vec3 vp = $aPosition;
     if( t < 3.0) {
      vp.y = t;
     } else {
      vp.y = 3.0;
-     vp += normalize(${aNormal})*(t-3.0);
+     vp += normalize($aNormal)*(t-3.0);
     }
-    gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(vp, 1.0);
+    gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4(vp, 1.0);
     gl_PointSize = 100.0/gl_Position.z;
 }
 """,
@@ -34,13 +34,13 @@ final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
   ..SetBody([
     """
 void main() {
-    ${oFragColor} = texture(${uTexture}, gl_PointCoord);
-    float t = mod(${uTime}, 5.0);
+    $oFragColor = texture($uTexture, gl_PointCoord);
+    float t = mod($uTime, 5.0);
     if( t < 3.0) {
        //gl_FragColor.x = 1.0;
     } else {
-       //gl_FragColor.rgb = ${uColor};
-       ${oFragColor}.a -= (t-3.0);
+       //gl_FragColor.rgb = $uColor;
+       $oFragColor.a -= (t-3.0);
     }
 }
 """,
@@ -104,10 +104,10 @@ void main() {
   final MeshData stars = Utils.MakeStarMesh(progSprites, 2000, 100.0);
   final MeshData rocket = getRocket(progFireworks);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     material.ForceUniform(uTime, timeMs / 1000.0);

@@ -1,16 +1,16 @@
-part of importer;
+part of 'lib.dart';
 
 int _FindSkinMultiplier(Map<String, Object?> json) {
   final SkinIndex = json["skinIndices"] as List<Object?>?;
   final SkinWeight = json["skinWeights"] as List<Object?>?;
-  if (SkinIndex == null || SkinIndex.length == 0) return 0;
+  if (SkinIndex == null || SkinIndex.isEmpty) return 0;
   final int vertexLength = _JsonList(json["vertices"]).length ~/ 3;
   final int skinMultiplier = SkinIndex.length ~/ vertexLength;
 
   assert(vertexLength * skinMultiplier == SkinIndex.length);
   assert(vertexLength * skinMultiplier == SkinWeight!.length);
   assert(skinMultiplier <= 4);
-  print("Skin multiplier is ${skinMultiplier}");
+  print("Skin multiplier is $skinMultiplier");
   return skinMultiplier;
 }
 
@@ -112,8 +112,8 @@ List<GeometryBuilder> ImportGeometryFromThreeJsJson(Map<String, Object?> json) {
 
     while (out.length <= mat) {
       GeometryBuilder gb = GeometryBuilder();
-      if (Normals.length > 0) gb.EnableAttribute(aNormal);
-      if (Uvs.length > 0) gb.EnableAttribute(aTexUV);
+      if (Normals.isNotEmpty) gb.EnableAttribute(aNormal);
+      if (Uvs.isNotEmpty) gb.EnableAttribute(aTexUV);
       if (skinMultiplier > 0) {
         gb.EnableAttribute(aBoneIndex);
         gb.EnableAttribute(aBoneWeight);
@@ -133,10 +133,10 @@ List<GeometryBuilder> ImportGeometryFromThreeJsJson(Map<String, Object?> json) {
       assert(d == 4);
       gb.AddVerticesFace4(vertex);
     }
-    if (uv.length > 0) {
+    if (uv.isNotEmpty) {
       gb.AddAttributesVector2(aTexUV, uv);
     }
-    if (normal.length > 0) {
+    if (normal.isNotEmpty) {
       gb.AddAttributesVector3(aNormal, normal);
     }
 
@@ -225,7 +225,7 @@ List<Bone> ImportSkeletonFromThreeJsJson(Map<String, Object?> json) {
     VM.Matrix4 mat = VM.Matrix4.zero()
       ..setFromTranslationRotationScale(t, r, s);
     if (i != 0 && parent < 0) {
-      print("found unusal root node ${i} ${parent}");
+      print("found unusal root node $i $parent");
     }
     return Bone(name, i, parent, mat, VM.Matrix4.identity());
   });

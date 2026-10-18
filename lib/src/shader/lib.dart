@@ -1,4 +1,4 @@
-library chronosshader;
+library;
 
 import 'dart:math' as Math;
 

@@ -16,12 +16,12 @@ final ShaderObject demoVertexShader = ShaderObject("demoVertexShader")
   ..SetBody([
     """
 void main() {
-    gl_Position = ${uPerspectiveViewMatrix} *
-                  ${uModelMatrix} *
-                  vec4(${aPosition}, 1.0);
-    ${vColor}.r = sin(${aPosition}.x)/2.0+0.5;
-    ${vColor}.g = cos(${aPosition}.y)/2.0+0.5;
-    ${vColor}.b = sin(${aPosition}.z)/2.0+0.5;
+    gl_Position = $uPerspectiveViewMatrix *
+                  $uModelMatrix *
+                  vec4($aPosition, 1.0);
+    $vColor.r = sin($aPosition.x)/2.0+0.5;
+    $vColor.g = cos($aPosition.y)/2.0+0.5;
+    $vColor.b = sin($aPosition.z)/2.0+0.5;
 }
 """,
   ]);
@@ -31,7 +31,7 @@ final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
   ..SetBody([
     """
 void main() {
-    ${oFragColor}.rgb = ${vColor};
+    $oFragColor.rgb = $vColor;
 }
     """,
   ]);
@@ -64,7 +64,7 @@ class CameraShaker {
     _offset.setZero();
   }
 
-  final VM.Vector3 _offset = new VM.Vector3.zero();
+  final VM.Vector3 _offset = VM.Vector3.zero();
   final Math.Random _rng;
   final Spatial _camera;
 }
@@ -123,27 +123,27 @@ void main() {
   final MeshData stars = Utils.MakeStarMesh(progSprites, 2000, 100.0);
 
   final Math.Random rng = Math.Random(0);
-  final CameraShaker shaker = new CameraShaker(orbit, rng);
+  final CameraShaker shaker = CameraShaker(orbit, rng);
   // Main loop body
-  double _lastShakeMs = 0.0;
-  double _lastTimeMs = 0.0;
+  double lastShakeMs = 0.0;
+  double lastTimeMs = 0.0;
   const double shakeIntervalMs = 2000.0;
   const double shakeDurationMs = 500.0;
 
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     // animate the camera a little
     orbit.azimuth += 0.003;
     // allow the camera to also reflect mouse movement.
     orbit.animate(elapsed);
 
-    final double shakeAgeMs = _lastTimeMs - (_lastShakeMs + shakeIntervalMs);
+    final double shakeAgeMs = lastTimeMs - (lastShakeMs + shakeIntervalMs);
 
     if (shakeAgeMs >= 0.0) {
       if (shakeAgeMs >= shakeDurationMs) {
         shaker.Unshake();
-        _lastShakeMs = _lastTimeMs;
+        lastShakeMs = lastTimeMs;
       }
 
       shaker.Shake((500 - shakeAgeMs) * 0.0001);

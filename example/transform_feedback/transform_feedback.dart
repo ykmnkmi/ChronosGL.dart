@@ -32,13 +32,13 @@ final ShaderObject particleVertexShader = ShaderObject("ParticleV")
   ..AddTransformVars([tPosition])
   ..SetBody([
     """
-const float kMaxDistance = ${kMaxDistance};
-const float kMinDistance = ${kMinDistance};
-const float dt = 0.06;  
-    
+const float kMaxDistance = $kMaxDistance;
+const float kMinDistance = $kMinDistance;
+const float dt = 0.06;
+
 float rand(vec2 seed){
     return fract(sin(dot(seed, vec2(12.9898,78.233))) * 43758.5453);
-}      
+}
 
 int irand(int n, vec2 seed) {
     return int(floor(rand(seed) * float(n)));
@@ -49,39 +49,39 @@ vec3 vec3rand(vec3 seed) {
 }
 
 vec3 RandomSource(vec3 seed) {
-    return ${uSources}[irand(${uSources}.length(), seed.xy * seed.z)];
+    return $uSources[irand($uSources.length(), seed.xy * seed.z)];
 }
 
 vec3 Update(vec3 pos, vec3 seed) {
     vec3 force = vec3(0.0, 0.0, 0.0);
-    for (int i = 0; i < ${uSources}.length(); ++i) {
-       vec3 d = pos - ${uSources}[i];
+    for (int i = 0; i < $uSources.length(); ++i) {
+       vec3 d = pos - $uSources[i];
        float l = length(d);
        if (l <= kMinDistance) continue;
        if (l >= kMaxDistance) {
            return RandomSource(seed) + vec3rand(seed) * 0.35;
        }
-       force += d / (l * l); 
-    } 
-    
-    for (int i = 0; i < ${uSinks}.length(); ++i) {
-       vec3 d = ${uSinks}[i] - pos;
+       force += d / (l * l);
+    }
+
+    for (int i = 0; i < $uSinks.length(); ++i) {
+       vec3 d = $uSinks[i] - pos;
        float l = length(d);
        if (l <= kMinDistance) {
           return RandomSource(seed) + vec3rand(seed) * 0.35;
        }
-       force += d / (l * l); 
-    } 
+       force += d / (l * l);
+    }
     return pos + normalize(force) * dt;
 }
-      
-void main() {        
-    gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * 
-                  vec4(${aPosition}, 1.0);
-    gl_PointSize = ${uPointSize}/gl_Position.z;
-    
+
+void main() {
+    gl_Position = $uPerspectiveViewMatrix * $uModelMatrix *
+                  vec4($aPosition, 1.0);
+    gl_PointSize = $uPointSize/gl_Position.z;
+
     // new position for next round
-    ${tPosition} = Update(${aPosition}, gl_Position.xyz);
+    $tPosition = Update($aPosition, gl_Position.xyz);
 }
 """,
   ]);
@@ -91,7 +91,7 @@ final ShaderObject particleFragmentShader = ShaderObject("ParticleF")
   ..SetBody([
     """
 void main() {
-      ${oFragColor} = texture( ${uTexture},  gl_PointCoord);
+      $oFragColor = texture( $uTexture,  gl_PointCoord);
 }
 """,
   ]);
@@ -239,7 +239,7 @@ void main() {
     particleFragmentShader,
   );
   final int bindingIndex = programGPU.GetTransformBindingIndex(tPosition);
-  print("@@@@ ${bindingIndex}");
+  print("@@@@ $bindingIndex");
 
   final List<Pole> srcPoles = MakeRowOfPoles(
     [2.0, 1.0, 0.0, -1.0, -2.0],

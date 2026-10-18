@@ -1,4 +1,4 @@
-part of polygon;
+part of 'lib.dart';
 
 /*
   Bevel Cut-View:
@@ -38,7 +38,7 @@ double EasingQuadratic(double t) => t * t;
 
 double EasingCubic(double t) => t * t * t;
 
-typedef double Easing(double t);
+typedef Easing = double Function(double t);
 
 final Map<String, Easing> MapStringToEasing = {
   "Cosine": EasingCosine,

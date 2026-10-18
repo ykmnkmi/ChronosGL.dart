@@ -194,7 +194,7 @@ void main() {
     input.onChange.listen((HTML.Event e) {
       HTML.InputElement input = e.target as HTML.InputElement;
       final String tag = input.id;
-      print("${tag} toggle ${input.checked}");
+      print("$tag toggle ${input.checked}");
       if (tag == "lightDiffuse") {
         for (Light light in gLightSources.values) {
           double v = input.checked! ? 1.0 : 0.0;
@@ -236,10 +236,10 @@ void main() {
   resolutionChange(null);
   HTML.window.onResize.listen(resolutionChange);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
@@ -255,7 +255,7 @@ void main() {
         : phaseGourad;
     phase.Draw();
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

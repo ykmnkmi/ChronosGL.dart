@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 class TheStencilFunction {
   TheStencilFunction(this.func, this.value, this.mask);
@@ -66,19 +66,19 @@ final TheBlendEquation BlendEquationAdd = TheBlendEquation(
 /// At most one Material can be passed to the RenderProgram::Draw() call
 /// because it controls the depth, stencil, and blending behavior
 class Material extends UniformGroup {
-  Material(String name) : super(name) {
+  Material(super.name) {
     SetUniform(cDepthFunc, GL_LESS);
     SetUniform(cDepthTest, true);
     SetUniform(cDepthWrite, true);
     SetUniform(cBlendEquation, BlendEquationNone);
   }
 
-  Material.Transparent(String name, TheBlendEquation beq) : super(name) {
+  Material.Transparent(super.name, TheBlendEquation beq) {
     SetUniform(cDepthFunc, GL_LESS);
     SetUniform(cDepthTest, true);
     SetUniform(cDepthWrite, false);
     SetUniform(cBlendEquation, beq);
   }
 
-  Material.Empty(String name) : super(name);
+  Material.Empty(super.name);
 }

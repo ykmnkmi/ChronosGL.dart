@@ -1,4 +1,4 @@
-part of shape;
+part of 'lib.dart';
 
 /// Parametric representation of a TorusKnot
 /// u varies from 0 - 2 PI
@@ -156,7 +156,7 @@ GeometryBuilder TorusKnotGeometryWireframeFriendly({
   }
 
   if (computeUVs) {
-    gb..EnableAttribute(aTexUV);
+    gb.EnableAttribute(aTexUV);
     for (int i = segmentsR - 1; i >= 0; --i) {
       for (int j = 0; j < segmentsT; ++j) {
         final int ip = i + 1;

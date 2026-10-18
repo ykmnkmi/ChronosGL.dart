@@ -1,4 +1,4 @@
-library importer;
+library;
 
 // This library does not depend on "dart:html" or core
 

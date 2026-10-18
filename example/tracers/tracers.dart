@@ -12,7 +12,7 @@ final ShaderObject bluredFragmentShader = ShaderObject("bluredF")
   ..SetBody([
     """
 void main() {  
-    ${oFragColor} = ${uColorAlpha};
+    $oFragColor = $uColorAlpha;
 }
     """,
   ]);
@@ -67,10 +67,10 @@ void main() {
 
   phase.add(MakeStarScene(cgl, perspective, 2000));
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.005;
     orbit.animate(elapsed);
 
@@ -82,7 +82,7 @@ void main() {
     }
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs, out.join("<br>"));
+    fps.UpdateFrameCount(lastTimeMs, out.join("<br>"));
   }
 
   animate(0.0);

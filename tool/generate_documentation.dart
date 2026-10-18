@@ -51,10 +51,11 @@ void ExtractDoc(File file) {
       }
       continue;
     }
-    if (line.length < 4)
+    if (line.length < 4) {
       comment_block.add("");
-    else
+    } else {
       comment_block.add(line.substring(4));
+    }
   }
 
   if (comment_block.isNotEmpty) {
@@ -63,13 +64,13 @@ void ExtractDoc(File file) {
 }
 
 void main(List<String> args) {
-  if (args.length == 0) {
+  if (args.isEmpty) {
     args = kDirs;
   }
 
   for (String d in args) {
     if (FileSystemEntity.isDirectorySync(d)) {
-      var dir = new Directory(d);
+      var dir = Directory(d);
       List<FileSystemEntity> content = dir.listSync(
         recursive: true,
         followLinks: false,
@@ -80,7 +81,7 @@ void main(List<String> args) {
         }
       }
     } else if (FileSystemEntity.isFileSync(d)) {
-      ExtractDoc(new File(d));
+      ExtractDoc(File(d));
     }
   }
 }

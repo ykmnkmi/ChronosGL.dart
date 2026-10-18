@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 /// Helper class for holding info produced by RenderProgram::Draw().
 class DrawStats {
@@ -18,23 +18,18 @@ class DrawStats {
 
   @override
   String toString() =>
-      "[${name}] ${numInstances} ${numItems} mode:${drawMode} [${duration.inMicroseconds}usec]";
+      "[$name] $numInstances $numItems mode:$drawMode [${duration.inMicroseconds}usec]";
 }
 
 /// represents program (Fragment + Vertex Shader) running on the GPU with an API to invoke it.
 class RenderProgram extends NamedEntity {
-  RenderProgram(
-    String name,
-    this._cgl,
-    this._shaderObjectV,
-    this._shaderObjectF,
-  ) : _program = _cgl.CompileWholeProgram(
+  RenderProgram(super.name, this._cgl, this._shaderObjectV, this._shaderObjectF)
+    : _program = _cgl.CompileWholeProgram(
         _shaderObjectV.shader!,
         _shaderObjectF.shader!,
         _shaderObjectV.transformVars,
       ),
-      _attributes = Set.from(_shaderObjectV.attributeVars),
-      super(name) {
+      _attributes = Set.from(_shaderObjectV.attributeVars) {
     for (String v in _shaderObjectV.uniformVars) {
       _uniformLocations[v] = _cgl.getUniformLocation(_program, v)!;
     }
@@ -158,7 +153,7 @@ class RenderProgram extends NamedEntity {
         break;
 
       default:
-        assert(false, "unknown control canonical ${canonical}");
+        assert(false, "unknown control canonical $canonical");
     }
   }
 
@@ -166,7 +161,7 @@ class RenderProgram extends NamedEntity {
     // enable only for debug
     if (_uniformsInitialized.containsKey(canonical)) {
       LogError(
-        "${name}:  ${canonical} : group [${group}] overwrites [${canonical}] (${_uniformsInitialized[canonical]})",
+        "$name:  $canonical : group [$group] overwrites [$canonical] (${_uniformsInitialized[canonical]})",
       );
     }
     _uniformsInitialized[canonical] = group;
@@ -197,7 +192,7 @@ class RenderProgram extends NamedEntity {
         } else if (val is Float32List) {
           _cgl.uniformMatrix4fv(l, false, val);
         } else {
-          assert(false, "bad unform: ${canonical}");
+          assert(false, "bad unform: $canonical");
         }
         break;
       case VarTypeMat3:
@@ -206,7 +201,7 @@ class RenderProgram extends NamedEntity {
         } else if (val is Float32List) {
           _cgl.uniformMatrix3fv(l, false, val);
         } else {
-          assert(false, "bad unform: ${canonical}");
+          assert(false, "bad unform: $canonical");
         }
         break;
       case VarTypeVec4:
@@ -252,8 +247,9 @@ class RenderProgram extends NamedEntity {
 
   List<String> UninitializedInputs() {
     if (_uniformsInitialized.length == _uniformLocations.length &&
-        _attributesInitialized.length == _attributes.length)
+        _attributesInitialized.length == _attributes.length) {
       return [];
+    }
     List<String> out = [];
     for (String u in _uniformLocations.keys) {
       if (!_uniformsInitialized.containsKey(u)) out.add(u);
@@ -283,7 +279,7 @@ class RenderProgram extends NamedEntity {
       }
     }
     final Duration delta = DateTime.now().difference(start);
-    LogDebug("setting ${count} var in ${delta}");
+    LogDebug("setting $count var in $delta");
   }
 
   void Draw(
@@ -303,7 +299,7 @@ class RenderProgram extends NamedEntity {
       if (u is Material) {
         assert(
           !haveSeenMaterial,
-          "in program ${name}: multiple materials specified",
+          "in program $name: multiple materials specified",
         );
         haveSeenMaterial = true;
       }
@@ -313,21 +309,22 @@ class RenderProgram extends NamedEntity {
     for (String a in md.GetAttributes()) {
       _attributesInitialized.add(a);
     }
-    if (debug)
+    if (debug) {
       print(
-        "[${name}] draw points: ${md.drawMode} instances${md.GetNumInstances()}",
+        "[$name] draw points: ${md.drawMode} instances${md.GetNumInstances()}",
       );
+    }
     // TODO: put this behind a flag
     List<String> uninitialized = UninitializedInputs();
     if (uninitialized.isNotEmpty) {
       String mesg =
-          "${name} mesh:${md.name} mode:${md.drawMode}: uninitialized inputs: ${uninitialized}";
+          "$name mesh:${md.name} mode:${md.drawMode}: uninitialized inputs: $uninitialized";
       LogError(mesg);
       //throw mesg;
     }
 
     md.Activate();
-    bool hasTransforms = _shaderObjectV.transformVars.length > 0;
+    bool hasTransforms = _shaderObjectV.transformVars.isNotEmpty;
     _cgl.draw(
       md.drawMode,
       md.GetNumItems(),

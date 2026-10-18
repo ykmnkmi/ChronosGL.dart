@@ -20,11 +20,11 @@ final ShaderObject lightVertexShaderBlinnPhongWithShadow =
       ..SetBody([
         """
 void main() {
-    vec4 pos = ${uModelMatrix} * vec4(${aPosition}, 1.0);
-    ${vPositionFromLight} = ${uLightPerspectiveViewMatrix} * pos;
-    gl_Position = ${uPerspectiveViewMatrix} * pos;
-    ${vPosition} = pos.xyz;
-    ${vNormal} = ${uNormalMatrix} * ${aNormal};
+    vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
+    $vPositionFromLight = $uLightPerspectiveViewMatrix * pos;
+    gl_Position = $uPerspectiveViewMatrix * pos;
+    $vPosition = pos.xyz;
+    $vNormal = $uNormalMatrix * $aNormal;
 }
     """,
       ]);
@@ -42,23 +42,23 @@ final ShaderObject lightFragmentShaderBlinnPhongWithShadow =
         [
           """
 void main() {
-    vec3 depth = ${vPositionFromLight}.xyz / ${vPositionFromLight}.w;
+    vec3 depth = $vPositionFromLight.xyz / $vPositionFromLight.w;
 		// depth is in [-1, 1] but we want [0, 1] for the texture lookup
 		depth = 0.5 * depth + vec3(0.5);
 
-    float shadow = GetShadow(depth, ${uShadowMap}, ${kShadowBias1}, ${kShadowBias2});
+    float shadow = GetShadow(depth, $uShadowMap, $kShadowBias1, $kShadowBias2);
 
     ColorComponents acc = ColorComponents(vec3(0.0), vec3(0.0));
     if (shadow > 0.0) {
-        acc = CombinedLight(${vPosition}, ${vNormal}, ${uEyePosition},
-                            ${uLightDescs}, ${uLightTypes}, ${uShininess});
+        acc = CombinedLight($vPosition, $vNormal, $uEyePosition,
+                            $uLightDescs, $uLightTypes, $uShininess);
     }
 
-    ${oFragColor}.rgb = shadow * acc.diffuse +
+    $oFragColor.rgb = shadow * acc.diffuse +
                        shadow * acc.specular +
                        uColor;
-    ${oFragColor}.a = 1.0;
-    // if ( ${oFragColor}.r != 66.0)  gl_FragColor.rgb = vec3(shadow);
+    $oFragColor.a = 1.0;
+    // if ( $oFragColor.r != 66.0)  gl_FragColor.rgb = vec3(shadow);
 }
       """,
         ],
@@ -97,7 +97,7 @@ final Map<String, Light> lightSources = {
 late Light gActiveLight;
 
 void EventRadioChanged(String name) {
-  print("${name} toggle ");
+  print("$name toggle ");
   gActiveLight = lightSources[name]!;
   lightSources[name]!.enabled = true;
   for (String n in lightSources.keys) {
@@ -106,7 +106,7 @@ void EventRadioChanged(String name) {
 }
 
 void EventPositionChanged(String name, double value) {
-  print("EventPositionChanged ${name} ${value}");
+  print("EventPositionChanged $name $value");
   switch (name) {
     case "posx":
       (lightSources[idSpot] as SpotLight).pos.x = value;
@@ -124,7 +124,7 @@ void EventPositionChanged(String name, double value) {
 }
 
 void EventDirectionChanged(String name, double value) {
-  print("EventDirectionChanged ${name} ${value}");
+  print("EventDirectionChanged $name $value");
   switch (name) {
     case "dirx":
       (lightSources[idSpot] as SpotLight).dir.x = value;
@@ -286,7 +286,7 @@ void main() {
         } else if (name.startsWith("dir")) {
           EventDirectionChanged(name, value);
         } else if (name == "cutoff") {
-          print("set cutoff ${value}");
+          print("set cutoff $value");
           //copyToScreen.ForceInput(uCutOff, value);
         }
       }
@@ -319,20 +319,20 @@ void main() {
   resolutionChange(null);
   HTML.window.onResize.listen(resolutionChange);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
 
   //HTML.document.getElementById("posx").onChange.listen((HTML.Event ev) =>
   //light.pos.x = GetInputValue(ev));
 
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
     VM.Matrix4 lm = gActiveLight.ExtractShadowProjViewMatrix();
     UpdateLightVisualizer(mdLight, gActiveLight);
-    fps.ChangeExtra("${gActiveLight}");
+    fps.ChangeExtra("$gActiveLight");
 
     shadowMap.Compute(lm);
     uniforms.ForceUniform(uLightPerspectiveViewMatrix, lm);
@@ -341,7 +341,7 @@ void main() {
     shadowMap.Visualize();
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

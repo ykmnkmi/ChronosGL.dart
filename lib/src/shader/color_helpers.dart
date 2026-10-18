@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 // http://www.chilliant.com/rgb2hsv.html
 String ColorFunctions = """

@@ -5,10 +5,10 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as VM;
 
 String Dir = "../asset/leeperrysmith/";
-String modelFile = Dir + "LeePerrySmith.js";
-String normalmapFile = Dir + "Infinite-Level_02_Tangent_SmoothUV.jpg";
-String textureFile = Dir + "Map-COL.jpg";
-String specularmapFile = Dir + "Map-SPEC.jpg";
+String modelFile = "${Dir}LeePerrySmith.js";
+String normalmapFile = "${Dir}Infinite-Level_02_Tangent_SmoothUV.jpg";
+String textureFile = "${Dir}Map-COL.jpg";
+String specularmapFile = "${Dir}Map-SPEC.jpg";
 
 final ShaderObject vertexShader = ShaderObject("LightBlinnPhongV")
   ..AddAttributeVars([aPosition, aNormal, aTexUV])
@@ -17,11 +17,11 @@ final ShaderObject vertexShader = ShaderObject("LightBlinnPhongV")
   ..SetBody([
     """
 void main() {
-    vec4 pos = ${uModelMatrix} * vec4(${aPosition}, 1.0);
-    gl_Position = ${uPerspectiveViewMatrix} * pos;
-    ${vPosition} = pos.xyz;
-    ${vNormal} = ${uNormalMatrix} * ${aNormal};
-    ${vTexUV} = ${aTexUV};
+    vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
+    gl_Position = $uPerspectiveViewMatrix * pos;
+    $vPosition = pos.xyz;
+    $vNormal = $uNormalMatrix * $aNormal;
+    $vTexUV = $aTexUV;
 }
 """,
   ]);
@@ -34,17 +34,17 @@ final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongF")
     [
       """
 void main() {
-    ColorComponents acc = CombinedLight(${vPosition} - ${uEyePosition},
-                                        ${vNormal},
-                                        ${uEyePosition},
-                                        ${uLightDescs},
-                                        ${uLightTypes},
-                                        ${uShininess});
+    ColorComponents acc = CombinedLight($vPosition - $uEyePosition,
+                                        $vNormal,
+                                        $uEyePosition,
+                                        $uLightDescs,
+                                        $uLightTypes,
+                                        $uShininess);
     
-    vec4 diffuseMap = texture(${uTexture}, ${vTexUV} );
+    vec4 diffuseMap = texture($uTexture, $vTexUV );
     
-    ${oFragColor}.rgb = diffuseMap.rgb + acc.diffuse + acc.specular + uColor;
-    ${oFragColor}.a = 1.0;
+    $oFragColor.rgb = diffuseMap.rgb + acc.diffuse + acc.specular + uColor;
+    $oFragColor.a = 1.0;
 }
 
 """,
@@ -120,16 +120,16 @@ void main() {
   );
   phase.add(sceneMain);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.Draw();
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   Material mat = Material("mat")

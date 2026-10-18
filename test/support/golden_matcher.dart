@@ -15,8 +15,9 @@ class GoldenSession {
       await channel.sink.close();
       await messages.cancel();
     });
-    if (!await messages.moveNext())
+    if (!await messages.moveNext()) {
       throw StateError('Golden file helper exited');
+    }
     return GoldenSession._(
       name,
       channel,

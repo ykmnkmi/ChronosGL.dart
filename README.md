@@ -66,9 +66,6 @@ dart pub get --enforce-lockfile
 dart test -P all
 ```
 
-Static analysis enables `strict-casts`, `strict-inference`, and
-`strict-raw-types` across the package, examples, tests, and tools:
-
 ```sh
 dart analyze
 ```

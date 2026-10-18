@@ -1,4 +1,4 @@
-part of polygon;
+part of 'lib.dart';
 
 /*
 References:
@@ -132,8 +132,9 @@ bool IsConvex(List<VM.Vector2> contour) {
     int im2 = i - 2;
     if (im2 < 0) im2 += contour.length;
 
-    if (!IsCounterClockWise(contour[im2], contour[im1], contour[i]))
+    if (!IsCounterClockWise(contour[im2], contour[im1], contour[i])) {
       return false;
+    }
   }
 
   return true;

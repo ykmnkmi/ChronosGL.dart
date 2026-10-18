@@ -1,4 +1,4 @@
-part of polygon;
+part of 'lib.dart';
 
 /*
 Simple Triangulation based on Ear clipping

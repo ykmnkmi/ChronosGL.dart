@@ -10,8 +10,8 @@ final ShaderObject normal2ColorVertexShader = ShaderObject("Normal2Color")
   ..SetBody([
     """
 void main() {
-    ${StdVertexBody} 
-    ${vColor} = normalize(${aNormal} / 2.0 + vec3(0.5) );
+    $StdVertexBody
+    $vColor = normalize($aNormal / 2.0 + vec3(0.5) );
 }
       """,
   ]);
@@ -20,8 +20,8 @@ final ShaderObject normal2ColorFragmentShader = ShaderObject("Normal2ColorF")
   ..AddVaryingVars([vColor])
   ..SetBody([
     """
-void main() {  
-    ${oFragColor} = vec4( ${vColor}, 1.0 );
+void main() {
+    $oFragColor = vec4( $vColor, 1.0 );
 }
     """,
   ]);
@@ -78,10 +78,10 @@ void main() {
     });
   gLoadables.add(future);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.Draw();

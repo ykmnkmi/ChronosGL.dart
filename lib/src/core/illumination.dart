@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 final VM.Vector3 _up = VM.Vector3(0.0, 1.0, 0.0);
 final VM.Vector3 _up2 = VM.Vector3(0.0, 0.0, 1.0);
@@ -9,8 +9,7 @@ final VM.Vector3 _up2 = VM.Vector3(0.0, 0.0, 1.0);
 /// can be added to an **Illumination** object which is
 /// a **UnformGroup*.
 abstract class Light extends NamedEntity {
-  Light(String name, this.type, VM.Vector3 diffuse, VM.Vector3 specular)
-    : super(name) {
+  Light(super.name, this.type, VM.Vector3 diffuse, VM.Vector3 specular) {
     colorDiffuse.setFrom(diffuse);
     colorSpecular.setFrom(specular);
   }
@@ -64,7 +63,7 @@ class PointLight extends Light {
 
   @override
   String toString() {
-    return "PL: p:${pos}  r:${range}";
+    return "PL: p:$pos  r:$range";
   }
 }
 
@@ -73,7 +72,7 @@ class PointLight extends Light {
 class DirectionalLight extends Light {
   DirectionalLight(
     String name,
-    VM.Vector3 this.dir,
+    this.dir,
     VM.Vector3 colorDiffuse,
     VM.Vector3 colorSpecular,
     this.dim,
@@ -82,8 +81,8 @@ class DirectionalLight extends Light {
   final VM.Vector3 dir;
   final double dim;
 
-  VM.Matrix4 _projViewMat = VM.Matrix4.zero();
-  VM.Matrix4 _tmpMat = VM.Matrix4.zero();
+  final VM.Matrix4 _projViewMat = VM.Matrix4.zero();
+  final VM.Matrix4 _tmpMat = VM.Matrix4.zero();
 
   // Must be in sync with UnpackDirectionalLightInfo
   @override
@@ -113,7 +112,7 @@ class DirectionalLight extends Light {
 
   @override
   String toString() {
-    return "DL: p:${dir}";
+    return "DL: p:$dir";
   }
 }
 
@@ -121,8 +120,8 @@ class DirectionalLight extends Light {
 class SpotLight extends Light {
   SpotLight(
     String name,
-    VM.Vector3 this.pos,
-    VM.Vector3 this.dir,
+    this.pos,
+    this.dir,
     VM.Vector3 colorDiffuse,
     VM.Vector3 colorSpecular,
     this.range,
@@ -138,14 +137,14 @@ class SpotLight extends Light {
   double angle;
 
   //
-  double _spotFocus;
+  final double _spotFocus;
 
   //
-  double _aspect = 1.0;
-  double _near;
-  double _far;
-  VM.Matrix4 _m1 = VM.Matrix4.zero();
-  VM.Matrix4 _m2 = VM.Matrix4.zero();
+  final double _aspect = 1.0;
+  final double _near;
+  final double _far;
+  final VM.Matrix4 _m1 = VM.Matrix4.zero();
+  final VM.Matrix4 _m2 = VM.Matrix4.zero();
 
   // Must be in sync with UnpackSpotLightInfo
   @override
@@ -184,7 +183,7 @@ class SpotLight extends Light {
 
   @override
   String toString() {
-    return "SL: p:${pos}  d:${dir}  r:${range}  a:${angle}";
+    return "SL: p:$pos  d:$dir  r:$range  a:$angle";
   }
 }
 

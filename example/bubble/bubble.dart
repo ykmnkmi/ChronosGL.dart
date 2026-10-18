@@ -15,13 +15,13 @@ ShaderObject sphereVertexShader = ShaderObject("sphereV")
   ..SetBody([
     """
 void main() {
-    ${StdVertexBody}
-    vec3 u = normalize(vec3(${uModelMatrix} * vec4(${aPosition}, 1.0)));
-    vec3 n = normalize(${uNormalMatrix} * ${aNormal} );
+    $StdVertexBody
+    vec3 u = normalize(vec3($uModelMatrix * vec4($aPosition, 1.0)));
+    vec3 n = normalize($uNormalMatrix * $aNormal );
     vec3 r = reflect( u, n );
     r.z += 1.0;
     float m = 2.0 * length(r);
-    ${vTexUV} = vec2(r.x/m + 0.5, r.y/m + 0.5);
+    $vTexUV = vec2(r.x/m + 0.5, r.y/m + 0.5);
 }
   """,
   ]);
@@ -32,7 +32,7 @@ ShaderObject sphereFragmentShader = ShaderObject("sphereF")
   ..SetBody([
     """
 void main() {
-    ${oFragColor} = texture(${uTexture}, ${vTexUV});
+    $oFragColor = texture($uTexture, $vTexUV);
 }
       """,
   ]);
@@ -88,10 +88,10 @@ void main() {
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
   final MeshData mdStars = Utils.MakeStarMesh(progStars, 2000, 100.0);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     modelMat.setIdentity();
@@ -101,7 +101,7 @@ void main() {
     progStars.Draw(mdStars, [matStars, perspective]);
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   Future.wait(gLoadables).then((list) {

@@ -1,4 +1,4 @@
-library polygon;
+library;
 
 import 'dart:math' as Math;
 

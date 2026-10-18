@@ -1,4 +1,4 @@
-part of webhelper;
+part of 'lib.dart';
 
 Future<String> LoadRaw(String url) {
   Completer<String> c = Completer();

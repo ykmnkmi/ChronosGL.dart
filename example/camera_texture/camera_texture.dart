@@ -49,10 +49,10 @@ void main2(HTML.VideoElement? video) {
     ..SetUniform(uModelMatrix, VM.Matrix4.identity())
     ..SetUniform(uTexture, texture);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     try {
@@ -63,7 +63,7 @@ void main2(HTML.VideoElement? video) {
     }
     program.Draw(cube, [perspective, mat]);
 
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
 
     HTML.window.animationFrame.then(animate);
   }
@@ -73,8 +73,6 @@ void main2(HTML.VideoElement? video) {
 
 void main() {
   MakeVideoElementFromCamera().then(main2).catchError((Object error) {
-    HTML.window.alert(
-      "Camera error ${error}: - do you have a camera installed?",
-    );
+    HTML.window.alert("Camera error $error: - do you have a camera installed?");
   });
 }

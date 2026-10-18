@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 // https://en.wikipedia.org/wiki/Gaussian_blur
 
@@ -31,14 +31,14 @@ String makeGaussianPdfKernelString(int radius, double sigma) {
 const String _kernelFragment =
     """
 void main() {
-    vec2 invSize = 1.0 / vec2(textureSize(${uTexture}, 0));
-    vec3 sum = texture(${uTexture}, ${vTexUV}).rgb * kernel[0];
+    vec2 invSize = 1.0 / vec2(textureSize($uTexture, 0));
+    vec3 sum = texture($uTexture, $vTexUV).rgb * kernel[0];
     for (int i = 1; i < kernel.length(); i++) {
-        vec2 offset = ${uDirection} * invSize * float(i);
-        sum += texture(${uTexture}, ${vTexUV} + offset).rgb * kernel[i];
-        sum += texture(${uTexture}, ${vTexUV} - offset).rgb * kernel[i];
+        vec2 offset = $uDirection * invSize * float(i);
+        sum += texture($uTexture, $vTexUV + offset).rgb * kernel[i];
+        sum += texture($uTexture, $vTexUV - offset).rgb * kernel[i];
     }
-    ${oFragColor} = vec4(sum, 1.0);
+    $oFragColor = vec4(sum, 1.0);
 }
 """;
 
@@ -61,10 +61,10 @@ final ShaderObject applyBloomEffectFragmentShader = ShaderObject("BloomPassF")
   ..SetBody([
     """
 void main() {
-	${oFragColor} = texture(${uTexture}, ${vTexUV}) +
-	                ${uScale} *
-	                vec4(${uColor}, 1.0) *
-	                texture(${uTexture2}, ${vTexUV});
+	$oFragColor = texture($uTexture, $vTexUV) +
+	                $uScale *
+	                vec4($uColor, 1.0) *
+	                texture($uTexture2, $vTexUV);
 }
 """,
   ]);
@@ -80,10 +80,10 @@ float RGB2Luma(vec3 rgb) { return dot(rgb, vec3(0.212, 0.715, 0.072)); }
 // float RGB2Luma(vec3 rgb) { return dot(rgb, vec3(0.299, 0.587, 0.114)); }
 
 void main() {
-    vec4 color = texture(${uTexture}, ${vTexUV});
+    vec4 color = texture($uTexture, $vTexUV);
     float luma = RGB2Luma(color.rgb);
-    float alpha = smoothstep(${uRange}.x, ${uRange}.y, luma);
-    ${oFragColor} = mix(${uColorAlpha}, color, alpha );
+    float alpha = smoothstep($uRange.x, $uRange.y, luma);
+    $oFragColor = mix($uColorAlpha, color, alpha );
 }
  """,
       ]);

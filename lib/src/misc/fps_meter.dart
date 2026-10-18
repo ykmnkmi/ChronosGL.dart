@@ -1,4 +1,4 @@
-part of misc;
+part of 'lib.dart';
 
 const int _numBars = 90;
 const int _graphHeight = 30;
@@ -6,7 +6,7 @@ const int _maxFps = 90;
 
 HTML.Element _MakeText(String initial) {
   HTML.Element text = HTML.Element.div();
-  text.style..fontWeight = "bold";
+  text.style.fontWeight = "bold";
   text.text = initial;
   return text;
 }
@@ -70,7 +70,7 @@ class Stats {
 const double _SAMPLE_RATE_MS = 1000.0;
 
 class StatsFps extends Stats {
-  StatsFps(HTML.Element root, String fg, String bg) : super(root, fg, bg);
+  StatsFps(super.root, super.fg, super.bg);
 
   int _frames = 0;
   double _lastSample = 0.0;
@@ -82,7 +82,7 @@ class StatsFps extends Stats {
     //print("${fps}");
     _frames = 0;
     _lastSample = now;
-    _text.text = fps.toStringAsFixed(2) + " fps";
+    _text.text = "${fps.toStringAsFixed(2)} fps";
     _extra.innerHtml = extra;
     AddRawValue(_graphHeight * fps.ceil() ~/ _maxFps);
   }

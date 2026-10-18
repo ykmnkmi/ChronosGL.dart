@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 /// properties like clamping and mip-mapping.
 class TextureProperties {
@@ -143,7 +143,7 @@ class Texture {
 
   @override
   String toString() {
-    return "Texture[${_url}, ${_textureType}]";
+    return "Texture[$_url, $_textureType]";
   }
 }
 
@@ -161,7 +161,7 @@ class TypedTexture extends Texture {
     _cgl.texStorage2D(GL_TEXTURE_2D, 1, _internalFormat, _width, _height);
     properties.InstallLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == GL_NO_ERROR, "texture error ${err}");
+    assert(err == GL_NO_ERROR, "texture error $err");
     _cgl.bindTexture(_textureType, null);
   }
 
@@ -171,7 +171,7 @@ class TypedTexture extends Texture {
 
   @override
   String toString() {
-    return "TypedTexture[${_url}, ${_internalFormat}, ${_width} X ${_height}]";
+    return "TypedTexture[$_url, $_internalFormat, $_width X $_height]";
   }
 }
 
@@ -201,7 +201,7 @@ class TypedTextureMutable extends Texture {
     );
     properties.InstallLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == GL_NO_ERROR, "texture error ${err}");
+    assert(err == GL_NO_ERROR, "texture error $err");
     _cgl.bindTexture(_textureType, null);
   }
 
@@ -251,7 +251,7 @@ class TypedTextureMutable extends Texture {
 
   @override
   String toString() {
-    return "TypedTextureMutable[${_url}, ${_internalFormat}, ${_width} X ${_height}]";
+    return "TypedTextureMutable[$_url, $_internalFormat, $_width X $_height]";
   }
 }
 
@@ -266,7 +266,7 @@ class ImageTexture extends Texture {
     this._element, [
     TextureProperties? tp,
     int textureType = GL_TEXTURE_2D,
-  ]) : super(cgl, textureType, url, tp == null ? TextureProperties() : tp) {
+  ]) : super(cgl, textureType, url, tp ?? TextureProperties()) {
     _cgl.bindTexture(_textureType, _texture);
 
     properties.InstallEarly(_cgl, _textureType);

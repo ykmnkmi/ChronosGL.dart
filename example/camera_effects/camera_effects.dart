@@ -221,8 +221,6 @@ void main2(HTML.VideoElement? video) {
 
 void main() {
   MakeVideoElementFromCamera().then(main2).catchError((Object error) {
-    HTML.window.alert(
-      "Camera error ${error}: - do you have a camera installed?",
-    );
+    HTML.window.alert("Camera error $error: - do you have a camera installed?");
   });
 }

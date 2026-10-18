@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 const int kMaxLights = 4;
 const int kMaxBones = 128;
@@ -8,10 +8,10 @@ const int lightTypeDirectional = 1;
 const int lightTypeSpot = 2;
 const int lightTypePoint = 3;
 
-const String lightTypeInvalidFloat = "${lightTypeInvalid}.0";
-const String lightTypeDirectionalFloat = "${lightTypeDirectional}.0";
-const String lightTypeSpotFloat = "${lightTypeSpot}.0";
-const String lightTypePointFloat = "${lightTypePoint}.0";
+const String lightTypeInvalidFloat = "$lightTypeInvalid.0";
+const String lightTypeDirectionalFloat = "$lightTypeDirectional.0";
+const String lightTypeSpotFloat = "$lightTypeSpot.0";
+const String lightTypePointFloat = "$lightTypePoint.0";
 
 const String VarTypeFloat = "float";
 const String VarTypeVec2 = "vec2";
@@ -314,7 +314,7 @@ final Map<String, ShaderVarDesc> _VarsDb = {
 void IntroduceNewShaderVar(String canonical, ShaderVarDesc desc) {
   assert(
     !_VarsDb.containsKey(canonical),
-    "duplicate shader variable ${canonical}",
+    "duplicate shader variable $canonical",
   );
   _VarsDb[canonical] = desc;
 }
@@ -339,7 +339,7 @@ class ShaderObject {
   final List<String> transformVars = []; // "transformFeedbackVaryings"
   // start with one to deliberately exercise corner cases
   int _nextLayoutPos = 0;
-  Map<String, int> _canonicalToLayoutPos = {};
+  final Map<String, int> _canonicalToLayoutPos = {};
 
   int GetAttributeLayoutPos(String canonical) =>
       _canonicalToLayoutPos[canonical]!;
@@ -424,28 +424,28 @@ class ShaderObject {
     for (String a in attributeVars) {
       ShaderVarDesc d = _VarsDb[a]!;
       int pos = GetAttributeLayoutPos(a);
-      out.add("layout (location=${pos}) in ${d.type} ${a};");
+      out.add("layout (location=$pos) in ${d.type} $a;");
     }
     out.add("");
 
     String modifier = isFragmentShader ? "in" : "out";
     if (isFragmentShader) {
-      out.add("out vec4 ${oFragColor};");
+      out.add("out vec4 $oFragColor;");
     }
 
     for (String v in varyingVars) {
       ShaderVarDesc d = _VarsDb[v]!;
-      out.add("${modifier} ${d.type} ${v};");
+      out.add("$modifier ${d.type} $v;");
     }
     for (String v in transformVars) {
       ShaderVarDesc d = _VarsDb[v]!;
-      out.add("${modifier} ${d.type} ${v};");
+      out.add("$modifier ${d.type} $v;");
     }
     out.add("");
     for (String v in uniformVars) {
       ShaderVarDesc d = _VarsDb[v]!;
       String suffix = d.arraySize == 0 ? "" : "[${d.arraySize}]";
-      out.add("uniform ${d.type} ${v}${suffix};");
+      out.add("uniform ${d.type} $v$suffix;");
     }
     out.add("");
 

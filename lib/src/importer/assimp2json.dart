@@ -1,7 +1,7 @@
 // Importer for assimp2json generated files
 // https://github.com/acgessler/assimp2json
 // Online converter: http://www.greentoken.de/onlineconv/
-part of importer;
+part of 'lib.dart';
 
 List<double> _Floatify(List<Object?> lst) => lst.map(_JsonDouble).toList();
 
@@ -64,7 +64,9 @@ GeometryBuilder ImportGeometryFromAssimp2JsonMesh(
   }
 
   Map<String, Bone> name2bone = <String, Bone>{};
-  skeleton.forEach((b) => name2bone[b.boneName] = b);
+  for (var b in skeleton) {
+    name2bone[b.boneName] = b;
+  }
   final int n = _JsonList(mesh['normals']).length ~/ 3;
   List<VM.Vector4> indices = List.generate(n, (i) => VM.Vector4.zero());
   List<VM.Vector4> weights = List.generate(n, (i) => VM.Vector4.zero());
@@ -94,7 +96,7 @@ GeometryBuilder ImportGeometryFromAssimp2JsonMesh(
   gb.AddAttributesVector4(aBoneIndex, indices);
   gb.AddAttributesVector4(aBoneWeight, weights);
 
-  print("mesh ${name} ${gb} ${mesh.keys}");
+  print("mesh $name $gb ${mesh.keys}");
   return gb;
 }
 
@@ -137,7 +139,9 @@ SkeletalAnimation ImportAnimationFromAssimp2Json(
   List<Bone> skeleton,
 ) {
   Map<String, Bone> name2bone = <String, Bone>{};
-  skeleton.forEach((b) => name2bone[b.boneName] = b);
+  for (var b in skeleton) {
+    name2bone[b.boneName] = b;
+  }
 
   String name = json["name"] as String;
   double tickspersecond = _JsonDouble(json["tickspersecond"]);

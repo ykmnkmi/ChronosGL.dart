@@ -28,17 +28,17 @@ mat4 adjustMatrix(sampler2D table, vec4 weights, ivec4 indices, int time) {
 }
 
 void main() {
-   mat4 skinMat = uModelMatrix * adjustMatrix(${uAnimationTable},
-                                              ${aBoneWeight},
-                                              ivec4(${aBoneIndex}),
-                                              int(${uTime}));
-   vec4 pos = skinMat * vec4(${aPosition}, 1.0);
+   mat4 skinMat = uModelMatrix * adjustMatrix($uAnimationTable,
+                                              $aBoneWeight,
+                                              ivec4($aBoneIndex),
+                                              int($uTime));
+   vec4 pos = skinMat * vec4($aPosition, 1.0);
    // vPosition = pos.xyz;
    // This is not quite accurate
-   //${vNormal} = normalize(mat3(skinMat) * aNormal);
-   gl_Position = ${uPerspectiveViewMatrix} * pos;
+   //$vNormal = normalize(mat3(skinMat) * aNormal);
+   gl_Position = $uPerspectiveViewMatrix * pos;
 
-   ${vTexUV} = ${aTexUV};
+   $vTexUV = $aTexUV;
 }
 
 """;
@@ -46,7 +46,7 @@ void main() {
 const String skinningFragmentShader =
     """
 void main() {
-  ${oFragColor} = texture(${uTexture}, ${vTexUV});
+  $oFragColor = texture($uTexture, $vTexUV);
 }
 """;
 
@@ -151,19 +151,19 @@ void main() {
     input.dispatchEvent(HTML.Event("change"));
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
 
   mat.ForceUniform(uTime, 0.0);
 
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.Draw();
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
 
     int step =
         ((timeMs / 1000.0) / kAnimTimeStep).floor() % animationSteps.length;
@@ -176,7 +176,7 @@ void main() {
   Future.wait(futures).then((list) {
     // Setup Texture
     Texture tex = ImageTexture(cgl, textureFile, list[1]);
-    mat..SetUniform(uTexture, tex);
+    mat.SetUniform(uTexture, tex);
 
     final json = list[0] as Map<String, Object?>;
     final meshJson =
@@ -190,7 +190,7 @@ void main() {
       skeleton,
     );
     SkeletalAnimation anim = ImportAnimationFromAssimp2Json(animJson, skeleton);
-    print("Imnported ${anim}");
+    print("Imnported $anim");
     {
       MeshData md = GeometryBuilderToMeshData(meshFile, sceneAnim.program, gb);
       Node mesh = Node(md.name, md, mat)..rotX(-3.14 / 4);

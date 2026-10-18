@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 final ShaderObject effectVertexShader = ShaderObject("null")
   ..AddAttributeVars([aPosition])
@@ -9,7 +9,7 @@ final ShaderObject copyVertexShader = effectVertexShader;
 final ShaderObject copyFragmentShader = ShaderObject("copyF")
   ..AddUniformVars([uTexture])
   ..SetBodyWithMain([
-    "${oFragColor} = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0);",
+    "$oFragColor = texelFetch($uTexture, ivec2(gl_FragCoord.xy), 0);",
   ]);
 
 final ShaderObject scalingCopyVertexShader = ShaderObject("nullUV")
@@ -20,7 +20,7 @@ final ShaderObject scalingCopyVertexShader = ShaderObject("nullUV")
 final ShaderObject scalingCopyFragmentShader = ShaderObject("copyF")
   ..AddUniformVars([uTexture])
   ..AddVaryingVars([vTexUV])
-  ..SetBodyWithMain(["${oFragColor} = texture(${uTexture}, ${vTexUV});"]);
+  ..SetBodyWithMain(["$oFragColor = texture($uTexture, $vTexUV);"]);
 
 const String _libFragment = """
 vec3 RGBtoHSV(vec3 rgb) {
@@ -93,7 +93,7 @@ float avg3(vec3 pix) {
 }
 
 vec3 get_pixel(ivec2 center, int dx, int dy) {
- return texelFetch(${uTexture}, center + ivec2(dx, dy), 0).rgb;
+ return texelFetch($uTexture, center + ivec2(dx, dy), 0).rgb;
 }
 
 // returns pixel color using a strange kernel
@@ -120,7 +120,7 @@ float IsEdge(ivec2 center) {
 void main() {
     ivec2 center = ivec2(gl_FragCoord.xy);
 
-    vec4 colorOrg = texelFetch(${uTexture}, center, 0);
+    vec4 colorOrg = texelFetch($uTexture, center, 0);
     vec3 vHSV =  RGBtoHSV(colorOrg.rgb);
     // find nearest level
     vHSV =  ceil(vHSV * config) / config;
@@ -128,7 +128,7 @@ void main() {
     vec3 vRGB = (edg >= 0.3) ? vec3(0.0,0.0,0.0) : HSVtoRGB(vHSV);
     //vec3 vRGB = (edg >= 0.3) ? vec3(1.0, 1.0, 1.0) : vec3(0.0, 0.0, 0.0);
     //vec3 vRGB = HSVtoRGB(vHSV);
-    ${oFragColor} = vec4(vRGB, 1.0);
+    $oFragColor = vec4(vRGB, 1.0);
 }
 """;
 
@@ -169,22 +169,22 @@ vec2 GetHexCenter(vec2 p) {
 }
 
 vec2 ToPixelSpace(vec2 v) {
-    vec2 p = (v - ${uCenter2}) / ${uPointSize};
+    vec2 p = (v - $uCenter2) / $uPointSize;
     float t = p.y / S;
     return vec2(p.x - 0.5 * t, t);
 }
 
 vec2 ToNormalizedSpace(vec2 v, vec2 texdim) {
    vec2 p = vec2(v.x + v.y * 0.5, v.y * S);
-   return p * ${uPointSize} + ${uCenter2} / texdim;
+   return p * $uPointSize + $uCenter2 / texdim;
 }
 
 void main() {
-    vec2 texdim = vec2(textureSize(${uTexture}, 0));
+    vec2 texdim = vec2(textureSize($uTexture, 0));
     vec2 p = ToPixelSpace(gl_FragCoord.xy);
     vec2 c = GetHexCenter(p);
     vec2 q = ToNormalizedSpace(c, texdim);
-    ${oFragColor} = texelFetch(${uTexture}, ivec2(q), 0);
+    $oFragColor = texelFetch($uTexture, ivec2(q), 0);
 }
 """;
 
@@ -199,19 +199,19 @@ final ShaderObject dotFragmentShader = ShaderObject("DotF")
 // Inspired by three.js
 
 float pattern(vec2 tex) {
-		float s = sin( ${uAngle} );
-		float c = cos( ${uAngle} );
-		vec2 point = vec2( c * tex.x - s * tex.y, s * tex.x + c * tex.y ) * ${uScale};
+		float s = sin( $uAngle );
+		float c = cos( $uAngle );
+		vec2 point = vec2( c * tex.x - s * tex.y, s * tex.x + c * tex.y ) * $uScale;
 		return ( sin( point.x ) * sin( point.y ) ) * 4.0;
 }
 
 void main() {
     vec2 center = gl_FragCoord.xy;
-		vec2 texdim = vec2(textureSize(${uTexture}, 0));
-		vec4 color = texelFetch(${uTexture}, ivec2(center), 0);
+		vec2 texdim = vec2(textureSize($uTexture, 0));
+		vec4 color = texelFetch($uTexture, ivec2(center), 0);
 		float average = ( color.r + color.g + color.b ) / 3.0;
-    vec2 tex = center - ${uCenter2};
-		${oFragColor} = vec4( vec3( average * 10.0 - 5.0 + pattern(tex) ), color.a );
+    vec2 tex = center - $uCenter2;
+		$oFragColor = vec4( vec3( average * 10.0 - 5.0 + pattern(tex) ), color.a );
 }
 """,
   ]);
@@ -240,16 +240,16 @@ vec3 rgbDistortion(vec2 uv, float magnitude, float time) {
 }
 
 void main() {
-      vec2 dim = vec2(textureSize(${uTexture}, 0));
+      vec2 dim = vec2(textureSize($uTexture, 0));
       vec2 center = gl_FragCoord.xy / dim;
-      vec3 d = rgbDistortion(center, ${uScale}, ${uTime});
+      vec3 d = rgbDistortion(center, $uScale, $uTime);
       float x = center.x;
       float y = center.y;
 
-			float r = texelFetch(${uTexture}, ivec2(dim * vec2(x + d.r, y)), 0).r;
-			float g = texelFetch(${uTexture}, ivec2(dim * vec2(x + d.g, y)), 0).g;
-			float b = texelFetch(${uTexture}, ivec2(dim * vec2(x + d.b, y)), 0).b;
-			${oFragColor} = vec4( r, g, b, 1.0 );
+			float r = texelFetch($uTexture, ivec2(dim * vec2(x + d.r, y)), 0).r;
+			float g = texelFetch($uTexture, ivec2(dim * vec2(x + d.g, y)), 0).g;
+			float b = texelFetch($uTexture, ivec2(dim * vec2(x + d.b, y)), 0).b;
+			$oFragColor = vec4( r, g, b, 1.0 );
 }
 """;
 
@@ -271,10 +271,10 @@ vec2 kaleidoscope( vec2 uv, float n) {
 }
 
 void main() {
-    vec2 dim = vec2(textureSize(${uTexture}, 0));
+    vec2 dim = vec2(textureSize($uTexture, 0));
     vec2 p = gl_FragCoord.xy / dim;
-    vec2 uv = ${uCenter2} + kaleidoscope(p - ${uCenter2}, ${uScale});
-    ${oFragColor} = texelFetch(${uTexture}, ivec2(uv * dim), 0);
+    vec2 uv = $uCenter2 + kaleidoscope(p - $uCenter2, $uScale);
+    $oFragColor = texelFetch($uTexture, ivec2(uv * dim), 0);
 }
 """,
   ]);
@@ -291,15 +291,15 @@ float RGB2Luma(vec3 rgb) { return dot(rgb, vec3(0.212, 0.715, 0.072)); }
 
 
 void main() {
-	  vec2 texdim = vec2(textureSize(${uTexture}, 0));
-    float r = ${uPointSize};
+	  vec2 texdim = vec2(textureSize($uTexture, 0));
+    float r = $uPointSize;
     vec2 uv = gl_FragCoord.xy;
     vec2 center = floor(uv / r / 2.0) * 2.0 * r + r;
-    vec3 col = texelFetch(${uTexture}, ivec2(center), 0).rgb;
+    vec3 col = texelFetch($uTexture, ivec2(center), 0).rgb;
     float lum = max(0.1, RGB2Luma(col));
     float alpha =  smoothstep(1.0, 0.5,
                               distance(center, uv) / lum / r);
-    ${oFragColor}.rgb = col.rgb * alpha;
+    $oFragColor.rgb = col.rgb * alpha;
 }
 """,
   ]);
@@ -310,9 +310,9 @@ final ShaderObject squarePixelateFragmentShader =
       ..SetBody([
         """
 void main() {
-    float r = ${uPointSize};
+    float r = $uPointSize;
     vec2 center = floor(gl_FragCoord.xy / r / 2.0) * 2.0 * r + r;
-    ${oFragColor} = texelFetch(${uTexture}, ivec2(center), 0);
+    $oFragColor = texelFetch($uTexture, ivec2(center), 0);
 }
 """,
       ]);
@@ -327,10 +327,10 @@ float RGB2Luma(vec3 rgb) { return dot(rgb, vec3(0.212, 0.715, 0.072)); }
 // float RGB2Luma(vec3 rgb) { return dot(rgb, vec3(0.299, 0.587, 0.114)); }
 
 void main() {
-    vec4 color = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0);
+    vec4 color = texelFetch($uTexture, ivec2(gl_FragCoord.xy), 0);
     float luma = RGB2Luma(color.rgb);
-    float alpha = smoothstep(${uRange}.x, ${uRange}.y, luma);
-    ${oFragColor} = mix(${uColorAlpha}, color, alpha );
+    float alpha = smoothstep($uRange.x, $uRange.y, luma);
+    $oFragColor = mix($uColorAlpha, color, alpha );
 }
  """,
       ]);
@@ -342,7 +342,7 @@ final ShaderObject fisheyeFragmentShader = ShaderObject("FisheyePassF")
 float fisheye_radius = 1.0;
       
 void main() {
-    vec2 dim = vec2(textureSize(${uTexture}, 0));
+    vec2 dim = vec2(textureSize($uTexture, 0));
     vec2 pixel = gl_FragCoord.xy / dim;
     float y = (pixel.y-0.5) * 2.0; // [0,1] => [-1, 1]
 
@@ -354,7 +354,7 @@ void main() {
                                   (max_arc_length * 2.0);
     // set arc_length as y
     vec2 uv = vec2(pixel.x, normalized_arc_length); 
-    ${oFragColor} = texelFetch(${uTexture}, ivec2(dim *uv), 0); 
+    $oFragColor = texelFetch($uTexture, ivec2(dim *uv), 0);
 }
 """,
   ]);
@@ -386,7 +386,7 @@ float randomLines(vec2 uv, float a, float b, float c, float d) {
 }
 
 vec3 scene(vec2 uv, vec2 pixel, vec2 dim) {
-    vec3 color = texelFetch(${uTexture}, ivec2(uv * dim), 0).rgb;
+    vec3 color = texelFetch($uTexture, ivec2(uv * dim), 0).rgb;
     color += 0.1;
     color *= vignette(uv);
     color *= 0.9 + 0.1 * rand(uv);
@@ -400,12 +400,12 @@ vec3 scene(vec2 uv, vec2 pixel, vec2 dim) {
 }
 
 void main() {
-    vec2 dim = vec2(textureSize(${uTexture}, 0));
+    vec2 dim = vec2(textureSize($uTexture, 0));
     vec2 pixel = gl_FragCoord.xy / dim;
     vec2 uv = pixel;
     uv += translation;
     uv = vec2(pixel.x, mod(uv.y, 1.));
-    ${oFragColor} = vec4(scene(uv, pixel, dim), 1.);
+    $oFragColor = vec4(scene(uv, pixel, dim), 1.);
 }
 """,
   ]);
@@ -494,15 +494,15 @@ final ShaderObject convolution3x3FragmentShader =
       ..SetBody([
         """
 void main() {
-    mat3 m = ${uConvolutionMatrix};
+    mat3 m = $uConvolutionMatrix;
     ivec2 center = ivec2(gl_FragCoord.xy);
     vec3 sum = vec3(0.0, 0.0, 0.0);
     for (int x = -1; x <= 1; x++) {
       for (int y = -1; y <= 1; y++) {
-        sum += m[x+1][y+1] * texelFetch(${uTexture}, center + ivec2(x, y), 0).rgb;     
+        sum += m[x+1][y+1] * texelFetch($uTexture, center + ivec2(x, y), 0).rgb;
       }
     }
-    ${oFragColor}.rgb = ${uColor} + sum;
+    $oFragColor.rgb = $uColor + sum;
 }
 
 """,
@@ -518,15 +518,15 @@ const vec3 comp = vec3(0.1, 0.30, 0.85);
 
 void main() {
     // number scan lines: texture height * 
-    vec2 sine_coord = ${uRange} * 2.0 * 3.1415;
+    vec2 sine_coord = $uRange * 2.0 * 3.1415;
                         
     sine_coord.x = 0.0;
-    vec2 dim = vec2(textureSize(${uTexture}, 0));
+    vec2 dim = vec2(textureSize($uTexture, 0));
     vec2 pixel = gl_FragCoord.xy;
-    vec3 color =  texelFetch(${uTexture}, ivec2(pixel), 0).xyz;
+    vec3 color =  texelFetch($uTexture, ivec2(pixel), 0).xyz;
     float m = comp.z + 
               dot(comp.xy * sin(pixel / dim * sine_coord), vec2(1.0, 1.0));
-    ${oFragColor} = vec4(color * m, 1.0);
+    $oFragColor = vec4(color * m, 1.0);
 }
 """,
   ]);
@@ -542,9 +542,9 @@ float wave(vec2 pos, float srcX, float srcY, float t) {
 
 void main() {
     vec2 center = gl_FragCoord.xy;
-    vec3 color = texelFetch(${uTexture}, ivec2(center), 0).rgb;
-    vec2 uv = center /  vec2(textureSize(${uTexture}, 0)); 
-    float t =  ${uTime} * 50.0;
+    vec3 color = texelFetch($uTexture, ivec2(center), 0).rgb;
+    vec2 uv = center /  vec2(textureSize($uTexture, 0));
+    float t =  $uTime * 50.0;
     float res = 0.0;
     res += wave(uv, 0.6, 0.7, t);
     res += wave(uv, 0.9, 0.9, t);
@@ -553,7 +553,7 @@ void main() {
     // res += wave(uv, 0.1, 0.4, t);
     res += wave(uv, 0.5, 0.5, t);
     res += wave(uv, -1.0, 1.4, t);
-    ${oFragColor} = vec4(color * (0.9 + 0.012 * res), 1.0);
+    $oFragColor = vec4(color * (0.9 + 0.012 * res), 1.0);
 }
 """,
   ]);
@@ -562,7 +562,7 @@ ShaderObject CrosshatchFragmentShader(int mode) {
   return ShaderObject("crosshatchPixelateF")
     ..AddUniformVars([uTexture])
     ..SetBody([
-      "#define MODE ${mode}",
+      "#define MODE $mode",
       """
 float level1 = 1.0;
 float level2 = 0.7;
@@ -610,10 +610,10 @@ void main()  {
     vec2 pixel = gl_FragCoord.xy;  // this is really pixel + 0.5
    
     float lum = dot(vec3(0.2126, 0.7152, 0.0723), 
-                    texelFetch(${uTexture}, ivec2(pixel), 0).rgb);
+                    texelFetch($uTexture, ivec2(pixel), 0).rgb);
     
     float color = PixelColor(pixel, lum);
-    ${oFragColor} = vec4(vec3(color), 1.0);  
+    $oFragColor = vec4(vec3(color), 1.0);
 }      
 
 """,
@@ -709,10 +709,10 @@ final ShaderObject sepiaFragmentShader = ShaderObject("sepiaPixelateF")
     photoEffectHelper,
     """
 void main() { 
-    vec3 color = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0).rgb;
+    vec3 color = texelFetch($uTexture, ivec2(gl_FragCoord.xy), 0).rgb;
     float gray = dot(color, vec3(0.3333));
     // float gray = dot(color, vec3(0.2126, 0.7152, 0.0723));
-    ${oFragColor} = vec4(SepiaColor(gray, ${uScale}), 1.0);
+    $oFragColor = vec4(SepiaColor(gray, $uScale), 1.0);
 }
 """,
   ]);
@@ -724,8 +724,8 @@ final ShaderObject techicolorFragmentShader =
         photoEffectHelper,
         """
 void main() { 
-    vec3 color = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0).rgb;
-    ${oFragColor} = vec4(Technicolor3(color, 0.5), 1.0);
+    vec3 color = texelFetch($uTexture, ivec2(gl_FragCoord.xy), 0).rgb;
+    $oFragColor = vec4(Technicolor3(color, 0.5), 1.0);
 }
 """,
       ]);
@@ -737,10 +737,10 @@ final ShaderObject vignettingFragmentShader =
         photoEffectHelper,
         """
 void main() { 
-    vec2 dim = vec2(textureSize(${uTexture}, 0));
-    vec3 color = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0).rgb;
-    float v = VignettingFactor(gl_FragCoord.xy / dim, ${uRange}.x, ${uRange}.y);
-    ${oFragColor} = vec4(color * v, 1.0);
+    vec2 dim = vec2(textureSize($uTexture, 0));
+    vec3 color = texelFetch($uTexture, ivec2(gl_FragCoord.xy), 0).rgb;
+    float v = VignettingFactor(gl_FragCoord.xy / dim, $uRange.x, $uRange.y);
+    $oFragColor = vec4(color * v, 1.0);
 }
 """,
       ]);
@@ -752,17 +752,17 @@ final ShaderObject blur1DShader9 = ShaderObject("blurF")
 void main() { 
     vec4 sum = vec4(0.0);
     vec2 c = gl_FragCoord.xy;
-    vec2 d = ${uDirection};
-    sum  += texelFetch(${uTexture}, ivec2(c - 4.0 * d), 0) * 0.0510;
-    sum  += texelFetch(${uTexture}, ivec2(c - 3.0 * d), 0) * 0.0918;
-    sum  += texelFetch(${uTexture}, ivec2(c - 2.0 * d), 0) * 0.1224;
-    sum  += texelFetch(${uTexture}, ivec2(c - 1.0 * d), 0) * 0.1531;
-    sum  += texelFetch(${uTexture}, ivec2(c)          , 0) * 0.1633;
-    sum  += texelFetch(${uTexture}, ivec2(c + 1.0 * d), 0) * 0.1531;
-    sum  += texelFetch(${uTexture}, ivec2(c + 2.0 * d), 0) * 0.1224;
-    sum  += texelFetch(${uTexture}, ivec2(c + 3.0 * d), 0) * 0.0918;
-    sum  += texelFetch(${uTexture}, ivec2(c + 4.0 * d), 0) * 0.0510;
-    ${oFragColor} = sum;
+    vec2 d = $uDirection;
+    sum  += texelFetch($uTexture, ivec2(c - 4.0 * d), 0) * 0.0510;
+    sum  += texelFetch($uTexture, ivec2(c - 3.0 * d), 0) * 0.0918;
+    sum  += texelFetch($uTexture, ivec2(c - 2.0 * d), 0) * 0.1224;
+    sum  += texelFetch($uTexture, ivec2(c - 1.0 * d), 0) * 0.1531;
+    sum  += texelFetch($uTexture, ivec2(c)          , 0) * 0.1633;
+    sum  += texelFetch($uTexture, ivec2(c + 1.0 * d), 0) * 0.1531;
+    sum  += texelFetch($uTexture, ivec2(c + 2.0 * d), 0) * 0.1224;
+    sum  += texelFetch($uTexture, ivec2(c + 3.0 * d), 0) * 0.0918;
+    sum  += texelFetch($uTexture, ivec2(c + 4.0 * d), 0) * 0.0510;
+    $oFragColor = sum;
 }
 """,
   ]);
@@ -774,15 +774,15 @@ final ShaderObject blur1DShader7 = ShaderObject("blurF")
 void main() { 
     vec4 sum = vec4(0.0);
     vec2 c = gl_FragCoord.xy;
-    vec2 d = ${uDirection};
-    sum  += texelFetch(${uTexture}, ivec2(c - 3.0 * d), 0) * (1.0 / 64.0);
-    sum  += texelFetch(${uTexture}, ivec2(c - 2.0 * d), 0) * (6.0 / 64.0);
-    sum  += texelFetch(${uTexture}, ivec2(c - 1.0 * d), 0) * (15.0 / 64.0);
-    sum  += texelFetch(${uTexture}, ivec2(c)          , 0) * (20.0 / 64.0);
-    sum  += texelFetch(${uTexture}, ivec2(c + 1.0 * d), 0) * (15.0 / 64.0);
-    sum  += texelFetch(${uTexture}, ivec2(c + 2.0 * d), 0) * (6.0 / 64.0);
-    sum  += texelFetch(${uTexture}, ivec2(c + 3.0 * d), 0) * (1.0 / 64.0);
-    ${oFragColor} = sum;
+    vec2 d = $uDirection;
+    sum  += texelFetch($uTexture, ivec2(c - 3.0 * d), 0) * (1.0 / 64.0);
+    sum  += texelFetch($uTexture, ivec2(c - 2.0 * d), 0) * (6.0 / 64.0);
+    sum  += texelFetch($uTexture, ivec2(c - 1.0 * d), 0) * (15.0 / 64.0);
+    sum  += texelFetch($uTexture, ivec2(c)          , 0) * (20.0 / 64.0);
+    sum  += texelFetch($uTexture, ivec2(c + 1.0 * d), 0) * (15.0 / 64.0);
+    sum  += texelFetch($uTexture, ivec2(c + 2.0 * d), 0) * (6.0 / 64.0);
+    sum  += texelFetch($uTexture, ivec2(c + 3.0 * d), 0) * (1.0 / 64.0);
+    $oFragColor = sum;
 }
 """,
   ]);
@@ -794,13 +794,13 @@ final ShaderObject blur1DShader5 = ShaderObject("blurF")
 void main() { 
     vec4 sum = vec4(0.0);
     vec2 c = gl_FragCoord.xy;
-    vec2 d = ${uDirection};
-    sum  += texelFetch(${uTexture}, ivec2(c - 2.0 * d), 0) * (1.0 / 16.0);
-    sum  += texelFetch(${uTexture}, ivec2(c - 1.0 * d), 0) * (4.0 / 16.0);
-    sum  += texelFetch(${uTexture}, ivec2(c)          , 0) * (6.0 / 16.0);
-    sum  += texelFetch(${uTexture}, ivec2(c + 1.0 * d), 0) * (4.0 / 16.0);
-    sum  += texelFetch(${uTexture}, ivec2(c + 2.0 * d), 0) * (1.0 / 16.0);
-    ${oFragColor} = sum;
+    vec2 d = $uDirection;
+    sum  += texelFetch($uTexture, ivec2(c - 2.0 * d), 0) * (1.0 / 16.0);
+    sum  += texelFetch($uTexture, ivec2(c - 1.0 * d), 0) * (4.0 / 16.0);
+    sum  += texelFetch($uTexture, ivec2(c)          , 0) * (6.0 / 16.0);
+    sum  += texelFetch($uTexture, ivec2(c + 1.0 * d), 0) * (4.0 / 16.0);
+    sum  += texelFetch($uTexture, ivec2(c + 2.0 * d), 0) * (1.0 / 16.0);
+    $oFragColor = sum;
 }
 """,
   ]);

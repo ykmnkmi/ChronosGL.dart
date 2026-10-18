@@ -1,4 +1,4 @@
-library scene;
+library;
 
 // This library does not depend on "dart:html"
 // for easier testing.

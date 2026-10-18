@@ -1,4 +1,4 @@
-part of webhelper;
+part of 'lib.dart';
 
 /// Interactive Camera focused on a specific point.
 class OrbitCamera extends Spatial {

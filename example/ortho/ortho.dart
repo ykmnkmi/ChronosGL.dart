@@ -76,16 +76,16 @@ void main() {
   resolutionChange(null);
   HTML.window.onResize.listen(resolutionChange);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phaseOrthograhic.Draw();
     phasePerspective.Draw();
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

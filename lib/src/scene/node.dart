@@ -1,4 +1,4 @@
-part of scene;
+part of 'lib.dart';
 
 /// represents a hierarchy of objects that well be rendered
 /// by rendered RenderProgram.
@@ -8,11 +8,11 @@ part of scene;
 /// Non leaf Nodes are just containers for other Nodes
 /// Each Node is a Spatial so it be re-oriented with respect to its parent
 class Node extends Spatial {
-  Node.Container(String name, [Node? child]) : super(name) {
+  Node.Container(super.name, [Node? child]) {
     if (child != null) children.add(child);
   }
 
-  Node(String name, this._meshData, this._material) : super(name) {
+  Node(super.name, this._meshData, this._material) {
     //if (!meshData.isOptimized) meshData.optimize();
   }
 
@@ -28,7 +28,7 @@ class Node extends Spatial {
 
   MeshData get meshData => _meshData!;
 
-  void set meshData(MeshData md) {
+  set meshData(MeshData md) {
     _meshData = md;
   }
 
@@ -56,5 +56,5 @@ class Node extends Spatial {
   }
 
   @override
-  String toString() => "NODE[${name}]";
+  String toString() => "NODE[$name]";
 }

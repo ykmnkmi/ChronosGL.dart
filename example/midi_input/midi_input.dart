@@ -14,13 +14,12 @@ const MIDI_PITCH_BEND = 14;
 HTML.Element gTab = HTML.document.getElementById("tab")!;
 
 void LogEvent(String kind, String device_channel, dynamic data) {
-  print("${kind} ${device_channel} ${data}");
+  print("$kind $device_channel $data");
   if (gTab.children.length > 20) {
     gTab.children.removeAt(0);
   }
   gTab.innerHtml =
-      gTab.innerHtml! +
-      "<tr><td>${kind}</td><td>${device_channel}</td><td>${data}</td></tr>";
+      "${gTab.innerHtml!}<tr><td>$kind</td><td>$device_channel</td><td>$data</td></tr>";
 }
 
 // MIDI NOT CURRENTLY AVAILABLE VIA dart:web
@@ -33,13 +32,13 @@ void EventHandler(int device, dynamic msg) {
   final int kind = data[0] >> 4;
   final int channel = data[0] & 0xf;
   if (kind == MIDI_NOTE_ON) {
-    LogEvent("NoteOn", "${device}.${channel}", data);
+    LogEvent("NoteOn", "$device.$channel", data);
   } else if (kind == MIDI_NOTE_OFF) {
-    LogEvent("NoteOff", "${device}.${channel}", data);
+    LogEvent("NoteOff", "$device.$channel", data);
   } else if (kind == MIDI_CONTROL_CHANGE) {
-    LogEvent("ControlChange", "${device}.${channel}", data);
+    LogEvent("ControlChange", "$device.$channel", data);
   } else {
-    LogEvent("Unknown", "${device}", data);
+    LogEvent("Unknown", "$device", data);
   }
 }
 

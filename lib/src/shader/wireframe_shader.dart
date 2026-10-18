@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 // http://codeflow.org/entries/2012/aug/02/easy-wireframe-display-with-barycentric-coordinates/
 
@@ -10,7 +10,7 @@ const String _WireframeF =
 // (0, 0, 1, 0)
 float edgeFactorFace3(vec3 center) {
     vec3 d = fwidth(center);
-    vec3 a3 = smoothstep(vec3(0.0), d * ${uThickness}, center);
+    vec3 a3 = smoothstep(vec3(0.0), d * $uThickness, center);
     return min(min(a3.x, a3.y), a3.z);
 }
 
@@ -21,19 +21,19 @@ float edgeFactorFace3(vec3 center) {
 // (0, 0, 0, 1)
 float edgeFactorFace4(vec2 center) {
     vec2 d = fwidth(center);
-    vec2 a2 = smoothstep(vec2(0.0), d * ${uThickness}, center);
+    vec2 a2 = smoothstep(vec2(0.0), d * $uThickness, center);
     return min(a2.x, a2.y);
 }
 
 void main() {
     float q;
-    if (${vCenter}.w == 0.0) {
-        q = edgeFactorFace3(${vCenter}.xyz);
+    if ($vCenter.w == 0.0) {
+        q = edgeFactorFace3($vCenter.xyz);
     } else {
-        q = min(edgeFactorFace4(${vCenter}.xy),
-                edgeFactorFace4(1.0 - ${vCenter}.xy));
+        q = min(edgeFactorFace4($vCenter.xy),
+                edgeFactorFace4(1.0 - $vCenter.xy));
     }
-    ${oFragColor} = mix(${uColorAlpha}, ${uColorAlpha2}, q);
+    $oFragColor = mix($uColorAlpha, $uColorAlpha2, q);
 }
 """;
 
@@ -41,7 +41,7 @@ final ShaderObject wireframeVertexShader = ShaderObject("WireframeV")
   ..AddAttributeVars([aPosition, aCenter])
   ..AddVaryingVars([vCenter])
   ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..SetBodyWithMain([StdVertexBody, "${vCenter} = ${aCenter};"]);
+  ..SetBodyWithMain([StdVertexBody, "$vCenter = $aCenter;"]);
 
 final ShaderObject wireframeFragmentShader = ShaderObject("WireframeF")
   ..AddVaryingVars([vCenter])

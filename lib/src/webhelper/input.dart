@@ -1,9 +1,9 @@
-part of webhelper;
+part of 'lib.dart';
 
 /// HTML keyboard handling
 class Keyboard {
   Keyboard(dynamic elem) {
-    if (elem == null) elem = HTML.document;
+    elem ??= HTML.document;
 
     elem.onKeyDown.listen((HTML.KeyboardEvent e) {
       _currentlyPressedKeys.add(e.which!);
@@ -92,7 +92,7 @@ class Keyboard {
 /// HTML mouse handling
 class Mouse {
   Mouse(dynamic elem) {
-    if (elem == null) elem = HTML.document;
+    elem ??= HTML.document;
 
     elem.onMouseMove.listen((HTML.MouseEvent e) {
       e.preventDefault();

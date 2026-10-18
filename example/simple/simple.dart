@@ -15,12 +15,12 @@ final ShaderObject demoVertexShader = ShaderObject("demoVertexShader")
   ..SetBody([
     """
 void main() {
-    gl_Position = ${uPerspectiveViewMatrix} *
-                  ${uModelMatrix} *
-                  vec4(${aPosition}, 1.0);
-    ${vColor}.r = sin(${aPosition}.x)/2.0+0.5;
-    ${vColor}.g = cos(${aPosition}.y)/2.0+0.5;
-    ${vColor}.b = sin(${aPosition}.z)/2.0+0.5;
+    gl_Position = $uPerspectiveViewMatrix *
+                  $uModelMatrix *
+                  vec4($aPosition, 1.0);
+    $vColor.r = sin($aPosition.x)/2.0+0.5;
+    $vColor.g = cos($aPosition.y)/2.0+0.5;
+    $vColor.b = sin($aPosition.z)/2.0+0.5;
 }
 """,
   ]);
@@ -30,7 +30,7 @@ final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
   ..SetBody([
     """
 void main() {
-    ${oFragColor}.rgb = ${vColor};
+    $oFragColor.rgb = $vColor;
 }
     """,
   ]);
@@ -94,10 +94,10 @@ void main() {
   final MeshData stars = Utils.MakeStarMesh(progSprites, 2000, 100.0);
 
   // Main loop body
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     // animate the camera a little
     orbit.azimuth += 0.003;
     // allow the camera to also reflect mouse movement.

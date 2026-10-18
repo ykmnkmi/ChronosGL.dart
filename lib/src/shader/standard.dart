@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 /*
 // Adapted from Babylon JS Shaders

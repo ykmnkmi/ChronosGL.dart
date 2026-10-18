@@ -1,4 +1,4 @@
-part of shape;
+part of 'lib.dart';
 
 // modified from vectormath's version to not use arbitrary thresholds
 void buildPlaneVectors(VM.Vector3 planeNormal, VM.Vector3 u, VM.Vector3 v) {
@@ -83,7 +83,7 @@ List<List<VM.Vector3>> TubeHullBands(
   return out;
 }
 
-typedef void ParametricCurveFunc(double u, VM.Vector3 out);
+typedef ParametricCurveFunc = void Function(double u, VM.Vector3 out);
 
 /// Returns a List with alternating points and directions/tangents
 /// Note this creates the curve for the interval [start, end] or,

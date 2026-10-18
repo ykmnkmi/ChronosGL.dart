@@ -1,4 +1,4 @@
-library misc;
+library;
 
 // This library does not depend on "dart:html"
 import 'dart:typed_data';

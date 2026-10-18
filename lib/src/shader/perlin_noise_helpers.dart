@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 // https://github.com/ashima/webgl-noise
 

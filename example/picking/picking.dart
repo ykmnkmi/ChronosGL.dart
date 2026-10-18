@@ -119,13 +119,13 @@ void main() {
       }
     }
     Duration dur = DateTime.now().difference(start);
-    return "${shape}<br>${x}.${y}<br>${pixelData}<br>${dur.inMicroseconds}us";
+    return "$shape<br>$x.$y<br>$pixelData<br>${dur.inMicroseconds}us";
   }
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
 
     orbit.azimuth += 0.001;
 
@@ -137,7 +137,7 @@ void main() {
     orbit.animate(elapsed);
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

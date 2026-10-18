@@ -1,4 +1,4 @@
-part of shape;
+part of 'lib.dart';
 
 /// Produces single square: -1 <= x,y  <= 1, z == 0
 ///

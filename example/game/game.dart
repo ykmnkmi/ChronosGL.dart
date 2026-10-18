@@ -15,9 +15,9 @@ final ShaderObject demoVertexShader = ShaderObject("demoVertexShader")
   ..SetBody([
     """
 void main(void) {
-    gl_Position = vec4(${aPosition}.xy, 0.0, 1.0);
-    gl_PointSize = ${aPointSize};
-    ${vColor} = ${aColor};
+    gl_Position = vec4($aPosition.xy, 0.0, 1.0);
+    gl_PointSize = $aPointSize;
+    $vColor = $aColor;
 }
 """,
   ]);
@@ -28,7 +28,7 @@ final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
     """
 void main(void) {
     float r = length(gl_PointCoord.xy - vec2(0.5, 0.5));
-    ${oFragColor}.rgb = r*r < 0.2 ? ${vColor} : vec3(0.0, 0.0, 0.0);
+    $oFragColor.rgb = r*r < 0.2 ? $vColor : vec3(0.0, 0.0, 0.0);
 }
 """,
   ]);
@@ -195,7 +195,7 @@ class Gamepad {
       for (final b in gp.buttons.toDart) {
         bs.add(b.pressed);
       }
-      info.innerHtml = "${gp.id}<br>axes: ${gp.axes}<br>buttons: ${bs}";
+      info.innerHtml = "${gp.id}<br>axes: ${gp.axes}<br>buttons: $bs";
     }
 
     // x = _gp!.axes[0] + 0.0;
@@ -289,10 +289,10 @@ void main() {
     ..ForceUniform(cDepthTest, false)
     ..ForceUniform(cDepthWrite, false);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     for (Sprite s in sprites) {
       s.AdvanceTime(elapsed / 10000.0);
     }

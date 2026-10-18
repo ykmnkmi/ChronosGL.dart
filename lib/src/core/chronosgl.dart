@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 const String NO_WEBGL_MESSAGE = """
 Calling canvas.getContext("webgl2") failed,
@@ -66,7 +66,7 @@ class ChronosGL {
     _gl = context;
 
     final actual = _gl.getContextAttributes();
-    LogInfo("ChronosGL Config: ${actual}");
+    LogInfo("ChronosGL Config: $actual");
 
     _gl.clearColor(0.0, 0.0, 0.0, 1.0);
     _gl.enable(GL_DEPTH_TEST);
@@ -95,7 +95,7 @@ class ChronosGL {
     _gl.attachShader(program, fs);
     // delete shader fs?
 
-    if (transformVarying.length > 0) {
+    if (transformVarying.isNotEmpty) {
       _gl.transformFeedbackVaryings(
         program,
         transformVarying,
@@ -402,7 +402,7 @@ class ChronosGL {
     try {
       return _gl.getUniformLocation(program, uniform);
     } catch (e) {
-      LogError("Unknown uniform [${uniform}] for ${program}");
+      LogError("Unknown uniform [$uniform] for $program");
       return null;
     }
   }

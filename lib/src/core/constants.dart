@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 // https://www.khronos.org/registry/webgl/specs/latest/2.0/
 // https://www.khronos.org/registry/webgl/specs/latest/1.0/

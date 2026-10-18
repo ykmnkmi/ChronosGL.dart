@@ -18,21 +18,21 @@ void ShowInfo(Map<String, Object?> json) {
     } else if (val is List<Object?>) {
       print("$k ${val.length}");
     } else {
-      print("$k ${val}");
+      print("$k $val");
     }
   }
 }
 
 void main(List<String> arguments) {
-  final parser = new ArgParser()..addFlag("faces", negatable: false, abbr: 'f');
+  final parser = ArgParser()..addFlag("faces", negatable: false, abbr: 'f');
 
   ArgResults argResults = parser.parse(arguments);
   List<String> paths = argResults.rest;
   for (var p in paths) {
-    print("reading  ${p}");
+    print("reading  $p");
 
-    print("reading mesh from: ${p}");
-    String meshData = new File(p).readAsStringSync();
+    print("reading mesh from: $p");
+    String meshData = File(p).readAsStringSync();
     final jsonData = json.decode(meshData) as Map<String, Object?>;
 
     List<Bone> skeleton = ImportSkeletonFromAssimp2Json(jsonData);
@@ -62,9 +62,9 @@ void main(List<String> arguments) {
       print(ba);
     }
 
-    VM.Matrix4 globalOffsetTransform = new VM.Matrix4.identity();
+    VM.Matrix4 globalOffsetTransform = VM.Matrix4.identity();
 
-    AnimatedSkeleton animatedSkeleton = new AnimatedSkeleton(skeleton.length);
+    AnimatedSkeleton animatedSkeleton = AnimatedSkeleton(skeleton.length);
     UpdateAnimatedSkeleton(
       skeleton,
       globalOffsetTransform,

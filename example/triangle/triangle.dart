@@ -97,10 +97,10 @@ void main() {
   // E.g.: http://www.cse.ust.hk/~pang/papers/Impossible_Figures_ToG.pdf
   orbit.polar = 35.0 * Math.pi / 180.0;
   orbit.azimuth = -45.0 * Math.pi / 180.0;
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
     //orbit.rotZ(0.001);
     orbit.animate(elapsed);
@@ -110,7 +110,7 @@ void main() {
     phase.Draw();
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs, "${polar}<br>${azimuth}");
+    fps.UpdateFrameCount(lastTimeMs, "$polar<br>$azimuth");
   }
 
   animate(0.0);

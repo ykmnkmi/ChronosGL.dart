@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 /// provides an Orthographic Perspective Matrix
 class Orthographic extends UniformGroup {
@@ -13,11 +13,11 @@ class Orthographic extends UniformGroup {
   final VM.Matrix4 _viewMatrix = VM.Matrix4.zero();
   final VM.Matrix4 _projViewMatrix = VM.Matrix4.identity();
   double _aspect = 1.0;
-  double _l;
-  double _r;
-  double _d;
-  double _f;
-  double _b;
+  final double _l;
+  final double _r;
+  final double _d;
+  final double _f;
+  final double _b;
 
   @override
   Map<String, Object> GetUniforms() {
@@ -58,8 +58,8 @@ class Perspective extends UniformGroup {
   Spatial _camera;
   double _fov = 50.0; // horizontal fov in deg  divided by 2
   double _aspect = 1.0;
-  double _near = 0.1;
-  double _far = 1000.0;
+  final double _near;
+  final double _far;
   final VM.Matrix4 _perspectiveViewMatrix = VM.Matrix4.identity();
   final VM.Matrix4 _viewMatrix = VM.Matrix4.identity();
   final VM.Matrix4 _mat = VM.Matrix4.zero();

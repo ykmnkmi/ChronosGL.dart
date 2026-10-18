@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 final ShaderObject sobelVertexShader = ShaderObject("SobelV")
   ..AddAttributeVars([aPosition, aTexUV])
@@ -15,15 +15,15 @@ final ShaderObject sobelFragmentShader = ShaderObject("SobelF")
   }
 
   float sobel() {
-      vec2 imageIncrement = vec2(1.0/${uCanvasSize}.x,1.0/${uCanvasSize}.y);
-      float t00 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2(-1, -1)));
-      float t10 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2( 0, -1)));
-      float t20 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2( 1, -1)));
-      float t01 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2(-1,  0)));
-      float t21 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2( 1,  0)));
-      float t02 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2(-1,  1)));
-      float t12 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2( 0,  1)));
-      float t22 = lum(texture(${uTexture}, ${vTexUV} + imageIncrement * vec2( 1,  1)));
+      vec2 imageIncrement = vec2(1.0/$uCanvasSize.x,1.0/$uCanvasSize.y);
+      float t00 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2(-1, -1)));
+      float t10 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2( 0, -1)));
+      float t20 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2( 1, -1)));
+      float t01 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2(-1,  0)));
+      float t21 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2( 1,  0)));
+      float t02 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2(-1,  1)));
+      float t12 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2( 0,  1)));
+      float t22 = lum(texture($uTexture, $vTexUV + imageIncrement * vec2( 1,  1)));
        // sobel kernel used
        // x:
        // +1  0 -1
@@ -42,7 +42,7 @@ final ShaderObject sobelFragmentShader = ShaderObject("SobelF")
 
   void main(void) {
       float len = sobel();
-      ${oFragColor} = vec4(len, len, len, 1.0); //
+      $oFragColor = vec4(len, len, len, 1.0); //
   }
   """,
   ]);

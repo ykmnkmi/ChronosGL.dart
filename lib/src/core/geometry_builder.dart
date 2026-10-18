@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 class Face1 {
   Face1(this.a);
@@ -66,7 +66,7 @@ class Edge3 {
   final VM.Vector3 v2;
 
   @override
-  String toString() => "${v1} -> ${v2}";
+  String toString() => "$v1 -> $v2";
 
   @override
   bool operator ==(Object other) =>
@@ -93,9 +93,9 @@ class GeometryBuilder {
   void EnableAttribute(String canonical) {
     assert(
       !attributes.containsKey(canonical),
-      "attribute ${canonical} already exists",
+      "attribute $canonical already exists",
     );
-    assert(canonical.startsWith("a"), "${canonical} is not an attribute");
+    assert(canonical.startsWith("a"), "$canonical is not an attribute");
     ShaderVarDesc desc = RetrieveShaderVarDesc(canonical);
     switch (desc.type) {
       case VarTypeVec2:
@@ -114,7 +114,7 @@ class GeometryBuilder {
         attributes[canonical] = <List<int>>[];
         break;
       default:
-        assert(false, "unknown type for ${canonical}");
+        assert(false, "unknown type for $canonical");
     }
   }
 
@@ -131,12 +131,12 @@ class GeometryBuilder {
     if (attributes.containsKey(aNormal)) {
       assert(matNormal != null, "no normal matrix provided");
       for (VM.Vector3 v in attributes[aNormal] as List<VM.Vector3>) {
-        v..applyMatrix3(matNormal!);
+        v.applyMatrix3(matNormal!);
       }
     }
     if (mat != null) {
       for (VM.Vector3 v in vertices) {
-        v..applyMatrix4(mat);
+        v.applyMatrix4(mat);
       }
     }
   }
@@ -157,7 +157,7 @@ class GeometryBuilder {
 
   // Simple means the vertex coordinated in other are not changed
   void MergeAndTakeOwnershipSimple(GeometryBuilder other) {
-    if (other.vertices.length == 0) return;
+    if (other.vertices.isEmpty) return;
     final int offset = vertices.length;
 
     assert(pointsOnly == other.pointsOnly);
@@ -171,7 +171,7 @@ class GeometryBuilder {
       }
     } else {
       for (String a in other.attributes.keys) {
-        assert(attributes.containsKey(a), "missing attribute ${a}");
+        assert(attributes.containsKey(a), "missing attribute $a");
         attributes[a]!.addAll(other.attributes[a]!);
       }
     }
@@ -200,8 +200,8 @@ class GeometryBuilder {
 
   void SanityCheck() {
     if (pointsOnly) {
-      assert(faces3.length == 0);
-      assert(faces4.length == 0);
+      assert(faces3.isEmpty);
+      assert(faces4.isEmpty);
       return;
     }
     int maxIndexFace3 = -1;
@@ -221,13 +221,13 @@ class GeometryBuilder {
 
     final int n = vertices.length;
     assert(n >= 0);
-    assert(maxIndexFace3 < n, "${maxIndexFace3} vs $n");
-    assert(maxIndexFace4 < n, "${maxIndexFace4} vs $n");
+    assert(maxIndexFace3 < n, "$maxIndexFace3 vs $n");
+    assert(maxIndexFace4 < n, "$maxIndexFace4 vs $n");
 
     for (String canonical in attributes.keys) {
       assert(
         attributes[canonical]!.length == vertices.length,
-        "bad attribute ${canonical}",
+        "bad attribute $canonical",
       );
     }
   }
@@ -435,7 +435,7 @@ class GeometryBuilder {
   // generateFaces is usually only called once to initialize _faces.
   // Its main purpose is to convert Face4 into two triangles
   List<int> GenerateFaceIndices() {
-    assert(faces3.length > 0 || faces4.length > 0);
+    assert(faces3.isNotEmpty || faces4.isNotEmpty);
     List<int> faces = List.generate(
       faces3.length * 3 + faces4.length * 6,
       (i) => 0,
@@ -677,7 +677,7 @@ class GeometryBuilder {
 
       final Object f = incidenceE.putIfAbsent(edge, () => face);
       if (f != face) {
-        LogWarn("unexpected duplicate edge:  ${edge}");
+        LogWarn("unexpected duplicate edge:  $edge");
         return true;
       } else {
         return false;
@@ -749,7 +749,7 @@ class GeometryBuilder {
     //print ("check loops");
     for (List<VM.Vector3> lst in incidenceV.values) {
       if (!formsLoop(lst)) {
-        LogWarn("fan issues for ${lst}");
+        LogWarn("fan issues for $lst");
         return false;
       }
     }
@@ -766,7 +766,7 @@ class GeometryBuilder {
     ];
     for (String canonical in attributes.keys) {
       String type = RetrieveShaderVarDesc(canonical).type;
-      s.add("${canonical}[${type},${attributes[canonical]!.length}]");
+      s.add("$canonical[$type,${attributes[canonical]!.length}]");
     }
     return s.join(" ");
   }

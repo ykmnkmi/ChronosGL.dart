@@ -1,5 +1,4 @@
-# https://dart.dev/tools/analysis
-# https://dart.dev/tools/linter-rules
+include: package:lints/recommended.yaml
 
 analyzer:
   exclude:
@@ -14,27 +13,9 @@ analyzer:
 linter:
   rules:
     - always_declare_return_types
-    - annotate_overrides
-    - avoid_empty_else
-    - avoid_init_to_null
     - avoid_slow_async_io
-    - await_only_futures
-    - camel_case_types
-    - empty_constructor_bodies
-    - empty_statements
     - no_adjacent_strings_in_list
-    - no_duplicate_case_values
-    - prefer_collection_literals
-#    - prefer_conditional_assignment
     - prefer_const_constructors
-    - prefer_contains
-#    - prefer_final_fields
-#    - prefer_final_locals
-    - slash_for_doc_comments
     - sort_constructors_first
     - unawaited_futures
-    - unnecessary_overrides
-    - unnecessary_this
-    - unrelated_type_equality_checks
     - use_string_buffers
-    - valid_regexps

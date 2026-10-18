@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 const int GL_CLEAR_ALL =
     GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
@@ -14,7 +14,7 @@ int TextureChannelsByType(int format) {
     case GL_RGBA:
       return 4;
     default:
-      assert(false, "unexpected format: ${format}");
+      assert(false, "unexpected format: $format");
       return -1;
   }
 }
@@ -30,7 +30,7 @@ String _FormatName(int format) {
     case GL_RGBA:
       return "GL_RGBA";
     default:
-      return "${format}";
+      return "$format";
   }
 }
 
@@ -41,7 +41,7 @@ String _TypeName(int code) {
     case GL_FLOAT:
       return "GL_FLOAT";
     default:
-      return "${code}";
+      return "$code";
   }
 }
 
@@ -60,7 +60,7 @@ class FramebufferFormat {
 
   @override
   String toString() {
-    return "FB-FMT: ${_FormatName(format)} [${channels}] ${_TypeName(type)}";
+    return "FB-FMT: ${_FormatName(format)} [$channels] ${_TypeName(type)}";
   }
 }
 
@@ -110,9 +110,9 @@ class Framebuffer {
     }
 
     int err = _cgl.checkFramebufferStatus(GL_FRAMEBUFFER);
-    assert(err == GL_FRAMEBUFFER_COMPLETE, "framebuffer error: ${err}");
+    assert(err == GL_FRAMEBUFFER_COMPLETE, "framebuffer error: $err");
     if (err != GL_FRAMEBUFFER_COMPLETE) {
-      throw "Error Incomplete Framebuffer: ${err}";
+      throw "Error Incomplete Framebuffer: $err";
     }
     _cgl.bindFramebuffer(GL_FRAMEBUFFER, null);
   }
@@ -171,7 +171,7 @@ class Framebuffer {
 
     assert(
       viewPortW > 0 && viewPortH > 0,
-      "width and height must be > 0: ${viewPortW} ${viewPortW}",
+      "width and height must be > 0: $viewPortW $viewPortW",
     );
     _cgl.viewport(viewPortX, viewPortY, viewPortW, viewPortH);
 
@@ -183,9 +183,7 @@ class Framebuffer {
   /// If buf is non-null it must have size 4*w*h elements
   Float32List ExtractFloatData(Float32List? buf, int x, int y, int w, int h) {
     _cgl.bindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-    if (buf == null) {
-      buf = Float32List(4 * w * h);
-    }
+    buf ??= Float32List(4 * w * h);
     _cgl.readPixels(x, y, w, h, GL_RGBA, GL_FLOAT, buf);
     _cgl.bindFramebuffer(GL_FRAMEBUFFER, null);
     return buf;
@@ -194,9 +192,7 @@ class Framebuffer {
   /// If buf is non-null it must have size 4*w*h elements
   Uint8List ExtractByteData(Uint8List? buf, int x, int y, int w, int h) {
     _cgl.bindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-    if (buf == null) {
-      buf = Uint8List(4 * w * h);
-    }
+    buf ??= Uint8List(4 * w * h);
     _cgl.readPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf);
     _cgl.bindFramebuffer(GL_FRAMEBUFFER, null);
     return buf;

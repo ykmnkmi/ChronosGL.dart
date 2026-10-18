@@ -1,4 +1,4 @@
-part of core;
+part of 'lib.dart';
 
 /// is inherited by almost all other classes in ChronosGL.
 /// It mostly exists to help with debugging by giving names to objects.
@@ -25,15 +25,12 @@ final NamedEntity kUnknownEntity = UnknownEntity();
 /// * Material provides color and texture uniforms
 /// * Illumination provides uniforms describing light sources
 class UniformGroup extends NamedEntity {
-  UniformGroup(String name) : super(name);
+  UniformGroup(super.name);
 
-  Map<String, Object> _uniforms = {};
+  final Map<String, Object> _uniforms = {};
 
   void SetUniform(String canonical, Object val) {
-    assert(
-      !_uniforms.containsKey(canonical),
-      "uniform ${canonical} already set",
-    );
+    assert(!_uniforms.containsKey(canonical), "uniform $canonical already set");
     ForceUniform(canonical, val);
   }
 
@@ -51,7 +48,7 @@ class UniformGroup extends NamedEntity {
   String toString() {
     List<String> out = <String>["{$runtimeType}[$name]"];
     for (String key in _uniforms.keys) {
-      out.add("${key}: ${_uniforms[key]}");
+      out.add("$key: ${_uniforms[key]}");
     }
     return out.join("\n");
   }

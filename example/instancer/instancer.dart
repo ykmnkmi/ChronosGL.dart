@@ -11,17 +11,17 @@ final ShaderObject instancedVertexShader = ShaderObject("InstancedV")
   ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
   ..SetBody([
     """
-vec3 rotate_vertex_position(vec3 pos, vec4 rot) { 
+vec3 rotate_vertex_position(vec3 pos, vec4 rot) {
     return pos + 2.0 * cross(rot.xyz, cross(rot.xyz, pos) + rot.w * pos);
 }
 
 void main() {
-    vec3 P = rotate_vertex_position(${aPosition}, ${iaRotation}) +
-             ${iaTranslation};
-    gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(P, 1);
-    ${vColor} = vec3(sin(${aPosition}.x)/2.0+0.5,
-                     cos(${aPosition}.y)/2.0+0.5, 
-                     sin(${aPosition}.z)/2.0+0.5);
+    vec3 P = rotate_vertex_position($aPosition, $iaRotation) +
+             $iaTranslation;
+    gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4(P, 1);
+    $vColor = vec3(sin($aPosition.x)/2.0+0.5,
+                     cos($aPosition.y)/2.0+0.5,
+                     sin($aPosition.z)/2.0+0.5);
 }
 """,
   ]);
@@ -30,8 +30,8 @@ final ShaderObject instancedFragmentShader = ShaderObject("InstancedF")
   ..AddVaryingVars([vColor])
   ..SetBody([
     """
-void main() {  
-     ${oFragColor} = vec4( ${vColor}, 1. );
+void main() {
+     $oFragColor = vec4( $vColor, 1. );
 }
      """,
   ]);
@@ -101,10 +101,10 @@ void main() {
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
   final MeshData mdStars = Utils.MakeStarMesh(progStars, 2000, 100.0);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
@@ -112,7 +112,7 @@ void main() {
     progStars.Draw(mdStars, [matStars, perspective]);
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

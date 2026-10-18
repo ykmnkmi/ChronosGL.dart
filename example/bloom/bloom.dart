@@ -147,10 +147,10 @@ void main() {
 
   final BloomEffect bloom = BloomEffect(cgl, width, height, 6, 4, fb, screen);
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.01;
     orbit.animate(elapsed);
     material.ForceUniform(uTime, timeMs / 1000.0);
@@ -164,7 +164,7 @@ void main() {
     );
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

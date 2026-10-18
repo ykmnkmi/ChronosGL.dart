@@ -1,33 +1,32 @@
-part of chronosshader;
+part of 'lib.dart';
 
 const String StdVertexBody =
-    "gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(${aPosition}, 1.0);";
+    "gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4($aPosition, 1.0);";
 
-const String StdVertexNormalForward =
-    "${vNormal} = ${uNormalMatrix} * ${aNormal};";
+const String StdVertexNormalForward = "$vNormal = $uNormalMatrix * $aNormal;";
 
 const String NullVertexShaderString =
     """
 void main() {
-  gl_Position = vec4(${aPosition}, 1.0);
+  gl_Position = vec4($aPosition, 1.0);
 }
 """;
 
 const String NullVertexShaderWithTextureForwardString =
     """
 void main() {
-  gl_Position = vec4(${aPosition}, 1.0);
-  ${vTexUV} = ${aTexUV};
+  gl_Position = vec4($aPosition, 1.0);
+  $vTexUV = $aTexUV;
 }
 """;
 
 const String StdVertexShaderWithTextureForwardString =
     """
 void main() {
-  gl_Position = ${uPerspectiveViewMatrix} * 
-                ${uModelMatrix} * 
-                vec4(${aPosition}, 1.0);
-  ${vTexUV} = ${aTexUV};
+  gl_Position = $uPerspectiveViewMatrix *
+                $uModelMatrix *
+                vec4($aPosition, 1.0);
+  $vTexUV = $aTexUV;
 }
 """;
 
@@ -230,23 +229,23 @@ ColorComponents CombinedLightDirectional(
 ColorComponents CombinedLight(vec3 vVertexPosition,
                    vec3 vNormal,
                    vec3 uEyePosition,
-                   const mat4 uLightDescs[${kMaxLights}],
-                   const float uLightTypes[${kMaxLights}],
+                   const mat4 uLightDescs[$kMaxLights],
+                   const float uLightTypes[$kMaxLights],
                    float uShininess) {
     ColorComponents acc = ColorComponents(vec3(0.0), vec3(0.0));
 
-    for (int i = 0; i < ${kMaxLights}; ++i) {
+    for (int i = 0; i < $kMaxLights; ++i) {
         ColorComponents curr;
-        float type = ${uLightTypes}[i];
-        if (type == ${lightTypeSpotFloat}) {
+        float type = $uLightTypes[i];
+        if (type == $lightTypeSpotFloat) {
             curr = CombinedLightSpot(
                        vVertexPosition, vNormal, uEyePosition, uLightDescs[i], 
                        uShininess);
-        } else if (type == ${lightTypePointFloat}) {
+        } else if (type == $lightTypePointFloat) {
             curr = CombinedLightPoint(
                        vVertexPosition, vNormal, uEyePosition, uLightDescs[i], 
                        uShininess);
-        } else if (type == ${lightTypeDirectionalFloat}) {
+        } else if (type == $lightTypeDirectionalFloat) {
             curr = CombinedLightDirectional(
                        vVertexPosition, vNormal, uEyePosition, uLightDescs[i], 
                        uShininess);

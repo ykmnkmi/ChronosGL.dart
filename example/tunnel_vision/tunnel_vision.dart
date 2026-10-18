@@ -69,8 +69,8 @@ class TheNodes {
   final VM.Vector3 cameraIntroEndPoint = VM.Vector3.zero();
   bool switched = false;
   int switchCount = 0;
-  VM.Vector3 _p1 = VM.Vector3.zero();
-  VM.Vector3 _p2 = VM.Vector3.zero();
+  final VM.Vector3 _p1 = VM.Vector3.zero();
+  final VM.Vector3 _p2 = VM.Vector3.zero();
 
   // now == -1.0 signals music ended
   void advanceTimeline(double now) {

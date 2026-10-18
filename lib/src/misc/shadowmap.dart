@@ -1,4 +1,4 @@
-part of misc;
+part of 'lib.dart';
 
 // Code for dealing with ShadowMaps
 
@@ -60,15 +60,15 @@ final ShaderObject shadowVertexShaderDepth = ShaderObject("ShadowMapV")
   ..SetBody([
     """
 void main() {
-    gl_Position = ${uLightPerspectiveViewMatrix} * ${uModelMatrix} *
-                  vec4(${aPosition}, 1.0);
+    gl_Position = $uLightPerspectiveViewMatrix * $uModelMatrix *
+                  vec4($aPosition, 1.0);
 }
     """,
   ]);
 
 final ShaderObject shadowFragmentShaderDepth =
     // What we care about here is the internal update of the depth buffer
-    ShaderObject("ShadowMapF")..SetBodyWithMain(["${oFragColor}.r = 1.0;"]);
+    ShaderObject("ShadowMapF")..SetBodyWithMain(["$oFragColor.r = 1.0;"]);
 
 final ShaderObject visualizeShadowmapVertexShaderLinearDepth16 =
     ShaderObject("copyV")
@@ -87,13 +87,13 @@ final ShaderObject visualizeShadowmapFragmentShaderLinearDepth16 =
       ..SetBody([
         """
 void main() {     
-   float d = texture(${uTexture},  ${vTexUV}).x;
-   float near = ${uCameraNear};
-   float far = ${uCameraFar};
+   float d = texture($uTexture,  $vTexUV).x;
+   float near = $uCameraNear;
+   float far = $uCameraFar;
    float gray = (2.0 * near) / (far + near - d * (far - near));
-   ${oFragColor}.rgb = vec3(gray);
-   // ${oFragColor}.rgb = vec3(d >= ${uCutOff} ? d : 0.0);
-   // ${oFragColor}.rgb = vec3(d);
+   $oFragColor.rgb = vec3(gray);
+   // $oFragColor.rgb = vec3(d >= $uCutOff ? d : 0.0);
+   // $oFragColor.rgb = vec3(d);
 }
 """,
       ]);
@@ -179,7 +179,7 @@ class ShadowMap {
   late Scene _programCompute;
 
   late RenderPhase _phaseVisualize;
-  UniformGroup _uniforms = UniformGroup("uniforms");
+  final UniformGroup _uniforms = UniformGroup("uniforms");
 
   late Scene _programVisualize;
 

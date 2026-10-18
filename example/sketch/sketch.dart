@@ -22,26 +22,26 @@ final ShaderObject instancedVertexShader = ShaderObject("finalV")
   ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
   ..SetBody([
     """
-vec3 rotate_vertex_position(vec3 pos, vec4 rot) { 
-    rot.xyz *= sin(0.5 * rot.w * ${uTime}) /  length(rot.xyz);
-    rot.w = cos(0.5 * rot.w * ${uTime});
+vec3 rotate_vertex_position(vec3 pos, vec4 rot) {
+    rot.xyz *= sin(0.5 * rot.w * $uTime) /  length(rot.xyz);
+    rot.w = cos(0.5 * rot.w * $uTime);
     return pos + 2.0 * cross(rot.xyz, cross(rot.xyz, pos) + rot.w * pos);
 }
 
 void main() {
   {
-    vec3 p = ${aPosition} * ${iaScale};
-    p = rotate_vertex_position(p, ${iaRotation});
-    p = p + ${iaTranslation};
-    gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(p, 1);
+    vec3 p = $aPosition * $iaScale;
+    p = rotate_vertex_position(p, $iaRotation);
+    p = p + $iaTranslation;
+    gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4(p, 1);
   }
   {
-      vec3 n = ${aNormal};
-      n = rotate_vertex_position(n, ${iaRotation});
-      ${vNormal} = normalize(n);
+      vec3 n = $aNormal;
+      n = rotate_vertex_position(n, $iaRotation);
+      $vNormal = normalize(n);
   }
-  ${vTexUV} = ${aTexUV};
-  ${vPosition} = gl_Position.xyz;
+  $vTexUV = $aTexUV;
+  $vPosition = gl_Position.xyz;
 }
 """,
   ]);
@@ -79,23 +79,23 @@ float Edge(sampler2D t, ivec2 p) {
 }
 
 void main() {
-  ColorComponents acc = CombinedLight(${vPosition},
-                                      ${vNormal},
-                                      ${uEyePosition},
-                                      ${uLightDescs},
-                                      ${uLightTypes},
-                                      ${uShininess});
-                                    
-  float edge = Edge(${uTexture}, ivec2(gl_FragCoord.xy));
-  vec4 info = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0);
+  ColorComponents acc = CombinedLight($vPosition,
+                                      $vNormal,
+                                      $uEyePosition,
+                                      $uLightDescs,
+                                      $uLightTypes,
+                                      $uShininess);
+
+  float edge = Edge($uTexture, ivec2(gl_FragCoord.xy));
+  vec4 info = texelFetch($uTexture, ivec2(gl_FragCoord.xy), 0);
   if (edge > 0.3) {
-      //${oFragColor}.rgb = vec3(0.0); 
-      ${oFragColor}.rgb = vec3(0.5 - edge); 
-     // ${oFragColor}.rgb = vec3(edge / (100.0 * info.w));
+      //$oFragColor.rgb = vec3(0.0);
+      $oFragColor.rgb = vec3(0.5 - edge);
+     // $oFragColor.rgb = vec3(edge / (100.0 * info.w));
     return;
-  } 
-    
-  ${oFragColor}.rgb = texture(${uTexture2}, ${vTexUV}).rgb * 0.5 + 
+  }
+
+  $oFragColor.rgb = texture($uTexture2, $vTexUV).rgb * 0.5 +
                       acc.diffuse +
                       acc.specular;
 }
@@ -115,23 +115,23 @@ final ShaderObject preparationVertexShader = ShaderObject("preparationV")
   ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
   ..SetBody([
     """
-vec3 rotate_vertex_position(vec3 pos, vec4 rot) { 
-    rot.xyz *= sin(0.5 * rot.w * ${uTime}) /  length(rot.xyz);
-    rot.w = cos(0.5 * rot.w * ${uTime});
+vec3 rotate_vertex_position(vec3 pos, vec4 rot) {
+    rot.xyz *= sin(0.5 * rot.w * $uTime) /  length(rot.xyz);
+    rot.w = cos(0.5 * rot.w * $uTime);
     return pos + 2.0 * cross(rot.xyz, cross(rot.xyz, pos) + rot.w * pos);
 }
 
 void main() {
     {
-      vec3 p = ${aPosition} * ${iaScale};
-      p = rotate_vertex_position(p, ${iaRotation});
-      p = p + ${iaTranslation};
-      gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(p, 1);
+      vec3 p = $aPosition * $iaScale;
+      p = rotate_vertex_position(p, $iaRotation);
+      p = p + $iaTranslation;
+      gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4(p, 1);
     }
     {
-      vec3 n = ${aNormal};
-      n = rotate_vertex_position(n, ${iaRotation});
-      ${vNormal} = normalize(n);
+      vec3 n = $aNormal;
+      n = rotate_vertex_position(n, $iaRotation);
+      $vNormal = normalize(n);
     }
 }
 """,
@@ -142,7 +142,7 @@ final ShaderObject preparationFragmentShader = ShaderObject("preparationF")
   ..SetBody([
     """
 void main() {
-  ${oFragColor} = vec4(${vNormal}, gl_FragCoord.w);
+  $oFragColor = vec4($vNormal, gl_FragCoord.w);
 }
   """,
   ]);
@@ -212,7 +212,7 @@ Framebuffer MakePrepareFb(ChronosGL cgl, int width, int height) {
 }
 
 Texture MakeNoiseTesture(ChronosGL cgl, Math.Random rand) {
-  HTML.CanvasElement canvas = new HTML.CanvasElement();
+  HTML.CanvasElement canvas = HTML.CanvasElement();
   canvas.width = 512;
   canvas.height = 512;
   var context = canvas.context2D;
@@ -319,17 +319,17 @@ void main() {
     ..mat.SetUniform(uDirection, VM.Vector2(0.0, 1.0));
 */
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
-    prepare.mat.ForceUniform(uTime, _lastTimeMs / 2000.0);
+    prepare.mat.ForceUniform(uTime, lastTimeMs / 2000.0);
     prepare.Run(width, height, [perspective]);
 
-    render.mat.ForceUniform(uTime, _lastTimeMs / 2000.0);
+    render.mat.ForceUniform(uTime, lastTimeMs / 2000.0);
     render.Run(width, height, [perspective, illumination]);
     /*
     horizontalBlur.Run(width, height);
@@ -337,7 +337,7 @@ void main() {
 */
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

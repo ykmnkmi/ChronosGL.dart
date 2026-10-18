@@ -1,4 +1,4 @@
-part of importer;
+part of 'lib.dart';
 
 // JSON is untyped at the decoding boundary. Check container and numeric types
 // before passing values to geometry and animation code.

@@ -33,7 +33,7 @@ const String _FragmentShader =
 #define LightDir2 vec3(1.0,-0.62886,1.0)
 #define LightColor2 vec3(0.9,0.8,1.0)
 
-#define time  (${uTime} + 38.0)
+#define time  ($uTime + 38.0)
 
 vec2 rotate(vec2 v, float a) {
   return vec2(cos(a)*v.x + sin(a)*v.y, -sin(a)*v.x + cos(a)*v.y);
@@ -182,13 +182,13 @@ void main()
   camUp = normalize(camUp-dot(camDir,camUp)*camDir); // orthogonalize
   vec3 camRight = normalize(cross(camDir,camUp));
   
-  vec2 coord =-1.0+2.0*gl_FragCoord.xy/${uCanvasSize}.xy;
-  coord.x *= ${uCanvasSize}.x/${uCanvasSize}.y;
+  vec2 coord =-1.0+2.0*gl_FragCoord.xy/$uCanvasSize.xy;
+  coord.x *= $uCanvasSize.x/$uCanvasSize.y;
    
   // Get direction for this pixel
   vec3 rayDir = normalize(camDir + (coord.x*camRight + coord.y*camUp)*FieldOfView);
   
-  ${oFragColor} = rayMarch(camPos, rayDir, scale);
+  $oFragColor = rayMarch(camPos, rayDir, scale);
 }
 
 """;

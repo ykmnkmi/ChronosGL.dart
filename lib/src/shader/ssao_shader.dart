@@ -1,4 +1,4 @@
-part of chronosshader;
+part of 'lib.dart';
 
 final ShaderObject ssaoVertexShader = ShaderObject("SSAOV")
   ..AddAttributeVars([aPosition, aTexUV])
@@ -59,8 +59,8 @@ final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
         float ny = dot ( coord, vec2( 12.9898, 78.233 ) * 2.0 );
         noise = clamp( fract ( 43758.5453 * sin( vec2( nx, ny ) ) ), 0.0, 1.0 );
       } else {
-        float width = ${uCanvasSize}.x;
-        float height = ${uCanvasSize}.y;
+        float width = $uCanvasSize.x;
+        float height = $uCanvasSize.y;
         float ff = fract( 1.0 - coord.s * ( width / 2.0 ) );
         float gg = fract( coord.t * ( height / 2.0 ) );
         noise = vec2( 0.25, 0.75 ) * vec2( ff ) + vec2( 0.75, 0.25 ) * gg;
@@ -70,17 +70,17 @@ final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
     
 /*
     float doFog() {
-      float zdepth = unpackDepth( texture(${uDepthMap}, ${vTexUV} ) );
+      float zdepth = unpackDepth( texture($uDepthMap, $vTexUV ) );
       float depth = -cameraFar * cameraNear / ( zdepth * cameraFarMinusNear - cameraFar );
       return smoothstep( fogNear, fogFar, depth );
     }
 */  
 
     float readDepth(vec2 coord) {
-      float cameraFarPlusNear = ${uCameraFar} + ${uCameraNear};
-      float cameraFarMinusNear = ${uCameraFar} - ${uCameraNear};
-      float cameraCoef = 2.0 * ${uCameraNear};
-      return cameraCoef / ( cameraFarPlusNear - unpackDepth( texture(${uDepthMap}, coord ) ) * cameraFarMinusNear );
+      float cameraFarPlusNear = $uCameraFar + $uCameraNear;
+      float cameraFarMinusNear = $uCameraFar - $uCameraNear;
+      float cameraCoef = 2.0 * $uCameraNear;
+      return cameraCoef / ( cameraFarPlusNear - unpackDepth( texture($uDepthMap, coord ) ) * cameraFarMinusNear );
     }
     
     float compareDepths( const in float depth1, const in float depth2, inout int far ) {
@@ -100,8 +100,8 @@ final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
     float calcAO( float depth, float dw, float dh ) {
       float dd = radius - depth * radius;
       vec2 vv = vec2( dw, dh );
-      vec2 coord1 = ${vTexUV} + dd * vv;
-      vec2 coord2 = ${vTexUV} - dd * vv;
+      vec2 coord1 = $vTexUV + dd * vv;
+      vec2 coord2 = $vTexUV - dd * vv;
       float temp1 = 0.0;
       float temp2 = 0.0;
       int far = 0;
@@ -114,11 +114,11 @@ final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
     }
     
     void main() {
-      float width = ${uCanvasSize}.x;
-      float height = ${uCanvasSize}.y;
+      float width = $uCanvasSize.x;
+      float height = $uCanvasSize.y;
 
-      vec2 noise = rand( ${vTexUV} );
-      float depth = readDepth( ${vTexUV} );
+      vec2 noise = rand( $vTexUV );
+      float depth = readDepth( $vTexUV );
       float tt = clamp( depth, aoClamp, 1.0 );
       float w = ( 1.0 / width )  / tt + ( noise.x * ( 1.0 - noise.x ) );
       float h = ( 1.0 / height ) / tt + ( noise.y * ( 1.0 - noise.y ) );
@@ -147,7 +147,7 @@ final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
 */
 
       // Diffuse
-      vec3 color = texture(${uTexture}, ${vTexUV} ).rgb;
+      vec3 color = texture($uTexture, $vTexUV ).rgb;
       vec3 lumcoeff = vec3( 0.299, 0.587, 0.114 );
       float lum = dot( color.rgb, lumcoeff );
       vec3 luminance = vec3( lum );
@@ -156,8 +156,8 @@ final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
       if ( onlyAO ) {
         final = onlyAOColor * vec3( mix( vec3( ao ), vec3( 1.0 ), luminance * lumInfluence ) );
       }
-      ${oFragColor} = vec4( final, 1.0 );
-      //${oFragColor} = vec4( color, 1.0 );
+      $oFragColor = vec4( final, 1.0 );
+      //$oFragColor = vec4( color, 1.0 );
     }
     
     """,

@@ -300,10 +300,10 @@ void main() {
     ..SetUniform(uColor, ColorGray8)
     ..SetUniform(uModelMatrix, VM.Matrix4.identity()..rotateX(Math.pi / 2));
 
-  double _lastTimeMs = 0.0;
+  double lastTimeMs = 0.0;
   void animate(num timeMs) {
-    double elapsed = timeMs - _lastTimeMs;
-    _lastTimeMs = timeMs + 0.0;
+    double elapsed = timeMs - lastTimeMs;
+    lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.01;
     orbit.animate(elapsed);
 
@@ -328,7 +328,7 @@ void main() {
         RangeOverTime(4.0, 30.0, 20.0, timeSec),
       );
     } else if (gEffect.value == "water") {
-      active.uniforms.ForceUniform(uTime, _lastTimeMs / 1000.0);
+      active.uniforms.ForceUniform(uTime, lastTimeMs / 1000.0);
     }
 
     // Draw logo to fb
@@ -340,7 +340,7 @@ void main() {
     active.program.Draw(unitQuad, [active.uniforms]);
 
     HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(_lastTimeMs);
+    fps.UpdateFrameCount(lastTimeMs);
   }
 
   List<Future<Object>> futures = [LoadRaw(modelFile)];
