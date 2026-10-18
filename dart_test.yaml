@@ -22,5 +22,6 @@ presets:
       - test/shader_syntax.dart
       - test/render_golden_test.dart
       - test/golden_comparison_test.dart
+      - test/type_boundaries_test.dart
     concurrency: 1
     timeout: 60s

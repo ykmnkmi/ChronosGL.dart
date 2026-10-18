@@ -20,15 +20,16 @@ String _AddLineNumbers(String text) {
   return out.join("\n");
 }
 
-GlShader _CompileShader(dynamic gl, int type, String text) {
+GlShader _CompileShader(WEBGL.RenderingContext2 gl, int type, String text) {
   GlShader shader = gl.createShader(type);
 
   gl.shaderSource(shader, text);
   gl.compileShader(shader);
 
-  bool result = gl.getShaderParameter(shader, GL_COMPILE_STATUS);
+  bool result = gl.getShaderParameter(shader, GL_COMPILE_STATUS) as bool;
   if (!result) {
-    String error = gl.getShaderInfoLog(shader);
+    String error =
+        gl.getShaderInfoLog(shader) ?? 'Unknown shader compilation error';
     LogError("Compilation failed:");
     LogError(_AddLineNumbers(text));
     LogError("Failure:");
@@ -57,12 +58,14 @@ class ChronosGL {
       "failIfMajorPerformanceCaveat": false,
     };
 
-    _gl = _canvas.getContext("webgl2", attributes);
-    if (_gl == null) {
+    final context =
+        _canvas.getContext("webgl2", attributes) as WEBGL.RenderingContext2?;
+    if (context == null) {
       throw Exception(NO_WEBGL_MESSAGE);
     }
+    _gl = context;
 
-    dynamic actual = _gl.getContextAttributes();
+    final actual = _gl.getContextAttributes();
     LogInfo("ChronosGL Config: ${actual}");
 
     _gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -72,9 +75,10 @@ class ChronosGL {
     }
   }
 
-  // either WebGL2RenderingContext' or 'RenderingContext2'
-  dynamic _gl;
+  late final WEBGL.RenderingContext2 _gl;
 
+  // Keep the HTML dependency out of core. The WebGL context is checked once
+  // at this browser boundary and is statically typed everywhere after that.
   final dynamic _canvas;
 
   GlProgram CompileWholeProgram(
@@ -101,19 +105,19 @@ class ChronosGL {
 
     _gl.linkProgram(program);
 
-    if (!_gl.getProgramParameter(program, GL_LINK_STATUS)) {
-      throw _gl.getProgramInfoLog(program);
+    if (!(_gl.getProgramParameter(program, GL_LINK_STATUS) as bool)) {
+      throw _gl.getProgramInfoLog(program) ?? 'Unknown program linking error';
     }
 
     return program;
   }
 
-  void ChangeArrayBuffer(GlBuffer buffer, List data) {
+  void ChangeArrayBuffer(GlBuffer buffer, List<num> data) {
     _gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
     _gl.bufferData(GL_ARRAY_BUFFER, data, GL_DYNAMIC_DRAW);
   }
 
-  void GetArrayBuffer(GlBuffer buffer, List data) {
+  void GetArrayBuffer(GlBuffer buffer, TypedData data) {
     _gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
     _gl.getBufferSubData(GL_ARRAY_BUFFER, 0, data);
   }
@@ -126,7 +130,7 @@ class ChronosGL {
 
   void GetTransformBuffer(GlBuffer buf, TypedData data) {
     _gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    _gl.getBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, data.buffer);
+    _gl.getBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, data);
   }
 
   GlBuffer createBuffer() {
@@ -140,7 +144,7 @@ class ChronosGL {
   }
 
   // Not really useful other than tesying
-  void ChangeTransformBuffer(GlBuffer buffer, List data) {
+  void ChangeTransformBuffer(GlBuffer buffer, List<num> data) {
     _gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
     _gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, data, GL_DYNAMIC_DRAW);
   }
@@ -157,7 +161,8 @@ class ChronosGL {
   }
 
   GlVertexArrayObject createVertexArray() {
-    return _gl.createVertexArray();
+    return _gl.createVertexArray() ??
+        (throw StateError('Cannot create vertex array'));
   }
 
   void bindVertexArray(GlVertexArrayObject vao) {
@@ -205,7 +210,8 @@ class ChronosGL {
   }
 
   GlTransformFeedback createTransformFeedback() {
-    return _gl.createTransformFeedback();
+    return _gl.createTransformFeedback() ??
+        (throw StateError('Cannot create transform feedback'));
   }
 
   void bindTransformFeedback(GlTransformFeedback transform) {
@@ -300,7 +306,7 @@ class ChronosGL {
     _gl.texParameterf(kind1, kind2, val);
   }
 
-  dynamic getParameter(int kind) {
+  Object? getParameter(int kind) {
     return _gl.getParameter(kind);
   }
 
@@ -323,7 +329,7 @@ class ChronosGL {
     int iformat,
     int format,
     int type,
-    dynamic data,
+    Object data,
   ) {
     _gl.texImage2D(target, level, iformat, format, type, data);
   }
@@ -337,7 +343,7 @@ class ChronosGL {
     int border,
     int format,
     int type,
-    dynamic data,
+    TypedData? data,
   ) {
     _gl.texImage2D(target, level, iformat, w, h, border, format, type, data);
   }
@@ -355,7 +361,7 @@ class ChronosGL {
     int h,
     int format,
     int type,
-    dynamic data,
+    TypedData? data,
   ) {
     _gl.texSubImage2D(target, level, x, y, w, h, format, type, data);
   }
@@ -402,7 +408,7 @@ class ChronosGL {
   }
 
   GlSampler createSampler() {
-    return _gl.createSampler();
+    return _gl.createSampler() ?? (throw StateError('Cannot create sampler'));
   }
 
   int getError() {
@@ -435,15 +441,15 @@ class ChronosGL {
   }
 
   String getProgramInfoLog(GlProgram program) {
-    return _gl.getProgramInfoLog(program);
+    return _gl.getProgramInfoLog(program) ?? '';
   }
 
   void pixelStorei(int type, int value) {
     _gl.pixelStorei(type, value);
   }
 
-  List getSupportedExtensions() {
-    return _gl.getSupportedExtensions();
+  List<String> getSupportedExtensions() {
+    return _gl.getSupportedExtensions() ?? <String>[];
   }
 
   Object? getExtension(String name) {
@@ -463,9 +469,9 @@ class ChronosGL {
     if (ext == null) {
       return kNoAnisotropicFilterLevel;
     }
-    return getParameter(
+    return (getParameter(
       WEBGL.ExtTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT,
-    );
+    ) as num).toInt();
   }
 
   void draw(

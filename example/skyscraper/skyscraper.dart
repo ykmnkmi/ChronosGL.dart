@@ -100,7 +100,7 @@ void main() {
     vMin: 0.01,
     vMax: 0.99,
   );
-  List uvs = gb.attributes[aTexUV]!;
+  final uvs = gb.attributes[aTexUV]! as List<VM.Vector2>;
   // change top and bottom face
   for (int i = 2 * 4; i < 4 * 4; i++) {
     uvs[i].setFrom(q);

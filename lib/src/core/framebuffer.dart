@@ -49,8 +49,8 @@ class FramebufferFormat {
   FramebufferFormat(this.format, this.channels, this.type);
 
   FramebufferFormat.fromActive(ChronosGL cgl)
-    : format = cgl.getParameter(GL_IMPLEMENTATION_COLOR_READ_FORMAT),
-      type = cgl.getParameter(GL_IMPLEMENTATION_COLOR_READ_TYPE) {
+    : format = cgl.getParameter(GL_IMPLEMENTATION_COLOR_READ_FORMAT) as int,
+      type = cgl.getParameter(GL_IMPLEMENTATION_COLOR_READ_TYPE) as int {
     channels = TextureChannelsByType(format);
   }
 

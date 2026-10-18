@@ -66,6 +66,13 @@ dart pub get --enforce-lockfile
 dart test -P all
 ```
 
+Static analysis enables `strict-casts`, `strict-inference`, and
+`strict-raw-types` across the package, examples, tests, and tools:
+
+```sh
+dart analyze
+```
+
 Golden tests use Dart and Chrome with SwiftShader; no Node.js packages,
 Playwright, or Docker are required. To compare or explicitly update the PNGs:
 

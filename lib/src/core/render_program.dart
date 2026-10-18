@@ -111,7 +111,7 @@ class RenderProgram extends NamedEntity {
     return _uniformLocations.containsKey(canonical);
   }
 
-  void _SetControl(String canonical, dynamic val) {
+  void _SetControl(String canonical, Object val) {
     switch (canonical) {
       case cDepthTest:
         if (val == true) {
@@ -121,7 +121,7 @@ class RenderProgram extends NamedEntity {
         }
         break;
       case cDepthFunc:
-        _cgl.depthFunc(val);
+        _cgl.depthFunc(val as int);
         break;
       case cStencilFunc:
         final TheStencilFunction sfun = val as TheStencilFunction;
@@ -137,7 +137,7 @@ class RenderProgram extends NamedEntity {
         _cgl.stencilOp(op.fail, op.zfail, op.zpass);
         break;
       case cDepthWrite:
-        _cgl.depthMask(val);
+        _cgl.depthMask(val as bool);
         break;
       case cBlendEquation:
         final TheBlendEquation beq = val as TheBlendEquation;
@@ -154,7 +154,7 @@ class RenderProgram extends NamedEntity {
         _cgl.colorMask(bb[0], bb[1], bb[2], bb[3]);
         break;
       case cStencilWrite:
-        _cgl.stencilMask(val);
+        _cgl.stencilMask(val as int);
         break;
 
       default:
@@ -162,7 +162,7 @@ class RenderProgram extends NamedEntity {
     }
   }
 
-  void _SetUniform(String group, String canonical, dynamic val) {
+  void _SetUniform(String group, String canonical, Object val) {
     // enable only for debug
     if (_uniformsInitialized.containsKey(canonical)) {
       LogError(
@@ -179,14 +179,14 @@ class RenderProgram extends NamedEntity {
     switch (desc.type) {
       case VarTypeInt:
         if (desc.arraySize == 0) {
-          _cgl.uniform1i(l, val);
+          _cgl.uniform1i(l, val as int);
         } else if (val is Int32List) {
           _cgl.uniform1iv(l, val);
         }
         break;
       case VarTypeFloat:
         if (desc.arraySize == 0) {
-          _cgl.uniform1f(l, val);
+          _cgl.uniform1f(l, (val as num).toDouble());
         } else if (val is Float32List) {
           _cgl.uniform1fv(l, val);
         }
@@ -213,21 +213,21 @@ class RenderProgram extends NamedEntity {
         if (desc.arraySize == 0) {
           _cgl.uniform4fv(l, (val as VM.Vector4).storage);
         } else {
-          _cgl.uniform4fv(l, val);
+          _cgl.uniform4fv(l, val as Float32List);
         }
         break;
       case VarTypeVec3:
         if (desc.arraySize == 0) {
           _cgl.uniform3fv(l, (val as VM.Vector3).storage);
         } else {
-          _cgl.uniform3fv(l, val);
+          _cgl.uniform3fv(l, val as Float32List);
         }
         break;
       case VarTypeVec2:
         if (desc.arraySize == 0) {
           _cgl.uniform2fv(l, (val as VM.Vector2).storage);
         } else {
-          _cgl.uniform2fv(l, val);
+          _cgl.uniform2fv(l, val as Float32List);
         }
         break;
       case VarTypeSampler2D:
@@ -272,12 +272,12 @@ class RenderProgram extends NamedEntity {
       switch (canonical.codeUnitAt(0)) {
         case prefixUniform:
           if (_HasUniform(canonical)) {
-            _SetUniform(group, canonical, inputs[canonical]);
+            _SetUniform(group, canonical, inputs[canonical]!);
             ++count;
           }
           break;
         case prefixControl:
-          _SetControl(canonical, inputs[canonical]);
+          _SetControl(canonical, inputs[canonical]!);
           ++count;
           break;
       }

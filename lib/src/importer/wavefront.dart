@@ -16,7 +16,7 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
   Map<String, int> groups = {};
 
   final RegExp lineEnd = RegExp(r"\s*\n");
-  final dynamic sep = RegExp(r"\s+");
+  final RegExp sep = RegExp(r"\s+");
 
   final List<VM.Vector3> vertices = [];
   final List<VM.Vector3> normals = [];

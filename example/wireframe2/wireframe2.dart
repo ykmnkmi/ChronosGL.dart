@@ -66,8 +66,8 @@ void main() {
 
   List<Future<Object>> futures = [LoadRaw(meshFile)];
 
-  Future.wait(futures).then((List list) {
-    GeometryBuilder gb = ImportGeometryFromWavefront(list[0]);
+  Future.wait(futures).then((list) {
+    GeometryBuilder gb = ImportGeometryFromWavefront(list[0] as String);
     print(gb);
     MeshData mdWire = GeometryBuilderToMeshDataWireframe(
       meshFile,

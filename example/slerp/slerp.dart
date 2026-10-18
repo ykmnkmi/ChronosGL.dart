@@ -148,7 +148,7 @@ void main() {
     HTML.window.animationFrame.then(animate);
   }
 
-  Future.wait(gLoadables).then((List list) {
+  Future.wait(gLoadables).then((list) {
     animate(0.0);
   });
 }

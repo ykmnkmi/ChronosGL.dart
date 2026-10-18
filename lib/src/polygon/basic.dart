@@ -198,7 +198,7 @@ List<VM.Vector3> GeneralProjection(List<VM.Vector2> contour, VM.Matrix3 mat) {
   List<VM.Vector3> out = List.generate(contour.length, (i) {
     t.x = contour[i].x;
     t.y = contour[i].y;
-    return mat * t;
+    return mat.transformed(t);
   });
   return out;
 }

@@ -185,7 +185,7 @@ class TypedTextureMutable extends Texture {
     TextureProperties prop,
     int format,
     int datatype,
-    dynamic /* */ data,
+    TypedData? data,
   ) : super(cgl, GL_TEXTURE_2D, url, prop) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texImage2D(
@@ -209,7 +209,7 @@ class TypedTextureMutable extends Texture {
   final int _height;
   final int _internalFormat;
 
-  void UpdateContent(Object data, int format, int datatype) {
+  void UpdateContent(TypedData data, int format, int datatype) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texImage2D(
       GL_TEXTURE_2D,
@@ -226,7 +226,7 @@ class TypedTextureMutable extends Texture {
   }
 
   void UpdateContentPartial(
-    Object data,
+    TypedData data,
     int formatType,
     int scalarType,
     int x,
@@ -277,7 +277,7 @@ class ImageTexture extends Texture {
     _cgl.bindTexture(_textureType, null);
   }
 
-  dynamic _element; // CanvasElement, ImageElement, VideoElement
+  final Object _element; // CanvasElement, ImageElement, VideoElement
 
   void SetImageData(Object data) {
     _cgl.bindTexture(_textureType, _texture);
@@ -307,7 +307,7 @@ const List<int> _kCubeModifier = [
 ];
 
 class CubeTexture extends Texture {
-  CubeTexture(ChronosGL cgl, String url, List images)
+  CubeTexture(ChronosGL cgl, String url, List<Object> images)
     : super(cgl, GL_TEXTURE_CUBE_MAP, url, TextureProperties()..clamp = true) {
     assert(images.length == _kCubeModifier.length);
     properties.InstallEarly(_cgl, _textureType);

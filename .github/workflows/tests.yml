@@ -23,6 +23,8 @@ jobs:
           chrome-version: '155.0.8059.80'
       - name: Install locked dependencies
         run: dart pub get --enforce-lockfile
+      - name: Build web examples and test bootstraps
+        run: dart run build_runner build --output=example:build/example
       - name: Analyze
         run: dart analyze
       - name: Test

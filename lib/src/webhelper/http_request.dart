@@ -5,18 +5,18 @@ Future<String> LoadRaw(String url) {
   HTML.HttpRequest hr = HTML.HttpRequest();
   hr.open("GET", url);
   hr.onLoadEnd.listen((e) {
-    c.complete(hr.response);
+    c.complete(hr.responseText);
   });
   hr.send('');
   return c.future;
 }
 
-Future<Map> LoadJson(String url) {
-  Completer<Map> c = Completer();
+Future<Map<String, Object?>> LoadJson(String url) {
+  Completer<Map<String, Object?>> c = Completer();
   HTML.HttpRequest hr = HTML.HttpRequest();
   hr.open("GET", url);
   hr.onLoadEnd.listen((e) {
-    c.complete(json.decode(hr.response));
+    c.complete(json.decode(hr.responseText!) as Map<String, Object?>);
   });
   hr.send('');
   return c.future;

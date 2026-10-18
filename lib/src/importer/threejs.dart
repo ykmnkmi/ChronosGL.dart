@@ -1,10 +1,10 @@
 part of importer;
 
-int _FindSkinMultiplier(Map<dynamic, dynamic> json) {
-  final List? SkinIndex = json["skinIndices"];
-  final List? SkinWeight = json["skinWeights"];
+int _FindSkinMultiplier(Map<String, Object?> json) {
+  final SkinIndex = json["skinIndices"] as List<Object?>?;
+  final SkinWeight = json["skinWeights"] as List<Object?>?;
   if (SkinIndex == null || SkinIndex.length == 0) return 0;
-  final int vertexLength = json["vertices"].length ~/ 3;
+  final int vertexLength = _JsonList(json["vertices"]).length ~/ 3;
   final int skinMultiplier = SkinIndex.length ~/ vertexLength;
 
   assert(vertexLength * skinMultiplier == SkinIndex.length);
@@ -14,22 +14,29 @@ int _FindSkinMultiplier(Map<dynamic, dynamic> json) {
   return skinMultiplier;
 }
 
-List<GeometryBuilder> ImportGeometryFromThreeJsJson(Map json) {
+List<GeometryBuilder> ImportGeometryFromThreeJsJson(Map<String, Object?> json) {
   List<GeometryBuilder> out = [];
   //
   final int skinMultiplier = _FindSkinMultiplier(json);
-  final List<int> Faces = _Intify(json["faces"]);
+  final List<int> Faces = _Intify(_JsonList(json["faces"]));
   print("faces: ${Faces.length}");
 
-  final List<VM.Vector3> Vertices = ConvertToVector3List(json["vertices"]);
-  final List<VM.Vector3> Normals = ConvertToVector3List(json["normals"]);
+  final List<VM.Vector3> Vertices = ConvertToVector3List(
+    _JsonList(json["vertices"]),
+  );
+  final List<VM.Vector3> Normals = ConvertToVector3List(
+    _JsonList(json["normals"]),
+  );
   final List<VM.Vector4>? SkinIndex = skinMultiplier == 0
       ? null
-      : ConvertToVector4List(skinMultiplier, json["skinIndices"]);
+      : ConvertToVector4List(skinMultiplier, _JsonList(json["skinIndices"]));
 
   final List<VM.Vector4>? SkinWeight = skinMultiplier == 0
       ? null
-      : ConvertToVector4List(skinMultiplier, _Floatify(json["skinWeights"]));
+      : ConvertToVector4List(
+          skinMultiplier,
+          _Floatify(_JsonList(json["skinWeights"])),
+        );
   if (SkinWeight != null) {
     for (VM.Vector4 v in SkinWeight) {
       final double d = v.x + v.y + v.z + v.w;
@@ -39,7 +46,9 @@ List<GeometryBuilder> ImportGeometryFromThreeJsJson(Map json) {
     }
   }
   // TODO: support for more than one
-  final List<VM.Vector2> Uvs = ConvertToVector2List(json["uvs"][0]);
+  final List<VM.Vector2> Uvs = ConvertToVector2List(
+    _JsonList(_JsonList(json["uvs"])[0]),
+  );
   // TODO: support incomplete
   //final List Colors = json["colors"];
 
@@ -151,17 +160,17 @@ List<GeometryBuilder> ImportGeometryFromThreeJsJson(Map json) {
 }
 
 SkeletalAnimation ImportAnimationFromThreeJsJson(
-  Map json,
+  Map<String, Object?> json,
   List<Bone> skeleton,
 ) {
-  final Map animation = json["animation"];
-  final List hierarchy = animation["hierarchy"];
+  final animation = _JsonMap(json["animation"]);
+  final hierarchy = _JsonObjects(animation["hierarchy"]).toList();
   SkeletalAnimation s = SkeletalAnimation(
-    animation["name"],
-    animation["length"],
+    animation["name"] as String,
+    _JsonDouble(animation["length"]),
     hierarchy.length,
   );
-  assert(hierarchy.length == json["bones"].length);
+  assert(hierarchy.length == _JsonList(json["bones"]).length);
   for (int i = 0; i < hierarchy.length; ++i) {
     List<double> pTimes = [];
     List<VM.Vector3> pValues = [];
@@ -169,22 +178,22 @@ SkeletalAnimation ImportAnimationFromThreeJsJson(
     List<VM.Quaternion> rValues = [];
     List<double> sTimes = [];
     List<VM.Vector3> sValues = [];
-    for (Map m in hierarchy[i]["keys"]) {
-      double t = m["time"].toDouble();
+    for (final m in _JsonObjects(hierarchy[i]["keys"])) {
+      double t = _JsonDouble(m["time"]);
 
       if (m.containsKey("pos")) {
         pTimes.add(t);
-        pValues.add(MakeTransVector3(m["pos"]));
+        pValues.add(MakeTransVector3(m["pos"] as List<Object?>?));
       }
 
       if (m.containsKey("scale")) {
         sTimes.add(t);
-        sValues.add(MakeScaleVector3(m["scl"]));
+        sValues.add(MakeScaleVector3(m["scl"] as List<Object?>?));
       }
 
       if (m.containsKey("rot")) {
         rTimes.add(t);
-        rValues.add(MakeQuaternion(m["rot"]));
+        rValues.add(MakeQuaternion(m["rot"] as List<Object?>?));
       }
     }
     BoneAnimation ba = BoneAnimation(
@@ -202,17 +211,17 @@ SkeletalAnimation ImportAnimationFromThreeJsJson(
   return s;
 }
 
-List<Bone> ImportSkeletonFromThreeJsJson(Map json) {
-  final Map metadata = json["metadata"];
-  final List Bones = json["bones"];
+List<Bone> ImportSkeletonFromThreeJsJson(Map<String, Object?> json) {
+  final metadata = _JsonMap(json["metadata"]);
+  final Bones = _JsonObjects(json["bones"]).toList();
   assert(Bones.length == metadata["bones"]);
   List<Bone> out = List.generate(Bones.length, (i) {
-    Map m = Bones[i];
-    String name = m["name"];
-    int parent = m["parent"];
-    final VM.Vector3 s = MakeScaleVector3(m["scl"]);
-    final VM.Vector3 t = MakeTransVector3(m["pos"]);
-    final VM.Quaternion r = MakeQuaternion(m["rotq"]);
+    final m = Bones[i];
+    String name = m["name"] as String;
+    int parent = m["parent"] as int;
+    final VM.Vector3 s = MakeScaleVector3(m["scl"] as List<Object?>?);
+    final VM.Vector3 t = MakeTransVector3(m["pos"] as List<Object?>?);
+    final VM.Quaternion r = MakeQuaternion(m["rotq"] as List<Object?>?);
     VM.Matrix4 mat = VM.Matrix4.zero()
       ..setFromTranslationRotationScale(t, r, s);
     if (i != 0 && parent < 0) {

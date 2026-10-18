@@ -88,7 +88,7 @@ class GeometryBuilder {
   final List<Face3> faces3 = []; // only used if pointsOnly == false
   final List<Face4> faces4 = []; // only used if pointsOnly == false
   final List<VM.Vector3> vertices = [];
-  final Map<String, List> attributes = {};
+  final Map<String, List<Object>> attributes = {};
 
   void EnableAttribute(String canonical) {
     assert(
@@ -172,7 +172,7 @@ class GeometryBuilder {
     } else {
       for (String a in other.attributes.keys) {
         assert(attributes.containsKey(a), "missing attribute ${a}");
-        attributes[a]!.addAll(other.attributes[a] as List);
+        attributes[a]!.addAll(other.attributes[a]!);
       }
     }
     other.attributes.clear();

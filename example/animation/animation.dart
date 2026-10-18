@@ -173,15 +173,18 @@ void main() {
 
   List<Future<Object>> futures = [LoadJson(meshFile), LoadImage(textureFile)];
 
-  Future.wait(futures).then((List list) {
+  Future.wait(futures).then((list) {
     // Setup Texture
     Texture tex = ImageTexture(cgl, textureFile, list[1]);
     mat..SetUniform(uTexture, tex);
 
-    final Map<String, dynamic> meshJson = list[0]["meshes"][0];
-    final Map<String, dynamic> animJson = list[0]["animations"][0];
+    final json = list[0] as Map<String, Object?>;
+    final meshJson =
+        (json['meshes'] as List<Object?>)[0] as Map<String, Object?>;
+    final animJson =
+        (json['animations'] as List<Object?>)[0] as Map<String, Object?>;
     VM.Matrix4 globalOffsetTransform = VM.Matrix4.identity();
-    List<Bone> skeleton = ImportSkeletonFromAssimp2Json(list[0]);
+    List<Bone> skeleton = ImportSkeletonFromAssimp2Json(json);
     final GeometryBuilder gb = ImportGeometryFromAssimp2JsonMesh(
       meshJson,
       skeleton,

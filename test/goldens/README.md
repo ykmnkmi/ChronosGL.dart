@@ -16,7 +16,8 @@ dart pub get --enforce-lockfile
 dart run tool/goldens.dart
 ```
 
-To run all 15 existing checks plus the new golden and comparison tests:
+To run the existing checks, golden comparisons, and importer/GPU data regression
+tests:
 
 ```sh
 dart test -P all
@@ -89,6 +90,9 @@ color preservation, tolerance boundaries, and dimension changes.
 The initial references were captured on Windows with Dart 3.13.5 and
 Chrome 155.0.8059.80. `dart_test.yaml` defines `golden_chrome`, which forces ANGLE
 SwiftShader, and the rendering tests verify that SwiftShader is actually active.
+The test annotations use the built-in `chrome` selector so that `build_test` can
+generate bootstraps while building or serving examples. The presets select the
+custom `golden_chrome` runtime, which inherits `chrome` and adds SwiftShader flags.
 `environment.json` records the browser user agent (which reports a reduced Chrome
 version), renderer, WebGL version, host OS, and Dart version for diagnosis.
 

@@ -63,7 +63,7 @@ void main() {
 
   List<Future<Object>> futures = LoadCubeImages("skybox_", ".png");
 
-  Future.wait(futures).then((List list) {
+  Future.wait(futures).then((list) {
     Texture cubeTex = CubeTexture(cgl, "stars", list);
     mat.SetUniform(uCubeTexture, cubeTex);
     animate(0.0);

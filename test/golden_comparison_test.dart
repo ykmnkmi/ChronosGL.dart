@@ -1,4 +1,4 @@
-@TestOn('golden_chrome')
+@TestOn('chrome')
 library;
 
 import 'dart:typed_data';

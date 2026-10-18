@@ -29,7 +29,7 @@ void LogEvent(String kind, String device_channel, dynamic data) {
 final Map<String, int> gMidiIdToPortIndex = {};
 
 void EventHandler(int device, dynamic msg) {
-  dynamic data = msg.data;
+  final data = msg.data as List<int>;
   final int kind = data[0] >> 4;
   final int channel = data[0] & 0xf;
   if (kind == MIDI_NOTE_ON) {

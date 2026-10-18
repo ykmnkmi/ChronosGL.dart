@@ -88,7 +88,7 @@ List<List<VM.Vector3>> BevelStrips(
       v.x = contour[i].x + gradient[i].x * s.x;
       v.y = contour[i].y + gradient[i].y * s.x;
       v.z = s.y;
-      return m * v;
+      return m.transformed(v);
     });
     out.add(c);
   }

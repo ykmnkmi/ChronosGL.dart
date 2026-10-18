@@ -115,7 +115,7 @@ void main() {
 
   List<Future<Object>> futures = [LoadJson(modelFile), LoadImage(bumpmapFile)];
 
-  Future.wait(futures).then((List list) {
+  Future.wait(futures).then((list) {
     // Setup Bumpmap
     final TextureProperties tp = TextureProperties()
       ..SetMipmapLinear()
@@ -127,7 +127,9 @@ void main() {
       ..SetUniform(uBumpMap, bumpmap)
       ..SetUniform(uBumpScale, 0.01);
     // Setup Mesh
-    List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(list[0]);
+    List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(
+      list[0] as Map<String, Object?>,
+    );
     print(gbs[0]);
     MeshData md = GeometryBuilderToMeshData(
       modelFile,

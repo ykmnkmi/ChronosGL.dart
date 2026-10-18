@@ -345,9 +345,9 @@ void main() {
 
   List<Future<Object>> futures = [LoadRaw(modelFile)];
 
-  Future.wait(futures).then((List list) {
+  Future.wait(futures).then((list) {
     // Setup Mesh
-    GeometryBuilder gb = ImportGeometryFromWavefront(list[0]);
+    GeometryBuilder gb = ImportGeometryFromWavefront(list[0] as String);
     ctLogo = GeometryBuilderToMeshData("", progDemo, gb);
     animate(0.0);
   });

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:math' as Math;
 import 'dart:html' as HTML;
+import 'dart:js_interop';
 
 import 'package:web/web.dart' as JS;
 
@@ -182,8 +183,8 @@ class Gamepad {
   bool justReleased = false;
 
   void Poll() {
-    dynamic gp;
-    dynamic pads = JS.window.navigator.getGamepads();
+    JS.Gamepad? gp;
+    final pads = JS.window.navigator.getGamepads().toDart;
     for (var p in pads) {
       gp = p;
       break;
@@ -191,8 +192,8 @@ class Gamepad {
     print("polling");
     if (gp != null) {
       List<bool> bs = [];
-      for (dynamic b in gp.buttons) {
-        bs.add(b.pressed!);
+      for (final b in gp.buttons.toDart) {
+        bs.add(b.pressed);
       }
       info.innerHtml = "${gp.id}<br>axes: ${gp.axes}<br>buttons: ${bs}";
     }

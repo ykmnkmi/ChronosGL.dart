@@ -143,7 +143,7 @@ void main() {
     LoadImage(normalmapFile),
   ];
 
-  Future.wait(futures).then((List list) {
+  Future.wait(futures).then((list) {
     // Setup Maps
     ImageTexture texture = ImageTexture(cgl, textureFile, list[1]);
     /*
@@ -157,7 +157,9 @@ void main() {
     mat.SetUniform(uNormalScale, 0.8);
 
     // Setup Mesh
-    List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(list[0]);
+    List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(
+      list[0] as Map<String, Object?>,
+    );
     print(gbs[0]);
     MeshData md = GeometryBuilderToMeshData(
       modelFile,

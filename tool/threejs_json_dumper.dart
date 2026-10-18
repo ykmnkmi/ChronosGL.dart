@@ -12,8 +12,8 @@ import 'package:chronosgl/src/importer/lib.dart';
 import 'package:chronosgl/src/animation/lib.dart';
 
 // Note this is similar to lib/src/importer/threejs.dart
-void DumpFaces(Map json, bool verbose) {
-  final List<int> faces = json["faces"];
+void DumpFaces(Map<String, Object?> json, bool verbose) {
+  final faces = (json["faces"] as List<Object?>).cast<int>();
   int i = 0;
   int count = 0;
 
@@ -106,24 +106,26 @@ void DumpFaces(Map json, bool verbose) {
   print("max Normal: ${mNormal}");
 }
 
-void ShowInfo(Map json) {
-  List materials = json["materials"];
-  List<double> vertices = json["vertices"];
-  List<double> normals = json["normals"];
-  List<double> colors = json["colors"];
-  List<double> uvs = [];
-  assert(json["uvs"].length <= 1);
-  if (json["uvs"].length == 1) {
-    uvs = json["uvs"][0];
+void ShowInfo(Map<String, Object?> json) {
+  final materials = json["materials"] as List<Object?>;
+  final vertices = json["vertices"] as List<Object?>;
+  final normals = json["normals"] as List<Object?>;
+  final colors = json["colors"] as List<Object?>;
+  List<Object?> uvs = [];
+  final uvLayers = json["uvs"] as List<Object?>;
+  assert(uvLayers.length <= 1);
+  if (uvLayers.length == 1) {
+    uvs = uvLayers[0] as List<Object?>;
   }
-  List<int> faces = json["faces"];
-  List bones = json["bones"];
-  List<Map> morphTargets = json["morphTargets"] ?? [];
+  final faces = json["faces"] as List<Object?>;
+  final bones = json["bones"] as List<Object?>;
+  final morphTargets = (json["morphTargets"] as List<Object?>? ?? [])
+      .cast<Map<String, Object?>>();
 
-  List<int> skinIndices = json["skinIndices"];
-  List<double> skinWeights = json["skinWeights"];
-  Map animation = json["animation"];
-  Object metadata = json["metadata"];
+  final skinIndices = json["skinIndices"] as List<Object?>;
+  final skinWeights = json["skinWeights"] as List<Object?>;
+  final animation = json["animation"] as Map<String, Object?>;
+  final metadata = json["metadata"];
 
   print("meta: ${metadata}");
   print("materials: ${materials.length}");
@@ -136,8 +138,10 @@ void ShowInfo(Map json) {
   print("skinIndices: ${skinIndices.length} ${skinIndices.length ~/ 2}");
   print("skinWeigths: ${skinWeights.length}");
   print("animation: ${animation['name']}");
-  for (Map m in morphTargets) {
-    print("morphTarget: ${m['name']} ${m['vertices'].length}");
+  for (final m in morphTargets) {
+    print(
+      "morphTarget: ${m['name']} ${(m['vertices'] as List<Object?>).length}",
+    );
   }
 }
 
@@ -151,9 +155,9 @@ void main(List<String> arguments) {
 
     print("reading mesh from: ${p}");
     var meshData = new File(p).readAsStringSync();
-    dynamic jsonData = json.decode(meshData);
+    final jsonData = json.decode(meshData) as Map<String, Object?>;
     ShowInfo(jsonData);
-    DumpFaces(jsonData, argResults['faces']);
+    DumpFaces(jsonData, argResults['faces'] as bool);
 
     List<GeometryBuilder> gb = ImportGeometryFromThreeJsJson(jsonData);
     print(gb);

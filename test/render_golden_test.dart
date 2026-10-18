@@ -1,4 +1,4 @@
-@TestOn('golden_chrome')
+@TestOn('chrome')
 library;
 
 import 'package:test/test.dart';
@@ -16,7 +16,7 @@ void main() {
       expect(
         environment['renderer'].toString(),
         contains('SwiftShader'),
-        reason: 'Run dart run tool/goldens.dart to use the software renderer',
+        reason: 'Run dart test -P goldens to use the software renderer',
       );
       final image = scene.render();
       var foregroundPixels = 0;

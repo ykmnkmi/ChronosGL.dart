@@ -74,7 +74,7 @@ class MeshData extends NamedEntity {
 
   late Float32List _vertices;
   List<int>? _faces;
-  Map<String, List> _attributes = {};
+  Map<String, List<num>> _attributes = {};
 
   void clearData() {
     for (String canonical in _buffers.keys) {
@@ -85,7 +85,7 @@ class MeshData extends NamedEntity {
     }
   }
 
-  void ChangeAttributeData(String canonical, List data, int width) {
+  void ChangeAttributeData(String canonical, List<num> data, int width) {
     if (debug) print("ChangeBuffer ${canonical} ${data.length}");
     if (canonical.codeUnitAt(0) == prefixInstancer) {
       assert(
@@ -127,7 +127,7 @@ class MeshData extends NamedEntity {
     return _instances;
   }
 
-  List GetAttribute(String canonical) {
+  List<num> GetAttribute(String canonical) {
     return _attributes[canonical]!;
   }
 
@@ -153,7 +153,7 @@ class MeshData extends NamedEntity {
     );
   }
 
-  void AddAttribute(String canonical, List data, int width) {
+  void AddAttribute(String canonical, List<num> data, int width) {
     final bool instanced = canonical.codeUnitAt(0) == prefixInstancer;
     if (instanced && _instances == 0) {
       _instances = data.length ~/ width;
@@ -215,7 +215,7 @@ void _GeometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
       LogInfo("Dropping unnecessary attribute: ${canonical}");
       continue;
     }
-    List lst = gb.attributes[canonical]!;
+    List<Object> lst = gb.attributes[canonical]!;
     ShaderVarDesc desc = RetrieveShaderVarDesc(canonical);
 
     //print("${md.name} ${canonical} ${lst}");

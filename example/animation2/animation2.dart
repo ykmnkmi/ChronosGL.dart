@@ -178,12 +178,13 @@ void main() {
 
   List<Future<Object>> futures = [LoadJson(meshFile)];
 
-  Future.wait(futures).then((List list) {
+  Future.wait(futures).then((list) {
     VM.Matrix4 globalOffsetTransform = VM.Matrix4.identity();
     // Setup Mesh
-    List<GeometryBuilder> gb = ImportGeometryFromThreeJsJson(list[0]);
-    List<Bone> skeleton = ImportSkeletonFromThreeJsJson(list[0]);
-    SkeletalAnimation anim = ImportAnimationFromThreeJsJson(list[0], skeleton);
+    final json = list[0] as Map<String, Object?>;
+    List<GeometryBuilder> gb = ImportGeometryFromThreeJsJson(json);
+    List<Bone> skeleton = ImportSkeletonFromThreeJsJson(json);
+    SkeletalAnimation anim = ImportAnimationFromThreeJsJson(json, skeleton);
     // skin mesh
     {
       MeshData md = GeometryBuilderToMeshData(

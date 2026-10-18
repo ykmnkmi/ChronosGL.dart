@@ -10,12 +10,12 @@ import 'package:chronosgl/src/core/lib.dart';
 import 'package:chronosgl/src/importer/lib.dart';
 import 'package:chronosgl/src/animation/lib.dart';
 
-void ShowInfo(Map json) {
+void ShowInfo(Map<String, Object?> json) {
   for (String k in json.keys) {
-    Object val = json[k];
-    if (val is Map) {
+    Object? val = json[k];
+    if (val is Map<Object?, Object?>) {
       print("$k ${val.length}");
-    } else if (val is List) {
+    } else if (val is List<Object?>) {
       print("$k ${val.length}");
     } else {
       print("$k ${val}");
@@ -33,19 +33,19 @@ void main(List<String> arguments) {
 
     print("reading mesh from: ${p}");
     String meshData = new File(p).readAsStringSync();
-    Map<String, List> jsonData = json.decode(meshData);
+    final jsonData = json.decode(meshData) as Map<String, Object?>;
 
     List<Bone> skeleton = ImportSkeletonFromAssimp2Json(jsonData);
 
     print("Bones: ${skeleton.length}");
     GeometryBuilder gb = ImportGeometryFromAssimp2JsonMesh(
-      jsonData["meshes"]?[0],
+      (jsonData["meshes"] as List<Object?>)[0] as Map<String, Object?>,
       skeleton,
     );
     print(gb);
 
     SkeletalAnimation anim = ImportAnimationFromAssimp2Json(
-      jsonData["animations"]?[0],
+      (jsonData["animations"] as List<Object?>)[0] as Map<String, Object?>,
       skeleton,
     );
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
