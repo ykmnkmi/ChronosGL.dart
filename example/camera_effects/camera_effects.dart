@@ -134,10 +134,6 @@ void RegisterEffects(ChronosGL cgl) {
       ..SetUniform(uColor, ConvolutionOffsetBlur),
   );
 
-  Effect(cgl, medianFilter3Shader, UniformGroup("median3"));
-
-  Effect(cgl, medianFilter5Shader, UniformGroup("median5"));
-
   for (String o in Effect.all.keys) {
     gEffect.appendHtml("<option>$o</option>");
   }
