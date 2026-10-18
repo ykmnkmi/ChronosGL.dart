@@ -234,7 +234,7 @@ void main() {
       theNodes.ctLogo = Node(md.name, md, theNodes.material)
         ..rotX(Math.pi / 2.0)
         ..rotZ(Math.pi)
-        ..transform.scale(0.25, 0.25, 0.25)
+        ..transform.scaleByDouble(0.25, 0.25, 0.25, 1.0)
         ..enabled = false;
       scene_pnc_novertexmovement.add(theNodes.ctLogo);
       //  ctLogo.invert=true;  // ???????????

@@ -174,7 +174,6 @@ class RenderProgram extends NamedEntity {
     // Note, we could make this smarter and skip
     // overwriting values with the same values;
     ShaderVarDesc desc = RetrieveShaderVarDesc(canonical);
-    if (desc == null) throw "unknown ${canonical}";
     assert(_uniformLocations.containsKey(canonical));
     GlUniformLocation l = _uniformLocations[canonical]!;
     switch (desc.type) {

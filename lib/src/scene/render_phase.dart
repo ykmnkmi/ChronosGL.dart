@@ -59,14 +59,11 @@ void drawRecursively(
 
 /// represents a sequence of Scenes.
 class RenderPhase extends NamedEntity {
-  RenderPhase(String name, this._cgl, [Framebuffer? framebuffer])
-    : _framebuffer = framebuffer != null
-          ? framebuffer
-          : Framebuffer.Screen(_cgl),
+  RenderPhase(String name, ChronosGL cgl, [Framebuffer? framebuffer])
+    : _framebuffer = framebuffer ?? Framebuffer.Screen(cgl),
       super(name);
 
   late Framebuffer _framebuffer;
-  final ChronosGL _cgl;
   final List<Scene> _scenes = <Scene>[];
   int _clear_mode = GL_CLEAR_ALL;
 

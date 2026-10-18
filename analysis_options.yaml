@@ -1,9 +1,5 @@
-# https://www.dartlang.org/guides/language/analysis-options
-# http://dart-lang.github.io/linter/lints/
-analyzer:
-  strong-mode:
-      implicit-dynamic: false
-#      implicit-casts: false
+# https://dart.dev/tools/analysis
+# https://dart.dev/tools/linter-rules
 
 linter:
   rules:
@@ -18,7 +14,6 @@ linter:
     - empty_statements
     - no_adjacent_strings_in_list
     - no_duplicate_case_values
-    - one_member_abstracts
     - prefer_collection_literals
 #    - prefer_conditional_assignment
     - prefer_const_constructors

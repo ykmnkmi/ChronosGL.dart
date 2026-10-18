@@ -85,7 +85,8 @@ void main() {
   // Sky Sphere
   MeshData md = ShapeIcosahedron(sceneSky.program, subdivisions: 3);
   //..multiplyVertices(100);
-  Node m = Node(md.name, md, mat)..transform.scale(100.0);
+  Node m = Node(md.name, md, mat)
+    ..transform.scaleByDouble(100.0, 100.0, 100.0, 1.0);
   sceneSky.add(m);
 
   // 0.01 and 0.99 is to remove some artifacts on the edges

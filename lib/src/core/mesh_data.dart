@@ -169,7 +169,6 @@ class MeshData extends NamedEntity {
   }
 
   void ChangeFaces(List<int> faces) {
-    assert(_vertices != null);
     if (_vertices.length < 3 * 256) {
       _faces = Uint8List.fromList(faces);
       _indexBufferType = GL_UNSIGNED_BYTE;

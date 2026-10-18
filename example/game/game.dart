@@ -35,14 +35,6 @@ void main(void) {
 final VM.Vector2 middle = VM.Vector2(0.5, 0.5);
 
 class Sprite {
-  final bool isShip;
-  double size;
-  final VM.Vector2 pos;
-  double angle;
-  double velocity;
-  final VM.Vector2 dir = VM.Vector2.zero(); // cache cartesian direction
-  final VM.Vector3 color;
-
   Sprite(this.isShip, this.size, Math.Random rng)
     : pos = VM.Vector2.random(rng)
         ..sub(middle)
@@ -52,6 +44,14 @@ class Sprite {
       color = VM.Vector3.random(rng) {
     dir.setValues(dirX, dirY);
   }
+
+  final bool isShip;
+  double size;
+  final VM.Vector2 pos;
+  double angle;
+  double velocity;
+  final VM.Vector2 dir = VM.Vector2.zero(); // cache cartesian direction
+  final VM.Vector3 color;
 
   double get dirX => velocity * Math.sin(angle);
   double get dirY => velocity * Math.cos(angle);

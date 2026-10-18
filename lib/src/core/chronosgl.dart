@@ -27,7 +27,7 @@ GlShader _CompileShader(dynamic gl, int type, String text) {
   gl.compileShader(shader);
 
   bool result = gl.getShaderParameter(shader, GL_COMPILE_STATUS);
-  if (result != null && result == false) {
+  if (!result) {
     String error = gl.getShaderInfoLog(shader);
     LogError("Compilation failed:");
     LogError(_AddLineNumbers(text));
@@ -450,8 +450,8 @@ class ChronosGL {
     return _gl.getExtension(name);
   }
 
-  Object GetGlExtensionAnisotropic() {
-    Object ext = _gl.getExtension("EXT_texture_filter_anisotropic");
+  Object? GetGlExtensionAnisotropic() {
+    Object? ext = getExtension("EXT_texture_filter_anisotropic");
     if (ext == null) {
       LogWarn("ExtensionAnisotropic NOT SUPPORTED");
     }

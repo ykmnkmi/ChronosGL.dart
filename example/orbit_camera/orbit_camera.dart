@@ -28,18 +28,18 @@ Node MakeHead(RenderProgram program) {
   Material eyeMat = Material("eye")..SetUniform(uColor, ColorBlue);
   Node leftEye = Node("leftEye", sphere, eyeMat)
     ..setPos(-0.2, 0.4, -0.8)
-    ..transform.scale(0.2);
+    ..transform.scaleByDouble(0.2, 0.2, 0.2, 1.0);
   head.add(leftEye);
 
   Node rightEye = Node("rightEye", sphere, eyeMat)
-    ..transform.scale(0.2)
+    ..transform.scaleByDouble(0.2, 0.2, 0.2, 1.0)
     ..setPos(0.2, 0.4, -0.8);
   head.add(rightEye);
 
   Material noseMat = Material("nose")
     ..SetUniform(uColor, VM.Vector3(0.9, 0.7, 0.6));
   Node nose = Node("nose", sphere, noseMat)
-    ..transform.scale(0.3)
+    ..transform.scaleByDouble(0.3, 0.3, 0.3, 1.0)
     ..setPos(0.0, 0.0, -0.9);
   head.add(nose);
   return head;

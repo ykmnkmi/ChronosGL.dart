@@ -61,44 +61,41 @@ GeometryBuilder ImportGeometryFromAssimp2JsonMesh(
     );
   }
   List<List<int>> faces = _ListIntify(mesh['faces']);
-  assert(faces != null, "no faces");
   for (List<int> f in faces) {
     assert(f.length == 3);
     gb.AddFace3(f[0], f[1], f[2]);
   }
 
-  if (skeleton != null) {
-    Map<String, Bone> name2bone = <String, Bone>{};
-    skeleton.forEach((b) => name2bone[b.boneName] = b);
-    final int n = mesh['normals'].length ~/ 3;
-    List<VM.Vector4> indices = List.generate(n, (i) => VM.Vector4.zero());
-    List<VM.Vector4> weights = List.generate(n, (i) => VM.Vector4.zero());
-    for (Map<String, dynamic> b in mesh["bones"]) {
-      assert(name2bone.containsKey(b["name"]));
-      final Bone bone = name2bone[b["name"]] as Bone;
-      // Note: Surprising side-effect
-      bone.offsetTransform.copyFromArray(_Floatify(b["offsetmatrix"]));
-      bone.offsetTransform.transpose();
-      if (b.containsKey("weights")) {
-        final double boneIndex = bone.boneIndex.toDouble();
+  Map<String, Bone> name2bone = <String, Bone>{};
+  skeleton.forEach((b) => name2bone[b.boneName] = b);
+  final int n = mesh['normals'].length ~/ 3;
+  List<VM.Vector4> indices = List.generate(n, (i) => VM.Vector4.zero());
+  List<VM.Vector4> weights = List.generate(n, (i) => VM.Vector4.zero());
+  for (Map<String, dynamic> b in mesh["bones"]) {
+    assert(name2bone.containsKey(b["name"]));
+    final Bone bone = name2bone[b["name"]] as Bone;
+    // Note: Surprising side-effect
+    bone.offsetTransform.copyFromArray(_Floatify(b["offsetmatrix"]));
+    bone.offsetTransform.transpose();
+    if (b.containsKey("weights")) {
+      final double boneIndex = bone.boneIndex.toDouble();
 
-        for (List w in b["weights"]) {
-          final int vertex = w[0];
-          int pos;
-          for (pos = 0; pos < 4; ++pos) {
-            if (weights[vertex][pos] == 0.0) break;
-          }
-          assert(pos != 4);
-          weights[vertex][pos] = w[1].toDouble();
-          indices[vertex][pos] = boneIndex;
+      for (List w in b["weights"]) {
+        final int vertex = w[0];
+        int pos;
+        for (pos = 0; pos < 4; ++pos) {
+          if (weights[vertex][pos] == 0.0) break;
         }
+        assert(pos != 4);
+        weights[vertex][pos] = w[1].toDouble();
+        indices[vertex][pos] = boneIndex;
       }
     }
-    gb.EnableAttribute(aBoneIndex);
-    gb.EnableAttribute(aBoneWeight);
-    gb.AddAttributesVector4(aBoneIndex, indices);
-    gb.AddAttributesVector4(aBoneWeight, weights);
   }
+  gb.EnableAttribute(aBoneIndex);
+  gb.EnableAttribute(aBoneWeight);
+  gb.AddAttributesVector4(aBoneIndex, indices);
+  gb.AddAttributesVector4(aBoneWeight, weights);
 
   print("mesh ${name} ${gb} ${mesh.keys}");
   return gb;
