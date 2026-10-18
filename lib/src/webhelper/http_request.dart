@@ -44,7 +44,9 @@ Future<HTML.VideoElement> LoadVideo(String url) {
 final List<String> _kUrlInfix = ["nx", "px", "ny", "py", "nz", "pz"];
 
 List<Future<HTML.ImageElement>> LoadCubeImages(
-    String urlPrefix, String urlSuffix) {
+  String urlPrefix,
+  String urlSuffix,
+) {
   List<Future<HTML.ImageElement>> out = List.generate(_kUrlInfix.length, (i) {
     Completer<HTML.ImageElement> c = Completer();
     HTML.ImageElement image = HTML.ImageElement();

@@ -1,8 +1,7 @@
 part of shape;
 
 // modified from vectormath's version to not use arbitrary thresholds
-void buildPlaneVectors(VM.Vector3 planeNormal, VM.Vector3 u,
-    VM.Vector3 v) {
+void buildPlaneVectors(VM.Vector3 planeNormal, VM.Vector3 u, VM.Vector3 v) {
   if (planeNormal.x.abs() > 0) {
     // choose u in x-y plane
     final double a =
@@ -37,8 +36,11 @@ void buildPlaneVectors(VM.Vector3 planeNormal, VM.Vector3 u,
 /// Given the points and corresponding tangents on a curve.
 /// Compute the hull (points and normals) at radius around those points
 /// divided into segment sections.
-List<List<VM.Vector3>> TubeHullBands(List<VM.Vector3> pointsAndTangents,
-    int segments, double radius) {
+List<List<VM.Vector3>> TubeHullBands(
+  List<VM.Vector3> pointsAndTangents,
+  int segments,
+  double radius,
+) {
   final List<List<VM.Vector3>> out = [];
   // Avoid unnecessary allocations:
 
@@ -89,9 +91,14 @@ typedef void ParametricCurveFunc(double u, VM.Vector3 out);
 /// The latter is useful for situations where we expect f(start) == f(end)
 /// but because numerical inaccuracies it will be slightly off.
 /// In such situations it is better to manually duplicate the f(start)
-List<VM.Vector3> ParametricCurvePointsAndTangents(ParametricCurveFunc func,
-    double start, double end, int numPoints,
-    {double epsilon = 0.001, bool halfOpen = false}) {
+List<VM.Vector3> ParametricCurvePointsAndTangents(
+  ParametricCurveFunc func,
+  double start,
+  double end,
+  int numPoints, {
+  double epsilon = 0.001,
+  bool halfOpen = false,
+}) {
   assert(numPoints >= 2);
   final List<VM.Vector3> out = [];
   final VM.Vector3 p = VM.Vector3.zero();

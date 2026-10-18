@@ -1,4 +1,5 @@
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:html' as HTML;
 
 const String uFlameHeight = "uFlameHeight";
@@ -22,7 +23,7 @@ final ShaderObject fireFragmentShader = ShaderObject("fireShaderF")
     uRandomSeed,
     uFlameWidth,
     uFlameHeight,
-    uFlameTurbulence
+    uFlameTurbulence,
   ])
   ..SetBody([
     """
@@ -54,7 +55,7 @@ void main() {
     float v = NextValue(gl_FragCoord.xy);
     ${oFragColor}.r = v;
 }
-"""
+""",
   ]);
 
 final ShaderObject colorFragmentShader = ShaderObject("colorShaderF")
@@ -72,7 +73,7 @@ void main() {
     vec3 hsl = vec3(v / 3.0, 1.0, clamp(2.0 * v, 0.0, 1.0));
     ${oFragColor}.rgb = HSLtoRGB(hsl);
 }
-"""
+""",
   ]);
 
 void main() {
@@ -83,8 +84,11 @@ void main() {
 
   IntroduceNewShaderVar(uRandomSeed, const ShaderVarDesc("float", ""));
 
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final int w = canvas.clientWidth;
@@ -95,17 +99,43 @@ void main() {
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   final Framebuffer screen = Framebuffer.Screen(cgl);
 
-  final TypedTextureMutable t1 = TypedTextureMutable(cgl, "t1", w, h, GL_RGBA,
-      TexturePropertiesFramebuffer, GL_RGBA, GL_UNSIGNED_BYTE, null);
+  final TypedTextureMutable t1 = TypedTextureMutable(
+    cgl,
+    "t1",
+    w,
+    h,
+    GL_RGBA,
+    TexturePropertiesFramebuffer,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    null,
+  );
 
-  final TypedTextureMutable t2 = TypedTextureMutable(cgl, "t2", w, h, GL_RGBA,
-      TexturePropertiesFramebuffer, GL_RGBA, GL_UNSIGNED_BYTE, null);
+  final TypedTextureMutable t2 = TypedTextureMutable(
+    cgl,
+    "t2",
+    w,
+    h,
+    GL_RGBA,
+    TexturePropertiesFramebuffer,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    null,
+  );
 
-  final RenderProgram programFire =
-      RenderProgram("fire", cgl, nullVertexShader, fireFragmentShader);
+  final RenderProgram programFire = RenderProgram(
+    "fire",
+    cgl,
+    nullVertexShader,
+    fireFragmentShader,
+  );
 
-  final RenderProgram programColor =
-      RenderProgram("color", cgl, nullVertexShader, colorFragmentShader);
+  final RenderProgram programColor = RenderProgram(
+    "color",
+    cgl,
+    nullVertexShader,
+    colorFragmentShader,
+  );
 
   final MeshData unit = ShapeQuad(programFire, 1);
 

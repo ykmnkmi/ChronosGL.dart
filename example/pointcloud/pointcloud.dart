@@ -67,7 +67,7 @@ void main() {
     ${vColor}.g = cos(${aPosition}.y)/2.0+0.5;
     ${vColor}.b = sin(${aPosition}.z)/2.0+0.5;
 }
-"""
+""",
   ]);
 
 final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
@@ -77,14 +77,17 @@ final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
 void main() {  
     ${oFragColor}.rgb = ${vColor};
 }
-    """
+    """,
   ]);
 
 void main() {
   IntroduceNewShaderVar(aCurrentPosition, const ShaderVarDesc(VarTypeVec3, ""));
 
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -92,11 +95,20 @@ void main() {
 
   final OrbitCamera orbit = OrbitCamera(7.0, 0.0, 0.0, HTML.document.body!);
 
-  final PerspectiveResizeAware perspective =
-      PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 1000.0);
+  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    orbit,
+    0.1,
+    1000.0,
+  );
 
   final RenderProgram prog = RenderProgram(
-      "fireworks", cgl, fireworksVertexShader, fireworksFragmentShader);
+    "fireworks",
+    cgl,
+    fireworksVertexShader,
+    fireworksFragmentShader,
+  );
   final int bindingIndex = prog.GetTransformBindingIndex(tPosition);
 
   final Material material = Material("torus-mat")
@@ -104,12 +116,14 @@ void main() {
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
 
   final detail = 2;
-  final MeshData torus = ShapeTorusKnot(prog,
-      radius: 1.0,
-      tubeRadius: 0.2,
-      computeNormals: true,
-      segmentsR: 256 * detail,
-      segmentsT: 16 * detail);
+  final MeshData torus = ShapeTorusKnot(
+    prog,
+    radius: 1.0,
+    tubeRadius: 0.2,
+    computeNormals: true,
+    segmentsR: 256 * detail,
+    segmentsT: 16 * detail,
+  );
   final MeshData points = ExtractPointCloud(prog, torus, 200000);
   points.AddAttribute(aCurrentPosition, points.GetAttribute(aPosition), 3);
 
@@ -119,7 +133,10 @@ void main() {
     ..AddVertices(points.GetAttribute(aPosition) as Float32List);
 
   cgl.bindBufferBase(
-      GL_TRANSFORM_FEEDBACK_BUFFER, bindingIndex, out0.GetBuffer(aPosition));
+    GL_TRANSFORM_FEEDBACK_BUFFER,
+    bindingIndex,
+    out0.GetBuffer(aPosition),
+  );
 
   double _lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -132,7 +149,10 @@ void main() {
 
     material.ForceUniform(uTime, timeMs / 1000.0);
     cgl.bindBufferBase(
-        GL_TRANSFORM_FEEDBACK_BUFFER, bindingIndex, out0.GetBuffer(aPosition));
+      GL_TRANSFORM_FEEDBACK_BUFFER,
+      bindingIndex,
+      out0.GetBuffer(aPosition),
+    );
     points.ChangeAttributeBuffer(aCurrentPosition, out1.GetBuffer(aPosition));
     prog.Draw(points, [perspective, material]);
     var t = out0;

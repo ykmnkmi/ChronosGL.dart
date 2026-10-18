@@ -7,8 +7,9 @@ final ShaderObject lightVertexShaderGourad = ShaderObject("LightGouradV")
   ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
   ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
   ..AddUniformVars([uEyePosition, uTexture])
-  ..SetBody([
-    """
+  ..SetBody(
+    [
+      """
 void main() {
     vec4 pos = ${uModelMatrix} * vec4(${aPosition}, 1.0);
     gl_Position = ${uPerspectiveViewMatrix} * pos;
@@ -23,10 +24,10 @@ void main() {
                  acc.specular +
                  texture(${uTexture}, ${aTexUV}).rgb;
 }
-        """
-  ], prolog: [
-    StdLibShader
-  ]);
+        """,
+    ],
+    prolog: [StdLibShader],
+  );
 
 final ShaderObject lightFragmentShaderGourad = ShaderObject("LightGrouradV")
   ..AddVaryingVars([vColor])
@@ -50,15 +51,16 @@ void main() {
     ${vTexUV} = ${aTexUV};
     ${vNormal} = ${uNormalMatrix} * ${aNormal};
 }
-"""
+""",
       ]);
 final ShaderObject lightFragmentShaderBlinnPhong =
     ShaderObject("LightBlinnPhongF")
       ..AddVaryingVars([vPosition, vNormal, vTexUV])
       ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
       ..AddUniformVars([uEyePosition, uTexture])
-      ..SetBodyWithMain([
-        """
+      ..SetBodyWithMain(
+        [
+          """
 ColorComponents acc = CombinedLight(${vPosition},
                                     ${vNormal},
                                     ${uEyePosition},
@@ -70,7 +72,7 @@ ${oFragColor}.rgb = acc.diffuse +
                     acc.specular +
                     texture(${uTexture}, ${vTexUV}).rgb;
 ${oFragColor}.a = 1.0;
-"""
-      ], prolog: [
-        StdLibShader
-      ]);
+""",
+        ],
+        prolog: [StdLibShader],
+      );

@@ -23,11 +23,26 @@ const String meshFile = "../asset/dragon/dragon.obj";
 const String textureFile = "../asset/dragon/dragon.png";
 
 final Map<String, Light> gLightSources = {
-  idDirectional:
-      DirectionalLight("dir", dirLight, ColorBlack, ColorWhite, 40.0),
+  idDirectional: DirectionalLight(
+    "dir",
+    dirLight,
+    ColorBlack,
+    ColorWhite,
+    40.0,
+  ),
   idPoint: PointLight("point", posLight, ColorLiteBlue, ColorWhite, range),
-  idSpot: SpotLight("spot", posLight, spotDirLight, ColorLiteGreen, ColorWhite,
-      range, angle, 2.0, 1.0, 40.0)
+  idSpot: SpotLight(
+    "spot",
+    posLight,
+    spotDirLight,
+    ColorLiteGreen,
+    ColorWhite,
+    range,
+    angle,
+    2.0,
+    1.0,
+    40.0,
+  ),
 };
 
 final Map<String, Node> gLightVisualizers = {};
@@ -36,15 +51,23 @@ final List<Future<dynamic>> gLoadables = [];
 
 Scene LightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   Scene scene = Scene(
+    "Fixed",
+    RenderProgram(
       "Fixed",
-      RenderProgram(
-          "Fixed", cgl, solidColorVertexShader, solidColorFragmentShader),
-      uniforms);
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    uniforms,
+  );
 
   Material lightSourceMat = Material("light")..SetUniform(uColor, ColorYellow);
   for (String k in gLightSources.keys) {
     gLightVisualizers[k] = Node(
-        k, LightVisualizer(scene.program, gLightSources[k]!), lightSourceMat);
+      k,
+      LightVisualizer(scene.program, gLightSources[k]!),
+      lightSourceMat,
+    );
   }
   for (Node n in gLightVisualizers.values) {
     scene.add(n);
@@ -79,8 +102,11 @@ Node Dragon(ChronosGL cgl, RenderProgram prog) {
 }
 
 void main() {
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
@@ -94,18 +120,29 @@ void main() {
     illumination.AddLight(l);
   }
   final Scene sceneBlinnPhong = Scene(
+    "BlinnPhong",
+    RenderProgram(
       "BlinnPhong",
-      RenderProgram("BlinnPhong", cgl, lightVertexShaderBlinnPhong,
-          lightFragmentShaderBlinnPhong),
-      [perspective, illumination]);
+      cgl,
+      lightVertexShaderBlinnPhong,
+      lightFragmentShaderBlinnPhong,
+    ),
+    [perspective, illumination],
+  );
 
   final Scene sceneGourad = Scene(
+    "Gourad",
+    RenderProgram(
       "Gourad",
-      RenderProgram(
-          "Gourad", cgl, lightVertexShaderGourad, lightFragmentShaderGourad),
-      [perspective, illumination]);
+      cgl,
+      lightVertexShaderGourad,
+      lightFragmentShaderGourad,
+    ),
+    [perspective, illumination],
+  );
   assert(
-      sceneBlinnPhong.program.HasCompatibleAttributesTo(sceneGourad.program));
+    sceneBlinnPhong.program.HasCompatibleAttributesTo(sceneGourad.program),
+  );
 
   final Scene sceneFixed = LightSourceVisualizerScene(cgl, [perspective]);
 
@@ -171,8 +208,9 @@ void main() {
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
-    RenderPhase phase =
-        selectPhase.selectedIndex == 0 ? phaseBlinnPhong : phaseGourad;
+    RenderPhase phase = selectPhase.selectedIndex == 0
+        ? phaseBlinnPhong
+        : phaseGourad;
     phase.Draw();
     HTML.window.animationFrame.then(animate);
     fps.UpdateFrameCount(_lastTimeMs);

@@ -33,7 +33,7 @@ class Keyboard {
     _justPressedKeys.clear();
   }
 
-// See http://keycode.info/
+  // See http://keycode.info/
   static const int PAGEUP = 33;
   static const int PAGEDOWN = 34;
   static const int END = 35;

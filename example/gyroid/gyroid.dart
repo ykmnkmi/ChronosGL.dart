@@ -1,5 +1,7 @@
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:html' as HTML;
+
 import 'package:vector_math/vector_math.dart' as VM;
 
 // Simple Gyroid Isosurface (spherical crop)
@@ -14,7 +16,8 @@ import 'package:vector_math/vector_math.dart' as VM;
 //https://www.shadertoy.com/view/Md23Rd
 //https://www.shadertoy.com/view/Ms2Gzd
 
-const String _FragmentShader = """
+const String _FragmentShader =
+    """
 #define MaxSteps 60
 #define MinimumDistance 0.01
 #define normalDistance     0.0002
@@ -208,8 +211,12 @@ void main() {
   canvas.height = h;
   ChronosGL cgl = ChronosGL(canvas);
 
-  RenderProgram program =
-      RenderProgram("gyroid", cgl, gyroidVertexShader, gyroidFragmentShader);
+  RenderProgram program = RenderProgram(
+    "gyroid",
+    cgl,
+    gyroidVertexShader,
+    gyroidFragmentShader,
+  );
   UniformGroup uniforms = UniformGroup("plain");
   MeshData unitQuad = ShapeQuad(program, 1);
 

@@ -2,14 +2,19 @@ import 'package:chronosgl/chronosgl.dart';
 
 const String uFadeFactor = "uFadeFactor";
 
-final ShaderObject _perlinNoiseVertexShader = ShaderObject(
-    "perlinNoiseVertexShader")
-  ..AddAttributeVars([aPosition])
-  ..AddVaryingVars([vColor])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime, uFadeFactor])
-  ..SetBody([
-    PerlinNoiseFunctions,
-    """
+final ShaderObject _perlinNoiseVertexShader =
+    ShaderObject("perlinNoiseVertexShader")
+      ..AddAttributeVars([aPosition])
+      ..AddVaryingVars([vColor])
+      ..AddUniformVars([
+        uPerspectiveViewMatrix,
+        uModelMatrix,
+        uTime,
+        uFadeFactor,
+      ])
+      ..SetBody([
+        PerlinNoiseFunctions,
+        """
 vec3 lerp( vec3 vec, float factor) {
       vec.x += factor * (1. - vec.x);
       vec.y += factor * (1. - vec.y);
@@ -37,8 +42,8 @@ void main() {
     gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * 
                   vec4( ${aPosition}, 1.0 );
 }
-"""
-  ]);
+""",
+      ]);
 
 final ShaderObject _perlinNoiseFragmentShader =
     ShaderObject("perlinNoiseFragmentShader")
@@ -49,21 +54,26 @@ void main(void) {
   oFragColor.rgb = vColor;
   oFragColor.a = 1.0;
 }  
-"""
+""",
       ]);
 
 RenderProgram MakeVertexColorShader(ChronosGL cgl) {
   return RenderProgram(
-      "basic", cgl, _perlinNoiseVertexShader, _perlinNoiseFragmentShader);
+    "basic",
+    cgl,
+    _perlinNoiseVertexShader,
+    _perlinNoiseFragmentShader,
+  );
 }
 
-final ShaderObject deformingPerlinNoiseVertexShader = ShaderObject("PerlinNoiseV")
-  ..AddAttributeVars([aPosition])
-  ..AddVaryingVars([vNormal])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
-  ..SetBody([
-    PerlinNoiseFunctions,
-    """
+final ShaderObject deformingPerlinNoiseVertexShader =
+    ShaderObject("PerlinNoiseV")
+      ..AddAttributeVars([aPosition])
+      ..AddVaryingVars([vNormal])
+      ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
+      ..SetBody([
+        PerlinNoiseFunctions,
+        """
 void main() {
     vec3 normal = normalize(${aPosition});
     float f = 0.5 * pnoise(normal + ${uTime} / 3.0, vec3(10.0));
@@ -71,5 +81,5 @@ void main() {
     gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * 
                   vec4(${aPosition} + f * normal, 1.0);
 }
-"""
-  ]);
+""",
+      ]);

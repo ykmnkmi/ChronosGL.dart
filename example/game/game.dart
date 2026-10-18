@@ -18,7 +18,7 @@ void main(void) {
     gl_PointSize = ${aPointSize};
     ${vColor} = ${aColor};
 }
-"""
+""",
   ]);
 
 final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
@@ -29,7 +29,7 @@ void main(void) {
     float r = length(gl_PointCoord.xy - vec2(0.5, 0.5));
     ${oFragColor}.rgb = r*r < 0.2 ? ${vColor} : vec3(0.0, 0.0, 0.0);
 }
-"""
+""",
   ]);
 
 final VM.Vector2 middle = VM.Vector2(0.5, 0.5);
@@ -44,12 +44,12 @@ class Sprite {
   final VM.Vector3 color;
 
   Sprite(this.isShip, this.size, Math.Random rng)
-      : pos = VM.Vector2.random(rng)
-          ..sub(middle)
-          ..scale(2.0),
-        velocity = rng.nextDouble(),
-        angle = 2.0 * Math.pi * rng.nextDouble(),
-        color = VM.Vector3.random(rng) {
+    : pos = VM.Vector2.random(rng)
+        ..sub(middle)
+        ..scale(2.0),
+      velocity = rng.nextDouble(),
+      angle = 2.0 * Math.pi * rng.nextDouble(),
+      color = VM.Vector3.random(rng) {
     dir.setValues(dirX, dirY);
   }
 
@@ -169,7 +169,8 @@ void ExtractSpriteSizes(List<Sprite> sprites, Float32List out) {
   }
 }
 
-final HTML.DivElement info = HTML.document.querySelector('#info') as HTML.DivElement;
+final HTML.DivElement info =
+    HTML.document.querySelector('#info') as HTML.DivElement;
 
 class Gamepad {
   Gamepad();
@@ -262,7 +263,12 @@ void main() {
 
   final ChronosGL cgl = ChronosGL(canvas, antialiasing: false);
   // Create the main shader program for displaying the torus.
-  final RenderProgram prog = RenderProgram("basic", cgl, demoVertexShader, demoFragmentShader);
+  final RenderProgram prog = RenderProgram(
+    "basic",
+    cgl,
+    demoVertexShader,
+    demoFragmentShader,
+  );
 
   final Float32List points = Float32List(3 * (sprites.length + 2));
   final Float32List sizes = Float32List(sprites.length + 2);

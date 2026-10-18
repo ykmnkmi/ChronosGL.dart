@@ -1,4 +1,5 @@
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:html' as HTML;
 import 'dart:async';
 import 'dart:typed_data';
@@ -8,7 +9,8 @@ import 'package:vector_math/vector_math.dart' as VM;
 const String meshFile = "../asset/monster/monster.json";
 const String textureFile = "../asset/monster/monster.jpg";
 
-const String skinningVertexShader = """
+const String skinningVertexShader =
+    """
 mat4 GetBoneMatrix(sampler2D table, int index, int time) {
     vec4 v1 = texelFetch(table, ivec2(index * 4 + 0, time), 0);
     vec4 v2 = texelFetch(table, ivec2(index * 4 + 1, time), 0);
@@ -41,7 +43,8 @@ void main() {
 
 """;
 
-const String skinningFragmentShader = """
+const String skinningFragmentShader =
+    """
 void main() {
   ${oFragColor} = texture(${uTexture}, ${vTexUV});
 }
@@ -68,8 +71,11 @@ final ShaderObject animationFragmentShader = ShaderObject("AnimationV")
 final double kAnimTimeStep = 0.0333;
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
@@ -78,26 +84,38 @@ void main() {
 
   // Shows the actual animation.
   final Scene sceneAnim = Scene(
+    "animation",
+    RenderProgram(
       "animation",
-      RenderProgram(
-          "animation", cgl, animationVertexShader, animationFragmentShader),
-      [perspective]);
+      cgl,
+      animationVertexShader,
+      animationFragmentShader,
+    ),
+    [perspective],
+  );
 
   // Shows a bone only animation.
   final Scene sceneSkeleton = Scene(
+    "solid",
+    RenderProgram(
       "solid",
-      RenderProgram(
-          "solid", cgl, solidColorVertexShader, solidColorFragmentShader),
-      [perspective]);
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    [perspective],
+  );
 
   // Shows the un-animated object.
   final Scene sceneDemo = Scene(
-      "demo",
-      RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
-      [perspective]);
+    "demo",
+    RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
+    [perspective],
+  );
 
-  assert(sceneSkeleton.program
-      .HasDownwardCompatibleAttributesTo(sceneAnim.program));
+  assert(
+    sceneSkeleton.program.HasDownwardCompatibleAttributesTo(sceneAnim.program),
+  );
 
   final RenderPhaseResizeAware phase =
       RenderPhaseResizeAware("main", cgl, canvas, perspective)
@@ -153,10 +171,7 @@ void main() {
     boneVisualizer.Update(timeMs / 1000.0);
   }
 
-  List<Future<Object>> futures = [
-    LoadJson(meshFile),
-    LoadImage(textureFile),
-  ];
+  List<Future<Object>> futures = [LoadJson(meshFile), LoadImage(textureFile)];
 
   Future.wait(futures).then((List list) {
     // Setup Texture
@@ -167,8 +182,10 @@ void main() {
     final Map<String, dynamic> animJson = list[0]["animations"][0];
     VM.Matrix4 globalOffsetTransform = VM.Matrix4.identity();
     List<Bone> skeleton = ImportSkeletonFromAssimp2Json(list[0]);
-    final GeometryBuilder gb =
-        ImportGeometryFromAssimp2JsonMesh(meshJson, skeleton);
+    final GeometryBuilder gb = ImportGeometryFromAssimp2JsonMesh(
+      meshJson,
+      skeleton,
+    );
     SkeletalAnimation anim = ImportAnimationFromAssimp2Json(animJson, skeleton);
     print("Imnported ${anim}");
     {
@@ -186,21 +203,30 @@ void main() {
 
     {
       Float32List animationData = CreateAnimationTable(
-          skeleton, globalOffsetTransform, anim, animationSteps);
+        skeleton,
+        globalOffsetTransform,
+        anim,
+        animationSteps,
+      );
       animationTable = TypedTextureMutable(
-          cgl,
-          "anim",
-          skeleton.length * 4,
-          animationSteps.length,
-          GL_RGBA32F,
-          TexturePropertiesFramebuffer,
-          GL_RGBA,
-          GL_FLOAT,
-          animationData);
+        cgl,
+        "anim",
+        skeleton.length * 4,
+        animationSteps.length,
+        GL_RGBA32F,
+        TexturePropertiesFramebuffer,
+        GL_RGBA,
+        GL_FLOAT,
+        animationData,
+      );
       mat.SetUniform(uAnimationTable, animationTable);
 
-      boneVisualizer =
-          BoneVisualizer(sceneSkeleton.program, matWire, skeleton, anim);
+      boneVisualizer = BoneVisualizer(
+        sceneSkeleton.program,
+        matWire,
+        skeleton,
+        anim,
+      );
 
       Node mesh = boneVisualizer.mesh..rotX(3.14 / 4);
       Node n = Node.Container("wrapper", mesh);

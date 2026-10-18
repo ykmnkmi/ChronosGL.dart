@@ -16,8 +16,11 @@ void main() {
   final HTML.DivElement info =
       HTML.document.querySelector('#info') as HTML.DivElement;
 
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -30,18 +33,25 @@ void main() {
 
   final RenderPhase phase = RenderPhase("main", cgl);
   final Scene scene = Scene(
-      "objects",
-      RenderProgram(
-          "prog", cgl, solidColorVertexShader, solidColorFragmentShader),
-      [perspective]);
+    "objects",
+    RenderProgram(
+      "prog",
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    [perspective],
+  );
   phase.add(scene);
 
   {
     String name = "sphere";
     Material mat = Material(name)..SetUniform(uColor, ShapeToColor[name]!);
-    Node node =
-        Node(name, ShapeIcosahedron(scene.program, subdivisions: 3), mat)
-          ..setPos(0.0, 0.0, 0.0);
+    Node node = Node(
+      name,
+      ShapeIcosahedron(scene.program, subdivisions: 3),
+      mat,
+    )..setPos(0.0, 0.0, 0.0);
     scene.add(node);
   }
   {
@@ -70,8 +80,10 @@ void main() {
     String name = "torus";
     Material mat = Material(name)..SetUniform(uColor, ShapeToColor[name]!);
     Node node = Node(
-        name, ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4), mat)
-      ..setPos(5.0, 0.0, 5.0);
+      name,
+      ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+      mat,
+    )..setPos(5.0, 0.0, 5.0);
     scene.add(node);
   }
 
@@ -108,9 +120,11 @@ void main() {
       // This also works
       //new Framebuffer.Screen(cgl).ExtractByteData(pixelData, x, y, 1, 1);
       cgl.readPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixelData);
-      pick =
-          VM.Vector3(pixelData[0] + 0.0, pixelData[1] + 0.0, pixelData[2] + 0.0)
-            ..scale(1.0 / 255.0);
+      pick = VM.Vector3(
+        pixelData[0] + 0.0,
+        pixelData[1] + 0.0,
+        pixelData[2] + 0.0,
+      )..scale(1.0 / 255.0);
     }
     String shape = "NONE";
     for (String name in ShapeToColor.keys) {

@@ -1,7 +1,10 @@
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:html' as HTML;
 import 'dart:typed_data';
+
 import 'package:vector_math/vector_math.dart' as VM;
+
 import 'dart:math' as Math;
 
 // Sketch shader based on:
@@ -40,15 +43,22 @@ void main() {
   ${vTexUV} = ${aTexUV};
   ${vPosition} = gl_Position.xyz;
 }
-"""
+""",
   ]);
 
 final ShaderObject instancedFragmentShader = ShaderObject("finalF")
   ..AddVaryingVars([vColor, vNormal, vTexUV, vPosition])
-  ..AddUniformVars(
-      [uTexture, uTexture2, uLightDescs, uLightTypes, uShininess, uEyePosition])
-  ..SetBody([
-    """
+  ..AddUniformVars([
+    uTexture,
+    uTexture2,
+    uLightDescs,
+    uLightTypes,
+    uShininess,
+    uEyePosition,
+  ])
+  ..SetBody(
+    [
+      """
 float Edge(sampler2D t, ivec2 p) {
 		vec4 hEdge = vec4(0.0);
 		hEdge -= texelFetch(t, ivec2(p.x - 1, p.y - 1), 0) * 1.0;
@@ -89,10 +99,10 @@ void main() {
                       acc.diffuse +
                       acc.specular;
 }
-  """
-  ], prolog: [
-    StdLibShader
-  ]);
+  """,
+    ],
+    prolog: [StdLibShader],
+  );
 
 //
 // Preparation Shader
@@ -124,7 +134,7 @@ void main() {
       ${vNormal} = normalize(n);
     }
 }
-"""
+""",
   ]);
 
 final ShaderObject preparationFragmentShader = ShaderObject("preparationF")
@@ -134,7 +144,7 @@ final ShaderObject preparationFragmentShader = ShaderObject("preparationF")
 void main() {
   ${oFragColor} = vec4(${vNormal}, gl_FragCoord.w);
 }
-  """
+  """,
   ]);
 
 void AddInstanceData(MeshData md, Math.Random rand, int count) {
@@ -147,8 +157,10 @@ void AddInstanceData(MeshData md, Math.Random rand, int count) {
     t.scale(60.0);
     translations.setAll(i * 3, t.storage);
     final VM.Vector3 u = VM.Vector3.random(rand);
-    final VM.Quaternion q =
-        VM.Quaternion.axisAngle(u, 2.0 * rand.nextDouble() * Math.pi);
+    final VM.Quaternion q = VM.Quaternion.axisAngle(
+      u,
+      2.0 * rand.nextDouble() * Math.pi,
+    );
     rotations.setAll(i * 4, q.storage);
 
     scales.setAll(i, [2.0 + rand.nextDouble() * 4.0]);
@@ -181,9 +193,21 @@ class Phase {
 
 Framebuffer MakePrepareFb(ChronosGL cgl, int width, int height) {
   TypedTexture tex = TypedTexture(
-      cgl, "float", width, height, GL_RGBA32F, TexturePropertiesFramebuffer);
-  TypedTexture depthTexture = TypedTexture(cgl, "frame::depth", width, height,
-      GL_DEPTH_COMPONENT24, TexturePropertiesShadowMap);
+    cgl,
+    "float",
+    width,
+    height,
+    GL_RGBA32F,
+    TexturePropertiesFramebuffer,
+  );
+  TypedTexture depthTexture = TypedTexture(
+    cgl,
+    "frame::depth",
+    width,
+    height,
+    GL_DEPTH_COMPONENT24,
+    TexturePropertiesShadowMap,
+  );
   return Framebuffer(cgl, tex, depthTexture);
 }
 
@@ -207,8 +231,11 @@ Texture MakeNoiseTesture(ChronosGL cgl, Math.Random rand) {
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
 
@@ -217,7 +244,8 @@ void main() {
 
   Illumination illumination = Illumination()
     ..AddLight(
-        DirectionalLight("dir", dirLight, ColorWhite * 0.5, ColorBlack, 100.0));
+      DirectionalLight("dir", dirLight, ColorWhite * 0.5, ColorBlack, 100.0),
+    );
 
   final dynamic ext = cgl.getExtension("EXT_color_buffer_float");
   if (ext == null) {
@@ -236,18 +264,28 @@ void main() {
   final Math.Random rand = Math.Random(1);
 
   final RenderProgram progPreparation = RenderProgram(
-      "preparation", cgl, preparationVertexShader, preparationFragmentShader);
+    "preparation",
+    cgl,
+    preparationVertexShader,
+    preparationFragmentShader,
+  );
 
   final RenderProgram progInstanced = RenderProgram(
-      "instanced", cgl, instancedVertexShader, instancedFragmentShader);
+    "instanced",
+    cgl,
+    instancedVertexShader,
+    instancedFragmentShader,
+  );
 
   final MeshData cubes = ShapeCube(progInstanced, computeNormals: true);
   AddInstanceData(cubes, rand, 80);
   print("instances: $cubes.GetNumInstances()}");
 
-  final Phase prepare =
-      Phase(progPreparation, cubes, MakePrepareFb(cgl, width, height))
-        ..mat.SetUniform(uModelMatrix, VM.Matrix4.identity());
+  final Phase prepare = Phase(
+    progPreparation,
+    cubes,
+    MakePrepareFb(cgl, width, height),
+  )..mat.SetUniform(uModelMatrix, VM.Matrix4.identity());
 
   final Phase render = Phase(progInstanced, cubes, Framebuffer.Screen(cgl))
     ..mat.SetUniform(uModelMatrix, VM.Matrix4.identity())
@@ -255,7 +293,7 @@ void main() {
     ..mat.SetUniform(uTexture2, MakeNoiseTesture(cgl, rand))
     ..mat.SetUniform(uTexture, prepare.fb.colorTexture!);
 
-/*
+  /*
   // The lines show aliasing problems but the experiments below
   // did not help:
   final Phase render =
@@ -293,7 +331,7 @@ void main() {
 
     render.mat.ForceUniform(uTime, _lastTimeMs / 2000.0);
     render.Run(width, height, [perspective, illumination]);
-/*
+    /*
     horizontalBlur.Run(width, height);
     verticalBlur.Run(width, height);
 */

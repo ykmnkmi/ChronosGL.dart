@@ -5,12 +5,14 @@ import 'package:vector_math/vector_math.dart' as VM;
 
 import 'polygon_data.dart' as DATA;
 
-double getTrianguatedArea(
-    List<int> triangles, List<VM.Vector2> data) {
+double getTrianguatedArea(List<int> triangles, List<VM.Vector2> data) {
   double area = 0.0;
   for (int i = 0; i < triangles.length; i += 3) {
-    area += GetSignedArea(
-        [data[triangles[i]], data[triangles[i + 1]], data[triangles[i + 2]]]);
+    area += GetSignedArea([
+      data[triangles[i]],
+      data[triangles[i + 1]],
+      data[triangles[i + 2]],
+    ]);
   }
   return area;
 }
@@ -26,7 +28,9 @@ void main() {
     expect(GetSignedArea(DATA.Square), equals(4.0));
 
     expect(
-        GetBounds(DATA.Square), equals(new VM.Vector4(-1.0, -1.0, 1.0, 1.0)));
+      GetBounds(DATA.Square),
+      equals(new VM.Vector4(-1.0, -1.0, 1.0, 1.0)),
+    );
 
     expect(IsInPolygon(DATA.Square, zero), equals(true));
     expect(IsInPolygon(DATA.Square, new VM.Vector2(0.0, 0.5)), equals(true));
@@ -38,7 +42,9 @@ void main() {
   test("basic_triangle", () {
     expect(GetSignedArea(DATA.Triangle), equals(2.0));
     expect(
-        GetBounds(DATA.Triangle), equals(new VM.Vector4(-1.0, -1.0, 1.0, 1.0)));
+      GetBounds(DATA.Triangle),
+      equals(new VM.Vector4(-1.0, -1.0, 1.0, 1.0)),
+    );
     expect(IsInPolygon(DATA.Triangle, zero), equals(true));
     expect(IsInPolygon(DATA.Triangle, new VM.Vector2(0.0, 0.5)), equals(true));
     expect(IsInPolygon(DATA.Triangle, new VM.Vector2(0.0, 1.0)), equals(true));
@@ -49,14 +55,22 @@ void main() {
   test("basic_triangle2", () {
     expect(GetSignedArea(DATA.Triangle2), equals(0.5));
     expect(
-        GetBounds(DATA.Triangle2), equals(new VM.Vector4(-1.0, 0.0, 1.0, 1.0)));
+      GetBounds(DATA.Triangle2),
+      equals(new VM.Vector4(-1.0, 0.0, 1.0, 1.0)),
+    );
     expect(IsInPolygon(DATA.Triangle2, new VM.Vector2(0.0, 0.0)), equals(true));
     expect(
-        IsInPolygon(DATA.Triangle2, new VM.Vector2(-1.0, 0.0)), equals(false));
+      IsInPolygon(DATA.Triangle2, new VM.Vector2(-1.0, 0.0)),
+      equals(false),
+    );
     expect(
-        IsInPolygon(DATA.Triangle2, new VM.Vector2(1.0, 1.0)), equals(false));
+      IsInPolygon(DATA.Triangle2, new VM.Vector2(1.0, 1.0)),
+      equals(false),
+    );
     expect(
-        IsInPolygon(DATA.Triangle2, new VM.Vector2(0.0, 1.0)), equals(false));
+      IsInPolygon(DATA.Triangle2, new VM.Vector2(0.0, 1.0)),
+      equals(false),
+    );
     expect(IsConvex(DATA.Triangle2), equals(true));
   });
 

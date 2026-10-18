@@ -3,9 +3,14 @@ part of shape;
 // single color cylinder
 // uv mapping is weird to help with debugging
 
-GeometryBuilder CylinderGeometry(double radTop, double radBot, double height,
-    int radialSubdivisions, bool computeNormals) {
-  assert (radialSubdivisions >2, "must have at least 3 divisions");
+GeometryBuilder CylinderGeometry(
+  double radTop,
+  double radBot,
+  double height,
+  int radialSubdivisions,
+  bool computeNormals,
+) {
+  assert(radialSubdivisions > 2, "must have at least 3 divisions");
   double halfHeight = height / 2;
 
   List<VM.Vector3> vertices = [];
@@ -90,7 +95,11 @@ GeometryBuilder CylinderGeometry(double radTop, double radBot, double height,
 /// Like CylinderGeometry but with duplicate Vertices to make it possible
 ///  to add aCenter attributes with GenerateWireframeCenters()
 GeometryBuilder CylinderGeometryWireframeFriendly(
-    double radTop, double radBot, double height, int radialSubdivisions) {
+  double radTop,
+  double radBot,
+  double height,
+  int radialSubdivisions,
+) {
   // Compute points on edges
   final double halfHeight = height / 2;
   List<VM.Vector3> top = [];
@@ -139,7 +148,10 @@ GeometryBuilder CylinderGeometryWireframeFriendly(
 /// Like ConeGeometry but with duplicate Vertices to make it possible
 ///  to add aCenter attributes with GenerateWireframeCenters()
 GeometryBuilder ConeGeometryWireframeFrienly(
-    double rad, double height, int radialSubdivisions) {
+  double rad,
+  double height,
+  int radialSubdivisions,
+) {
   // Compute points on edges
   final double halfHeight = height / 2;
   VM.Vector3 top = VM.Vector3(0.0, halfHeight, 0.0);

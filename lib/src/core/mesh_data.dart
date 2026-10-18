@@ -60,8 +60,8 @@ Float32List FlattenMatrix4List(List<VM.Matrix4> v, [Float32List? data]) {
 /// but it is possible to assert compatibility with multiple RenderPrograms.
 class MeshData extends NamedEntity {
   MeshData(String name, this._cgl, this._drawMode, this._locationMap)
-      : _vao = _cgl.createVertexArray(),
-        super("meshdata:" + name);
+    : _vao = _cgl.createVertexArray(),
+      super("meshdata:" + name);
 
   final ChronosGL _cgl;
   final GlVertexArrayObject _vao;
@@ -88,10 +88,15 @@ class MeshData extends NamedEntity {
   void ChangeAttributeData(String canonical, List data, int width) {
     if (debug) print("ChangeBuffer ${canonical} ${data.length}");
     if (canonical.codeUnitAt(0) == prefixInstancer) {
-      assert(data.length ~/ width == _instances, "ChangeAttribute ${_instances}");
+      assert(
+        data.length ~/ width == _instances,
+        "ChangeAttribute ${_instances}",
+      );
     } else {
-      assert(data.length ~/ width == _vertices.length ~/ 3,
-          "wrong size for attribute: ${canonical} expected: ${_vertices.length ~/ 3} got: ${data.length ~/ width}");
+      assert(
+        data.length ~/ width == _vertices.length ~/ 3,
+        "wrong size for attribute: ${canonical} expected: ${_vertices.length ~/ 3} got: ${data.length ~/ width}",
+      );
     }
     _attributes[canonical] = data;
     _cgl.ChangeArrayBuffer(_buffers[canonical]!, data);
@@ -137,7 +142,15 @@ class MeshData extends NamedEntity {
     final int index = _locationMap[canonical]!;
     _cgl.bindVertexArray(_vao);
     _cgl.enableVertexAttribArray(index, instanced ? 1 : 0);
-    _cgl.vertexAttribPointer(buffer, index, desc.GetSize(), GL_FLOAT, false, 0, 0);
+    _cgl.vertexAttribPointer(
+      buffer,
+      index,
+      desc.GetSize(),
+      GL_FLOAT,
+      false,
+      0,
+      0,
+    );
   }
 
   void AddAttribute(String canonical, List data, int width) {
@@ -209,30 +222,55 @@ void _GeometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
     //print("${md.name} ${canonical} ${lst}");
     switch (desc.type) {
       case VarTypeVec2:
-        md.AddAttribute(canonical, FlattenVector2List(lst as List<VM.Vector2>), 2);
+        md.AddAttribute(
+          canonical,
+          FlattenVector2List(lst as List<VM.Vector2>),
+          2,
+        );
         break;
       case VarTypeVec3:
-        md.AddAttribute(canonical, FlattenVector3List(lst as List<VM.Vector3>), 3);
+        md.AddAttribute(
+          canonical,
+          FlattenVector3List(lst as List<VM.Vector3>),
+          3,
+        );
         break;
       case VarTypeVec4:
-        md.AddAttribute(canonical, FlattenVector4List(lst as List<VM.Vector4>), 4);
+        md.AddAttribute(
+          canonical,
+          FlattenVector4List(lst as List<VM.Vector4>),
+          4,
+        );
         break;
       case VarTypeFloat:
-        md.AddAttribute(canonical, Float32List.fromList(lst as List<double>), 1);
+        md.AddAttribute(
+          canonical,
+          Float32List.fromList(lst as List<double>),
+          1,
+        );
         break;
       case VarTypeUvec4:
         md.AddAttribute(canonical, FlattenUvec4List(lst as List<List<int>>), 4);
         break;
       default:
-        assert(false,
-            "unknown type for ${canonical} [${lst[0].runtimeType}] [${lst.runtimeType}] ${lst}");
+        assert(
+          false,
+          "unknown type for ${canonical} [${lst[0].runtimeType}] [${lst.runtimeType}] ${lst}",
+        );
     }
   }
 }
 
-MeshData GeometryBuilderToMeshData(String name, RenderProgram prog, GeometryBuilder gb) {
+MeshData GeometryBuilderToMeshData(
+  String name,
+  RenderProgram prog,
+  GeometryBuilder gb,
+) {
   final DateTime start = DateTime.now();
-  MeshData md = prog.MakeMeshData(name, gb.pointsOnly ? GL_POINTS : GL_TRIANGLES);
+  MeshData md = prog.MakeMeshData(
+    name,
+    gb.pointsOnly ? GL_POINTS : GL_TRIANGLES,
+  );
   md.AddVertices(FlattenVector3List(gb.vertices));
   if (!gb.pointsOnly) md.AddFaces(gb.GenerateFaceIndices());
   _GeometryBuilderAttributesToMeshData(gb, md);
@@ -242,7 +280,11 @@ MeshData GeometryBuilderToMeshData(String name, RenderProgram prog, GeometryBuil
 }
 
 MeshData _ExtractWireframeNormals(
-    MeshData out, List<double> vertices, List<double> normals, double scale) {
+  MeshData out,
+  List<double> vertices,
+  List<double> normals,
+  double scale,
+) {
   assert(vertices.length == normals.length);
   Float32List v = Float32List(2 * vertices.length);
   for (int i = 0; i < vertices.length; i += 3) {
@@ -262,15 +304,26 @@ MeshData _ExtractWireframeNormals(
   return out;
 }
 
-MeshData GeometryBuilderToWireframeNormals(RenderProgram prog, GeometryBuilder gb,
-    [double scale = 1.0]) {
+MeshData GeometryBuilderToWireframeNormals(
+  RenderProgram prog,
+  GeometryBuilder gb, [
+  double scale = 1.0,
+]) {
   MeshData out = prog.MakeMeshData("norm", GL_LINES);
-  return _ExtractWireframeNormals(out, FlattenVector3List(gb.vertices),
-      FlattenVector3List(gb.attributes[aNormal] as List<VM.Vector3>), scale);
+  return _ExtractWireframeNormals(
+    out,
+    FlattenVector3List(gb.vertices),
+    FlattenVector3List(gb.attributes[aNormal] as List<VM.Vector3>),
+    scale,
+  );
 }
 
 //Extract Wireframe MeshData
-MeshData GeometryBuilderToMeshDataWireframe(String name, RenderProgram prog, GeometryBuilder gb) {
+MeshData GeometryBuilderToMeshDataWireframe(
+  String name,
+  RenderProgram prog,
+  GeometryBuilder gb,
+) {
   MeshData md = prog.MakeMeshData(name, GL_LINES);
   md.AddVertices(FlattenVector3List(gb.vertices));
   md.AddFaces(gb.GenerateLineIndices());
@@ -278,7 +331,11 @@ MeshData GeometryBuilderToMeshDataWireframe(String name, RenderProgram prog, Geo
   return md;
 }
 
-MeshData LineEndPointsToMeshData(String name, RenderProgram prog, List<VM.Vector3> points) {
+MeshData LineEndPointsToMeshData(
+  String name,
+  RenderProgram prog,
+  List<VM.Vector3> points,
+) {
   MeshData md = prog.MakeMeshData(name, GL_LINES);
   md.AddVertices(FlattenVector3List(points));
   List<int> faces = List.generate(points.length, (i) => i);
@@ -286,7 +343,11 @@ MeshData LineEndPointsToMeshData(String name, RenderProgram prog, List<VM.Vector
   return md;
 }
 
-MeshData ExtractWireframeNormals(RenderProgram prog, MeshData md, [double scale = 1.0]) {
+MeshData ExtractWireframeNormals(
+  RenderProgram prog,
+  MeshData md, [
+  double scale = 1.0,
+]) {
   assert(md._drawMode == GL_TRIANGLES, "expected GL_TRIANGLES");
   MeshData out = prog.MakeMeshData(md.name, GL_LINES);
   final Float32List vertices = md.GetAttribute(aPosition) as Float32List;
@@ -344,8 +405,13 @@ double GetMeshFaceArea(MeshData md) {
   return total_area;
 }
 
-MeshData ExtractPointCloud(RenderProgram prog, MeshData md, int num_points,
-    {bool extract_normal = true, bool extract_color = false}) {
+MeshData ExtractPointCloud(
+  RenderProgram prog,
+  MeshData md,
+  int num_points, {
+  bool extract_normal = true,
+  bool extract_color = false,
+}) {
   assert(md._drawMode == GL_TRIANGLES, "expected GL_TRIANGLES");
   if (extract_normal) {
     assert(md.SupportsAttribute(aNormal), "expected support for aNormal");
@@ -355,12 +421,15 @@ MeshData ExtractPointCloud(RenderProgram prog, MeshData md, int num_points,
   }
   final List<int> faces = md._faces!;
   final Float32List verts = md._vertices;
-  final Float32List norms =
-      extract_normal ? md.GetAttribute(aNormal) as Float32List : Float32List(0);
+  final Float32List norms = extract_normal
+      ? md.GetAttribute(aNormal) as Float32List
+      : Float32List(0);
   if (extract_normal) {
     assert(norms.length == verts.length);
   }
-  final Float32List cols = extract_color ? md.GetAttribute(aColor) as Float32List : Float32List(0);
+  final Float32List cols = extract_color
+      ? md.GetAttribute(aColor) as Float32List
+      : Float32List(0);
   if (extract_color) {
     assert(cols.length == verts.length);
   }
@@ -399,7 +468,9 @@ MeshData ExtractPointCloud(RenderProgram prog, MeshData md, int num_points,
   List<double> areas = _GetMeshFaceAreas(faces, verts);
   double total_area = 0.0;
   areas.forEach((d) => total_area += d);
-  print("vertices: ${md._vertices.length ~/ 3}  faces: ${faces.length}  total: ${total_area}");
+  print(
+    "vertices: ${md._vertices.length ~/ 3}  faces: ${faces.length}  total: ${total_area}",
+  );
   final double area_per_point = total_area / num_points;
   double ceiling = 0.0;
   int current_face = 0;

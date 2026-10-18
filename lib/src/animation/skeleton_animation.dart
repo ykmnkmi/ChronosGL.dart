@@ -16,7 +16,13 @@ part of animation;
 ///  the basic unit of a skeleton. Bones form a tree structure and have
 ///  a parent bone.
 class Bone {
-  Bone(this.boneName, this.boneIndex, this.parentNum, this.localTransform, this.offsetTransform) {
+  Bone(
+    this.boneName,
+    this.boneIndex,
+    this.parentNum,
+    this.localTransform,
+    this.offsetTransform,
+  ) {
     assert(boneIndex > parentNum);
   }
 
@@ -37,8 +43,8 @@ class Bone {
 /// represents a Skeleton ready to be used for skinning.
 class AnimatedSkeleton {
   AnimatedSkeleton(int length)
-      : globalTransforms = List.generate(length, (index) => VM.Matrix4.zero()),
-        skinningTransforms = List.generate(length, (index) => VM.Matrix4.zero());
+    : globalTransforms = List.generate(length, (index) => VM.Matrix4.zero()),
+      skinningTransforms = List.generate(length, (index) => VM.Matrix4.zero());
 
   // one for each bone
   final List<VM.Matrix4> globalTransforms;
@@ -47,7 +53,10 @@ class AnimatedSkeleton {
 
 void RecomputeLocalOffsets(List<Bone> skeleton) {
   print("recomputing local transform");
-  final List<VM.Matrix4> toRoot = List.generate(skeleton.length, (i) => VM.Matrix4.zero());
+  final List<VM.Matrix4> toRoot = List.generate(
+    skeleton.length,
+    (i) => VM.Matrix4.zero(),
+  );
   for (int i = 0; i < skeleton.length; i++) {
     Bone bone = skeleton[i];
     if (bone.parentNum < 0) {
@@ -60,8 +69,13 @@ void RecomputeLocalOffsets(List<Bone> skeleton) {
 }
 
 // Note the bones in skeleton must be in topological order
-void UpdateAnimatedSkeleton(List<Bone> skeleton, VM.Matrix4 globalOffsetTransform,
-    SkeletalAnimation animation, AnimatedSkeleton posedSkeleton, double time) {
+void UpdateAnimatedSkeleton(
+  List<Bone> skeleton,
+  VM.Matrix4 globalOffsetTransform,
+  SkeletalAnimation animation,
+  AnimatedSkeleton posedSkeleton,
+  double time,
+) {
   VM.Matrix4 tmp = VM.Matrix4.zero();
   for (int i = 0; i < skeleton.length; i++) {
     Bone bone = skeleton[i];
@@ -95,13 +109,23 @@ void UpdateAnimatedSkeleton(List<Bone> skeleton, VM.Matrix4 globalOffsetTransfor
 // (skeleton.length * 16) x (time.length)
 // If the texture is RGBA this reduces to
 // (skeleton.length * 4) x (time.length)
-Float32List CreateAnimationTable(List<Bone> skeleton, VM.Matrix4 globalOffsetTransform,
-    SkeletalAnimation animation, List<double> time) {
+Float32List CreateAnimationTable(
+  List<Bone> skeleton,
+  VM.Matrix4 globalOffsetTransform,
+  SkeletalAnimation animation,
+  List<double> time,
+) {
   AnimatedSkeleton posedSkeleton = AnimatedSkeleton(skeleton.length);
   Float32List data = Float32List(skeleton.length * 16 * time.length);
   int pos = 0;
   for (double t in time) {
-    UpdateAnimatedSkeleton(skeleton, globalOffsetTransform, animation, posedSkeleton, t);
+    UpdateAnimatedSkeleton(
+      skeleton,
+      globalOffsetTransform,
+      animation,
+      posedSkeleton,
+      t,
+    );
     for (VM.Matrix4 m in posedSkeleton.skinningTransforms) {
       for (int i = 0; i < 16; ++i) data[pos + i] = m[i];
       pos += 16;
@@ -114,8 +138,15 @@ Float32List CreateAnimationTable(List<Bone> skeleton, VM.Matrix4 globalOffsetTra
 class BoneAnimation {
   /// Construct bone animation with [boneName]. Animation key frames
   /// will be loaded from [positions], [rotations], and [scales].
-  BoneAnimation(this.bone, this._positionTimes, this._positionValues, this._rotationTimes,
-      this._rotationValues, this._scaleTimes, this._scaleValues) {
+  BoneAnimation(
+    this.bone,
+    this._positionTimes,
+    this._positionValues,
+    this._rotationTimes,
+    this._rotationValues,
+    this._scaleTimes,
+    this._scaleValues,
+  ) {
     if (_positionTimes.length == 0) {
       _positionTimes = [0.0];
       _positionValues = [VM.Vector3(0.0, 0.0, 0.0)];
@@ -187,7 +218,7 @@ class BoneAnimation {
 /// represents Key frame animation data for an entire skeleton.
 class SkeletalAnimation {
   SkeletalAnimation(this.name, this.duration, int length)
-      : animList = List<BoneAnimation?>.generate(length, (i) => null);
+    : animList = List<BoneAnimation?>.generate(length, (i) => null);
 
   final String name;
   final List<BoneAnimation?> animList;

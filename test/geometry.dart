@@ -6,8 +6,12 @@ import "package:test/test.dart";
 void main() {
   test("cube", () {
     print("@cube");
-    GeometryBuilder gb =
-        CubeGeometry(x: 100.0, y: 100.0, z: 100.0, computeNormals: true);
+    GeometryBuilder gb = CubeGeometry(
+      x: 100.0,
+      y: 100.0,
+      z: 100.0,
+      computeNormals: true,
+    );
     expect(gb.GenerateFaceIndices().length, equals(3 * 6 * 2));
     expect(gb.IsOrientableManifoldWithBoundaries(), equals(true));
   });
@@ -47,44 +51,47 @@ void main() {
 
   test("torus1", () {
     GeometryBuilder gb = TorusKnotGeometry(
-        radius: 20.0,
-        tubeRadius: 4.0,
-        segmentsR: 4,
-        segmentsT: 4,
-        p: 1,
-        q: 0,
-        wrap: false,
-        heightScale: 1.0,
-        computeNormals: true);
+      radius: 20.0,
+      tubeRadius: 4.0,
+      segmentsR: 4,
+      segmentsT: 4,
+      p: 1,
+      q: 0,
+      wrap: false,
+      heightScale: 1.0,
+      computeNormals: true,
+    );
     expect(gb.GenerateFaceIndices().length, equals(4 * 4 * 6));
     expect(gb.IsOrientableManifoldWithBoundaries(), equals(true));
   });
 
   test("torus2", () {
     GeometryBuilder gb = TorusKnotGeometry(
-        radius: 20.0,
-        tubeRadius: 4.0,
-        segmentsR: 128,
-        segmentsT: 16,
-        p: 2,
-        q: 3,
-        wrap: false,
-        heightScale: 1.0,
-        computeNormals: true);
+      radius: 20.0,
+      tubeRadius: 4.0,
+      segmentsR: 128,
+      segmentsT: 16,
+      p: 2,
+      q: 3,
+      wrap: false,
+      heightScale: 1.0,
+      computeNormals: true,
+    );
     expect(gb.GenerateFaceIndices().length, equals(128 * 16 * 6));
     expect(gb.IsOrientableManifoldWithBoundaries(), equals(true));
   });
 
   test("torus_wireframe", () {
     GeometryBuilder gb = TorusKnotGeometryWireframeFriendly(
-        radius: 20.0,
-        tubeRadius: 4.0,
-        segmentsR: 128,
-        segmentsT: 16,
-        p: 3,
-        q: 4,
-        heightScale: 1.0,
-        computeNormals: true);
+      radius: 20.0,
+      tubeRadius: 4.0,
+      segmentsR: 128,
+      segmentsT: 16,
+      p: 3,
+      q: 4,
+      heightScale: 1.0,
+      computeNormals: true,
+    );
     expect(gb.GenerateFaceIndices().length, equals(16 * 128 * 6));
     expect(gb.IsOrientableManifoldWithBoundaries(), equals(true));
   });

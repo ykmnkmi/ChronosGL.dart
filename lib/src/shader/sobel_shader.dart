@@ -44,5 +44,5 @@ final ShaderObject sobelFragmentShader = ShaderObject("SobelF")
       float len = sobel();
       ${oFragColor} = vec4(len, len, len, 1.0); //
   }
-  """
+  """,
   ]);

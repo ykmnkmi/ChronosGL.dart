@@ -11,7 +11,7 @@ void main() {
     ${vNormal} = normalize( ${aPosition});
     gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(${aPosition}, 1.0);
 }
-"""
+""",
   ]);
 
 // this shader is build for use with an icosahedron
@@ -26,7 +26,7 @@ ShaderObject makePerlinNoiseColorFragmentShader(bool blackVariant) {
     ..AddVaryingVars([vNormal])
     ..AddUniformVars([
       // uTransformationMatrix,
-      uTime
+      uTime,
     ])
     ..SetBody([
       define,
@@ -67,6 +67,6 @@ void main() {
 #endif
   ${oFragColor} = vec4( color, 1.0 );
 }
-"""
+""",
     ]);
 }

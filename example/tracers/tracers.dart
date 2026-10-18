@@ -14,37 +14,50 @@ final ShaderObject bluredFragmentShader = ShaderObject("bluredF")
 void main() {  
     ${oFragColor} = ${uColorAlpha};
 }
-    """
+    """,
   ]);
 
 Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
+    "stars",
+    RenderProgram(
       "stars",
-      RenderProgram(
-          "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader),
-      [perspective]);
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
+    [perspective],
+  );
   scene.add(Utils.MakeParticles(scene.program, num));
   return scene;
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, preserveDrawingBuffer: true);
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
   phase.clearDepthBuffer = true;
   phase.clearColorBuffer = false;
 
   Scene scene = Scene(
-      "blur",
-      RenderProgram("blur", cgl, blurdVertexShader, bluredFragmentShader),
-      [perspective]);
+    "blur",
+    RenderProgram("blur", cgl, blurdVertexShader, bluredFragmentShader),
+    [perspective],
+  );
   phase.add(scene);
 
   // Every frame 4% of the screen will be blurred

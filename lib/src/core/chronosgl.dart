@@ -41,10 +41,12 @@ GlShader _CompileShader(dynamic gl, int type, String text) {
 /// Prepares a canvas for 3d rendering. Contains wrapper for all the
 /// WebGL2 bindings
 class ChronosGL {
-  ChronosGL(this._canvas,
-      {bool preserveDrawingBuffer = false,
-      bool faceCulling = false,
-      bool antialiasing = true}) {
+  ChronosGL(
+    this._canvas, {
+    bool preserveDrawingBuffer = false,
+    bool faceCulling = false,
+    bool antialiasing = true,
+  }) {
     Map<String, Object> attributes = {
       "alpha": false,
       "depth": true,
@@ -75,8 +77,11 @@ class ChronosGL {
 
   final dynamic _canvas;
 
-  GlProgram CompileWholeProgram(String vertShaderText, String fragShaderText,
-      List<String> transformVarying) {
+  GlProgram CompileWholeProgram(
+    String vertShaderText,
+    String fragShaderText,
+    List<String> transformVarying,
+  ) {
     GlProgram program = _gl.createProgram();
     GlShader vs = _CompileShader(_gl, GL_VERTEX_SHADER, vertShaderText);
     _gl.attachShader(program, vs);
@@ -88,7 +93,10 @@ class ChronosGL {
 
     if (transformVarying.length > 0) {
       _gl.transformFeedbackVaryings(
-          program, transformVarying, GL_INTERLEAVED_ATTRIBS);
+        program,
+        transformVarying,
+        GL_INTERLEAVED_ATTRIBS,
+      );
     }
 
     _gl.linkProgram(program);
@@ -157,7 +165,12 @@ class ChronosGL {
   }
 
   void copyBufferSubData(
-      int srcBuffer, int dstBuffer, int srcOffset, int dstOffset, int size) {
+    int srcBuffer,
+    int dstBuffer,
+    int srcOffset,
+    int dstOffset,
+    int size,
+  ) {
     _gl.copyBufferSubData(srcBuffer, dstBuffer, srcOffset, dstOffset, size);
   }
 
@@ -174,7 +187,12 @@ class ChronosGL {
   }
 
   void framebufferTexture2D(
-      int target, int attachment, int textarget, GlTexture texture, int level) {
+    int target,
+    int attachment,
+    int textarget,
+    GlTexture texture,
+    int level,
+  ) {
     _gl.framebufferTexture2D(target, attachment, textarget, texture, level);
   }
 
@@ -286,19 +304,41 @@ class ChronosGL {
     return _gl.getParameter(kind);
   }
 
-  void vertexAttribPointer(GlBuffer buffer, int index, int size, int type,
-      bool normalized, int stride, int offset) {
+  void vertexAttribPointer(
+    GlBuffer buffer,
+    int index,
+    int size,
+    int type,
+    bool normalized,
+    int stride,
+    int offset,
+  ) {
     _gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
     _gl.vertexAttribPointer(index, size, type, normalized, stride, offset);
   }
 
   void texImage2Dweb(
-      int target, int level, int iformat, int format, int type, dynamic data) {
+    int target,
+    int level,
+    int iformat,
+    int format,
+    int type,
+    dynamic data,
+  ) {
     _gl.texImage2D(target, level, iformat, format, type, data);
   }
 
-  void texImage2D(int target, int level, int iformat, int w, int h, int border,
-      int format, int type, dynamic data) {
+  void texImage2D(
+    int target,
+    int level,
+    int iformat,
+    int w,
+    int h,
+    int border,
+    int format,
+    int type,
+    dynamic data,
+  ) {
     _gl.texImage2D(target, level, iformat, w, h, border, format, type, data);
   }
 
@@ -306,13 +346,29 @@ class ChronosGL {
     _gl.texStorage2D(target, level, iformat, w, h);
   }
 
-  void texSubImage2D(int target, int level, int x, int y, int w, int h,
-      int format, int type, dynamic data) {
+  void texSubImage2D(
+    int target,
+    int level,
+    int x,
+    int y,
+    int w,
+    int h,
+    int format,
+    int type,
+    dynamic data,
+  ) {
     _gl.texSubImage2D(target, level, x, y, w, h, format, type, data);
   }
 
   void copyTexImage2D(
-      int target, int level, int format, int x, int y, int w, int h) {
+    int target,
+    int level,
+    int format,
+    int x,
+    int y,
+    int w,
+    int h,
+  ) {
     _gl.copyTexImage2D(target, level, format, x, y, w, h, 0);
   }
 
@@ -355,12 +411,26 @@ class ChronosGL {
 
   // reads from bound GL_FRAMEBUFFER
   void readPixels(
-      int x, int y, int w, int h, int implFormat, int implType, TypedData buf) {
+    int x,
+    int y,
+    int w,
+    int h,
+    int implFormat,
+    int implType,
+    TypedData buf,
+  ) {
     _gl.readPixels(x, y, w, h, implFormat, implType, buf);
   }
 
   void readPixelsToBuffer(
-      int x, int y, int w, int h, int implFormat, int implType, int offset) {
+    int x,
+    int y,
+    int w,
+    int h,
+    int implFormat,
+    int implType,
+    int offset,
+  ) {
     _gl.readPixels2(x, y, w, h, implFormat, implType, offset);
   }
 
@@ -394,11 +464,18 @@ class ChronosGL {
       return kNoAnisotropicFilterLevel;
     }
     return getParameter(
-        WEBGL.ExtTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+      WEBGL.ExtTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT,
+    );
   }
 
-  void draw(int mode, int count, int type, int offset, int instanceCount,
-      bool hasTransforms) {
+  void draw(
+    int mode,
+    int count,
+    int type,
+    int offset,
+    int instanceCount,
+    bool hasTransforms,
+  ) {
     if (hasTransforms) _gl.beginTransformFeedback(mode);
     if (type != -1) {
       if (instanceCount > 1) {
@@ -445,12 +522,18 @@ class ChronosGL {
   }
 
   void uniformMatrix4fv(
-      GlUniformLocation location, bool transpose, Float32List value) {
+    GlUniformLocation location,
+    bool transpose,
+    Float32List value,
+  ) {
     _gl.uniformMatrix4fv(location, transpose, value);
   }
 
   void uniformMatrix3fv(
-      GlUniformLocation location, bool transpose, Float32List value) {
+    GlUniformLocation location,
+    bool transpose,
+    Float32List value,
+  ) {
     _gl.uniformMatrix3fv(location, transpose, value);
   }
 

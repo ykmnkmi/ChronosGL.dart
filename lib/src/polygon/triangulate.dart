@@ -8,8 +8,13 @@ https://github.com/mapbox/earcut
 which is also used by babylonjs
 */
 
-bool _isGoodEar(List<VM.Vector2> contour, List<int> available,
-    int i0, int i1, int i2) {
+bool _isGoodEar(
+  List<VM.Vector2> contour,
+  List<int> available,
+  int i0,
+  int i1,
+  int i2,
+) {
   final VM.Vector2 a = contour[i0];
   final VM.Vector2 b = contour[i1];
   final VM.Vector2 c = contour[i2];

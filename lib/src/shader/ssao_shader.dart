@@ -7,9 +7,9 @@ final ShaderObject ssaoVertexShader = ShaderObject("SSAOV")
 
 final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
   ..AddVaryingVars([vTexUV])
-//..AddUniformVar(uFogEnabled)
-//..AddUniformVar(uFogNear)
-//..AddUniformVar(uFogFar)
+  //..AddUniformVar(uFogEnabled)
+  //..AddUniformVar(uFogNear)
+  //..AddUniformVar(uFogFar)
   ..AddUniformVars([uCanvasSize, uCameraNear, uCameraFar, uTexture, uDepthMap])
   ..SetBody([
     """
@@ -160,6 +160,5 @@ final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
       //${oFragColor} = vec4( color, 1.0 );
     }
     
-    """
+    """,
   ]);
-

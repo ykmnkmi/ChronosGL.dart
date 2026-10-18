@@ -1,27 +1,48 @@
 import 'dart:html' as HTML;
+
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as VM;
 
 void main2(HTML.VideoElement? video) {
   if (video == null) {
-    HTML.window.alert("Could not access camera - do you have a camera installed?");
+    HTML.window.alert(
+      "Could not access camera - do you have a camera installed?",
+    );
     return;
   }
-  final StatsFps fps = StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, 10.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective =
-      PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 1000.0);
+  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    orbit,
+    0.1,
+    1000.0,
+  );
 
-  final RenderProgram program =
-      RenderProgram("solid", cgl, texturedVertexShader, texturedFragmentShader);
+  final RenderProgram program = RenderProgram(
+    "solid",
+    cgl,
+    texturedVertexShader,
+    texturedFragmentShader,
+  );
 
   MeshData cube = ShapeCube(program);
 
-  final ImageTexture texture = ImageTexture(cgl, "video", video, TexturePropertiesVideo);
+  final ImageTexture texture = ImageTexture(
+    cgl,
+    "video",
+    video,
+    TexturePropertiesVideo,
+  );
 
   final Material mat = Material("cube")
     ..SetUniform(uColor, ColorBlack)
@@ -52,6 +73,8 @@ void main2(HTML.VideoElement? video) {
 
 void main() {
   MakeVideoElementFromCamera().then(main2).catchError((Object error) {
-    HTML.window.alert("Camera error ${error}: - do you have a camera installed?");
+    HTML.window.alert(
+      "Camera error ${error}: - do you have a camera installed?",
+    );
   });
 }

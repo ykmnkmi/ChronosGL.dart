@@ -1,8 +1,10 @@
 //@TestOn("dartium")
 import 'dart:html' as HTML;
+
 import 'package:vector_math/vector_math.dart' as VM;
 
 import 'package:chronosgl/chronosgl.dart';
+
 //import "package:test/test.dart";
 import 'polygon_data.dart' as DATA;
 
@@ -29,16 +31,22 @@ void DrawContour(List<VM.Vector2> contour, String color) {
     ..stroke();
 }
 
-void DrawMovement(List<VM.Vector2> contour, List<VM.Vector2> movement,
-    double scale, String color) {
+void DrawMovement(
+  List<VM.Vector2> contour,
+  List<VM.Vector2> movement,
+  double scale,
+  String color,
+) {
   assert(contour.length == movement.length);
   gContext.beginPath();
 
   for (int i = 0; i < contour.length; i++) {
     gContext
       ..moveTo(contour[i].x, contour[i].y)
-      ..lineTo(contour[i].x + scale * movement[i].x,
-          contour[i].y + scale * movement[i].y);
+      ..lineTo(
+        contour[i].x + scale * movement[i].x,
+        contour[i].y + scale * movement[i].y,
+      );
   }
   gContext
     ..closePath()

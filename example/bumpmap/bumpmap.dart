@@ -22,7 +22,7 @@ void main() {
     ${vTexUV} = ${aTexUV};
     ${vNormal} = ${uNormalMatrix} * ${aNormal};
 }
-"""
+""",
   ]);
 
 final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongFancyF")
@@ -30,8 +30,9 @@ final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongFancyF")
   ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
   ..AddUniformVars([uEyePosition, uColor])
   ..AddUniformVars([uBumpScale, uBumpMap])
-  ..SetBody([
-    """    
+  ..SetBody(
+    [
+      """
 void main() {
    vec3 normal = normalize(${vNormal});
    vec2 uv = dHdxy_fwd(${vTexUV}, ${uBumpScale}, ${uBumpMap});
@@ -47,11 +48,10 @@ void main() {
                     + uColor;
    ${oFragColor}.a = 1.0;
 }
-"""
-  ], prolog: [
-    StdLibShaderDerivative,
-    StdLibShader,
-  ]);
+""",
+    ],
+    prolog: [StdLibShaderDerivative, StdLibShader],
+  );
 
 final VM.Vector3 colSkin = VM.Vector3(0.333, 0.157, 0.067);
 //const VM.Vector3 colGray = new VM.Vector3(0.2, 0.2, 0.2);
@@ -63,8 +63,11 @@ final double glossiness = 10.0;
 final double angle = MATH.pi / 6.0;
 
 void main() {
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
@@ -73,19 +76,29 @@ void main() {
     ..mouseWheelFactor = -0.001;
   final Perspective perspective = Perspective(orbit, 0.01, 1000.0);
 
-  final DirectionalLight light =
-      DirectionalLight("dir", dirLight, colDiffuse, colSpecular, 40.0);
+  final DirectionalLight light = DirectionalLight(
+    "dir",
+    dirLight,
+    colDiffuse,
+    colSpecular,
+    40.0,
+  );
 
   final Illumination illumination = Illumination();
   illumination.AddLight(light);
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
 
   final Scene sceneMain = Scene(
-      "main",
-      RenderProgram("main", cgl, vertexShader, fragmentShader),
-      [perspective, illumination]);
+    "main",
+    RenderProgram("main", cgl, vertexShader, fragmentShader),
+    [perspective, illumination],
+  );
   phase.add(sceneMain);
 
   double _lastTimeMs = 0.0;
@@ -100,10 +113,7 @@ void main() {
     fps.UpdateFrameCount(_lastTimeMs);
   }
 
-  List<Future<Object>> futures = [
-    LoadJson(modelFile),
-    LoadImage(bumpmapFile),
-  ];
+  List<Future<Object>> futures = [LoadJson(modelFile), LoadImage(bumpmapFile)];
 
   Future.wait(futures).then((List list) {
     // Setup Bumpmap
@@ -119,8 +129,11 @@ void main() {
     // Setup Mesh
     List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(list[0]);
     print(gbs[0]);
-    MeshData md =
-        GeometryBuilderToMeshData(modelFile, sceneMain.program, gbs[0]);
+    MeshData md = GeometryBuilderToMeshData(
+      modelFile,
+      sceneMain.program,
+      gbs[0],
+    );
 
     Node mesh = Node(md.name, md, mat);
     Node n = Node.Container("wrapper", mesh);

@@ -312,8 +312,10 @@ final Map<String, ShaderVarDesc> _VarsDb = {
 };
 
 void IntroduceNewShaderVar(String canonical, ShaderVarDesc desc) {
-  assert(!_VarsDb.containsKey(canonical),
-      "duplicate shader variable ${canonical}");
+  assert(
+    !_VarsDb.containsKey(canonical),
+    "duplicate shader variable ${canonical}",
+  );
   _VarsDb[canonical] = desc;
 }
 
@@ -406,7 +408,10 @@ class ShaderObject {
   /// _CreateShader updates the shader field from header and body.
   /// If you have set shader manually do not call this.
   String _CreateShader(
-      bool addWrapperForMain, List<String> body, List<String>? prolog) {
+    bool addWrapperForMain,
+    List<String> body,
+    List<String>? prolog,
+  ) {
     assert(shader == null);
     // Hack
     bool isFragmentShader = attributeVars.isEmpty;
@@ -414,7 +419,7 @@ class ShaderObject {
       "#version 300 es",
       "precision highp float;",
       "precision highp sampler2DShadow;",
-      ""
+      "",
     ];
     for (String a in attributeVars) {
       ShaderVarDesc d = _VarsDb[a]!;

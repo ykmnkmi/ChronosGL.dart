@@ -8,11 +8,17 @@ class TheStencilFunction {
   int mask;
 }
 
-final TheStencilFunction StencilFunctionNone =
-    TheStencilFunction(GL_INVALID_VALUE, 0, ~0);
+final TheStencilFunction StencilFunctionNone = TheStencilFunction(
+  GL_INVALID_VALUE,
+  0,
+  ~0,
+);
 
-final TheStencilFunction StencilFunctionAlways =
-    TheStencilFunction(GL_ALWAYS, 0, ~0);
+final TheStencilFunction StencilFunctionAlways = TheStencilFunction(
+  GL_ALWAYS,
+  0,
+  ~0,
+);
 
 class TheStencilOp {
   TheStencilOp(this.fail, this.zfail, this.zpass);
@@ -30,18 +36,30 @@ class TheBlendEquation {
   int dstFactor;
 }
 
-final TheBlendEquation BlendEquationNone =
-    TheBlendEquation(GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE);
+final TheBlendEquation BlendEquationNone = TheBlendEquation(
+  GL_INVALID_VALUE,
+  GL_INVALID_VALUE,
+  GL_INVALID_VALUE,
+);
 
 // dst was GL_ONE
-final TheBlendEquation BlendEquationStandard =
-    TheBlendEquation(GL_FUNC_ADD, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+final TheBlendEquation BlendEquationStandard = TheBlendEquation(
+  GL_FUNC_ADD,
+  GL_SRC_ALPHA,
+  GL_ONE_MINUS_SRC_ALPHA,
+);
 
-final TheBlendEquation BlendEquationMix =
-    TheBlendEquation(GL_FUNC_ADD, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+final TheBlendEquation BlendEquationMix = TheBlendEquation(
+  GL_FUNC_ADD,
+  GL_SRC_ALPHA,
+  GL_ONE_MINUS_SRC_COLOR,
+);
 
-final TheBlendEquation BlendEquationAdd =
-    TheBlendEquation(GL_FUNC_ADD, GL_ONE, GL_ONE);
+final TheBlendEquation BlendEquationAdd = TheBlendEquation(
+  GL_FUNC_ADD,
+  GL_ONE,
+  GL_ONE,
+);
 
 /// is a light weight container for uniforms related to the appearance
 /// of a mesh.

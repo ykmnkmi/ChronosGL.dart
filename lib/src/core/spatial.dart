@@ -95,8 +95,11 @@ class Spatial extends NamedEntity {
 
   void setPosFromSpherical(double radius, double azimuth, double polar) {
     double rcp = radius * Math.cos(polar);
-    setPos(rcp * Math.cos(azimuth), radius * Math.sin(polar),
-        rcp * Math.sin(azimuth));
+    setPos(
+      rcp * Math.cos(azimuth),
+      radius * Math.sin(polar),
+      rcp * Math.sin(azimuth),
+    );
   }
 
   void translate(double x, double y, double z, [double factor = 1.0]) {

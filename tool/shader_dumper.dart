@@ -11,8 +11,7 @@ void main(List<String> args) {
   if (args.length != 1) {
     throw "no args give";
   }
-  switch (args[0]) {
-  }
+  switch (args[0]) {}
 
   print(lightFragmentShaderBlinnPhong);
 }

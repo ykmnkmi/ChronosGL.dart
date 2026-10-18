@@ -2,15 +2,22 @@ import 'dart:html' as HTML;
 import 'dart:async';
 
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:math' as Math;
+
 import 'package:vector_math/vector_math.dart' as VM;
 
 Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
+    "stars",
+    RenderProgram(
       "stars",
-      RenderProgram(
-          "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader),
-      [perspective]);
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
+    [perspective],
+  );
   scene.add(Utils.MakeParticles(scene.program, num));
   return scene;
 }
@@ -43,8 +50,12 @@ VM.Quaternion slerp(VM.Quaternion a, VM.Quaternion b, double t) {
     scale0 = 1.0 - t;
     scale1 = t;
   }
-  return VM.Quaternion(scale0 * ax + scale1 * bx, scale0 * ay + scale1 * by,
-      scale0 * az + scale1 * bz, scale0 * aw + scale1 * bw);
+  return VM.Quaternion(
+    scale0 * ax + scale1 * bx,
+    scale0 * ay + scale1 * by,
+    scale0 * az + scale1 * bz,
+    scale0 * aw + scale1 * bw,
+  );
 }
 
 const String modelFile = "../ct_logo.obj";
@@ -57,13 +68,18 @@ void main() {
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, -45.0, 0.3, canvas);
   final Perspective perspective = Perspective(orbit, 1.0, 1000.0);
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
 
   final Scene scene = Scene(
-      "demo",
-      RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
-      [perspective]);
+    "demo",
+    RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
+    [perspective],
+  );
   phase.add(scene);
 
   phase.add(MakeStarScene(cgl, perspective, 2000));

@@ -17,7 +17,7 @@ void main() {
     ${oFragColor}.g = gl_FragCoord.y / ${kDim}.0;
     ${oFragColor}.r = 0.0;
 }
-    """
+    """,
   ]);
 
 String ExtractAndSummarizeBytes(Framebuffer fb, int w, int h) {
@@ -66,8 +66,12 @@ void main() {
 
   final ChronosGL cgl = ChronosGL(canvas);
 
-  final RenderProgram program =
-      RenderProgram("program", cgl, computeVertexShader, computeFragmentShader);
+  final RenderProgram program = RenderProgram(
+    "program",
+    cgl,
+    computeVertexShader,
+    computeFragmentShader,
+  );
 
   final MeshData unitQuad = ShapeQuad(program, 1);
 
@@ -87,11 +91,18 @@ void main() {
         results.innerHtml! + "<h3>Drawing into float format FB</h3>";
     var ext = cgl.getExtension("EXT_color_buffer_float");
     if (ext == null) {
-      results.innerHtml = results.innerHtml! +
+      results.innerHtml =
+          results.innerHtml! +
           "extension not available: EXT_color_buffer_float";
     }
     TypedTexture tex = TypedTexture(
-        cgl, "float", kDim, kDim, GL_RGBA32F, TexturePropertiesFramebuffer);
+      cgl,
+      "float",
+      kDim,
+      kDim,
+      GL_RGBA32F,
+      TexturePropertiesFramebuffer,
+    );
 
     Framebuffer fb = Framebuffer(cgl, tex);
     fb.Activate(GL_CLEAR_ALL, 0, 0, kDim, kDim);

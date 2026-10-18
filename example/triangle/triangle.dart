@@ -1,4 +1,5 @@
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:html' as HTML;
 import 'dart:math' as Math;
 
@@ -13,22 +14,32 @@ Node Triangle(RenderProgram program) {
   double length = 5.0 * thickness;
 
   Node side1 = Node(
-      "side1", ShapeCube(program, x: length, y: thickness, z: thickness), mat1)
-    ..setPos(-thickness, 0.0, 0.0);
+    "side1",
+    ShapeCube(program, x: length, y: thickness, z: thickness),
+    mat1,
+  )..setPos(-thickness, 0.0, 0.0);
 
   Node side2 = Node(
-      "side2", ShapeCube(program, x: thickness, y: thickness, z: length), mat2)
-    ..setPos(-length, 0.0, length + thickness);
+    "side2",
+    ShapeCube(program, x: thickness, y: thickness, z: length),
+    mat2,
+  )..setPos(-length, 0.0, length + thickness);
 
   double length3 = length - thickness;
-  Node side3a = Node("side3a",
-      ShapeCube(program, x: thickness, y: length3, z: thickness), mat3)
-    ..setPos(length, length3 - 1 * thickness, 0.0);
+  Node side3a = Node(
+    "side3a",
+    ShapeCube(program, x: thickness, y: length3, z: thickness),
+    mat3,
+  )..setPos(length, length3 - 1 * thickness, 0.0);
 
-  Node side3b = Node("side3b",
-      ShapeWedge(program, x: thickness, y: thickness, z: thickness), mat3)
-    ..rotY(Math.pi)
-    ..setPos(length, length + length3 - thickness, 0.0);
+  Node side3b =
+      Node(
+          "side3b",
+          ShapeWedge(program, x: thickness, y: thickness, z: thickness),
+          mat3,
+        )
+        ..rotY(Math.pi)
+        ..setPos(length, length + length3 - thickness, 0.0);
 
   return Node.Container("triangle")
     ..add(side1)
@@ -39,8 +50,11 @@ Node Triangle(RenderProgram program) {
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
@@ -51,10 +65,15 @@ void main() {
   RenderPhase phase = RenderPhase("shadow", cgl);
 
   Scene scene = Scene(
-      "objects",
-      RenderProgram(
-          "textured", cgl, solidColorVertexShader, solidColorFragmentShader),
-      [orthographic]);
+    "objects",
+    RenderProgram(
+      "textured",
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    [orthographic],
+  );
   phase.add(scene);
 
   scene.add(Triangle(scene.program));

@@ -9,25 +9,47 @@ final HTML.InputElement gIntensity =
     HTML.document.querySelector('#intensity') as HTML.InputElement;
 
 class BloomEffect {
-  BloomEffect(ChronosGL cgl, this.w, this.h, this.radius, int scale, this.fbIn,
-      this.fbOut)
-      : wSmall = w ~/ scale,
-        hSmall = h ~/ scale,
-        fb1 = Framebuffer.Default(cgl, w ~/ scale, h ~/ scale),
-        fb2 = Framebuffer.Default(cgl, w ~/ scale, h ~/ scale) {
-    progHighPass = RenderProgram("highpass", cgl, uvPassthruVertexShader,
-        scaledLuminosityHighPassFragmentShader);
+  BloomEffect(
+    ChronosGL cgl,
+    this.w,
+    this.h,
+    this.radius,
+    int scale,
+    this.fbIn,
+    this.fbOut,
+  ) : wSmall = w ~/ scale,
+      hSmall = h ~/ scale,
+      fb1 = Framebuffer.Default(cgl, w ~/ scale, h ~/ scale),
+      fb2 = Framebuffer.Default(cgl, w ~/ scale, h ~/ scale) {
+    progHighPass = RenderProgram(
+      "highpass",
+      cgl,
+      uvPassthruVertexShader,
+      scaledLuminosityHighPassFragmentShader,
+    );
 
-    progBloom = RenderProgram("bloom", cgl, uvPassthruVertexShader,
-        CreateBloomTextureFragmentShader(radius, radius * 1.0));
+    progBloom = RenderProgram(
+      "bloom",
+      cgl,
+      uvPassthruVertexShader,
+      CreateBloomTextureFragmentShader(radius, radius * 1.0),
+    );
 
     progApplyBloom = RenderProgram(
-        "bloom", cgl, uvPassthruVertexShader, applyBloomEffectFragmentShader);
+      "bloom",
+      cgl,
+      uvPassthruVertexShader,
+      applyBloomEffectFragmentShader,
+    );
 
-    assert(progHighPass.HasDownwardCompatibleAttributesTo(progApplyBloom),
-        "highpass incompatible attributes");
-    assert(progApplyBloom.HasCompatibleAttributesTo(progBloom),
-        "bloom incompatible attributes");
+    assert(
+      progHighPass.HasDownwardCompatibleAttributesTo(progApplyBloom),
+      "highpass incompatible attributes",
+    );
+    assert(
+      progApplyBloom.HasCompatibleAttributesTo(progBloom),
+      "bloom incompatible attributes",
+    );
     unitQuad = ShapeQuad(progApplyBloom, 1);
 
     // Note: the input uTexture varies between the various UniformGroups
@@ -69,7 +91,9 @@ class BloomEffect {
     // Copy high intensity areas from fb to fb2
     fb2.Activate(GL_CLEAR_ALL, 0, 0, wSmall, hSmall);
     uniformsHighPass.ForceUniform(
-        uRange, VM.Vector2(luminosity, luminosity + 0.01));
+      uRange,
+      VM.Vector2(luminosity, luminosity + 0.01),
+    );
     progHighPass.Draw(unitQuad, [uniformsHighPass]);
 
     // Blur fb2 to fb1 horizontally
@@ -88,8 +112,11 @@ class BloomEffect {
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
@@ -105,8 +132,12 @@ void main() {
   final Framebuffer screen = Framebuffer.Screen(cgl);
   final Framebuffer fb = Framebuffer.Default(cgl, width, height);
 
-  final RenderProgram progPerlinNoise = RenderProgram("perlin", cgl,
-      perlinNoiseVertexShader, makePerlinNoiseColorFragmentShader(true));
+  final RenderProgram progPerlinNoise = RenderProgram(
+    "perlin",
+    cgl,
+    perlinNoiseVertexShader,
+    makePerlinNoiseColorFragmentShader(true),
+  );
 
   final Material material = Material("mat")
     ..SetUniform(uTransformationMatrix, VM.Matrix4.identity())
@@ -128,7 +159,9 @@ void main() {
     fb.Activate(GL_CLEAR_ALL, 0, 0, width, height);
     progPerlinNoise.Draw(torus, [perspective, material]);
     bloom.Draw(
-        gLuminance.valueAsNumber! * 1.0, gIntensity.valueAsNumber! * 1.0);
+      gLuminance.valueAsNumber! * 1.0,
+      gIntensity.valueAsNumber! * 1.0,
+    );
 
     HTML.window.animationFrame.then(animate);
     fps.UpdateFrameCount(_lastTimeMs);

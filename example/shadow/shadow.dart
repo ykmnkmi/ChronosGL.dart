@@ -15,7 +15,7 @@ final ShaderObject lightVertexShaderBlinnPhongWithShadow =
         uPerspectiveViewMatrix,
         uLightPerspectiveViewMatrix,
         uModelMatrix,
-        uNormalMatrix
+        uNormalMatrix,
       ])
       ..SetBody([
         """
@@ -26,7 +26,7 @@ void main() {
     ${vPosition} = pos.xyz;
     ${vNormal} = ${uNormalMatrix} * ${aNormal};
 }
-    """
+    """,
       ]);
 
 final ShaderObject lightFragmentShaderBlinnPhongWithShadow =
@@ -38,8 +38,9 @@ final ShaderObject lightFragmentShaderBlinnPhongWithShadow =
         //uShadowBias,
         uColor,
       ])
-      ..SetBody([
-        """
+      ..SetBody(
+        [
+          """
 void main() {
     vec3 depth = ${vPositionFromLight}.xyz / ${vPositionFromLight}.w;
 		// depth is in [-1, 1] but we want [0, 1] for the texture lookup
@@ -59,12 +60,10 @@ void main() {
     ${oFragColor}.a = 1.0;
     // if ( ${oFragColor}.r != 66.0)  gl_FragColor.rgb = vec3(shadow);
 }
-      """
-      ], prolog: [
-        "",
-        StdLibShader,
-        ShadowMapShaderLib,
-      ]);
+      """,
+        ],
+        prolog: ["", StdLibShader, ShadowMapShaderLib],
+      );
 
 final VM.Vector3 posLight = VM.Vector3(11.0, 20.0, 0.0);
 final VM.Vector3 dirLight = VM.Vector3(0.0, -30.0, 0.0);
@@ -80,8 +79,18 @@ final String idDirectional = "idDirectional";
 
 final Map<String, Light> lightSources = {
   idDirectional: DirectionalLight("dir", dirLight, ColorBlue, ColorBlack, 40.0),
-  idSpot: SpotLight("spot", posLight, dirLight, ColorBlue, ColorBlack, range,
-      angle, 0.5, 0.5, range * 1.1),
+  idSpot: SpotLight(
+    "spot",
+    posLight,
+    dirLight,
+    ColorBlue,
+    ColorBlack,
+    range,
+    angle,
+    0.5,
+    0.5,
+    range * 1.1,
+  ),
   idPoint: PointLight("point", posLight, ColorLiteBlue, ColorBlue, range),
 };
 
@@ -156,32 +165,46 @@ final Material lightSourceMat = Material("light")
   ..SetUniform(uColor, ColorYellow);
 
 void AddShapesToScene(Scene scene) {
-  scene.add(Node(
-      "sphere", ShapeIcosahedron(scene.program, subdivisions: 3), matObjects)
-    ..setPos(0.0, 0.0, 0.0));
-
-  scene.add(Node("cube", ShapeCube(scene.program), matObjects)
-    ..setPos(-5.0, 0.0, -5.0));
-
-  scene.add(Node(
-      "cylinder", ShapeCylinder(scene.program, 3.0, 6.0, 2.0, 32), matObjects)
-    ..setPos(5.0, 0.0, -5.0));
-
-  scene.add(Node("torusknot",
-      ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4), matObjects)
-    ..setPos(5.0, 0.0, 5.0));
+  scene.add(
+    Node("sphere", ShapeIcosahedron(scene.program, subdivisions: 3), matObjects)
+      ..setPos(0.0, 0.0, 0.0),
+  );
 
   scene.add(
-      Node("plane", ShapeCube(scene.program, x: 30.0, y: 0.1, z: 30.0), matGray)
-        ..setPos(0.0, -10.0, 0.0));
+    Node("cube", ShapeCube(scene.program), matObjects)..setPos(-5.0, 0.0, -5.0),
+  );
+
+  scene.add(
+    Node(
+      "cylinder",
+      ShapeCylinder(scene.program, 3.0, 6.0, 2.0, 32),
+      matObjects,
+    )..setPos(5.0, 0.0, -5.0),
+  );
+
+  scene.add(
+    Node(
+      "torusknot",
+      ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+      matObjects,
+    )..setPos(5.0, 0.0, 5.0),
+  );
+
+  scene.add(
+    Node("plane", ShapeCube(scene.program, x: 30.0, y: 0.1, z: 30.0), matGray)
+      ..setPos(0.0, -10.0, 0.0),
+  );
 }
 
 double kNear = 0.1;
 double kFar = 50.0;
 
 void main() {
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: false);
@@ -208,21 +231,32 @@ void main() {
   // display scene with shadow on left part of screen.
   final RenderPhase phaseMain = RenderPhase("main", cgl);
   final Scene sceneBasic = Scene(
+    "solid",
+    RenderProgram(
       "solid",
-      RenderProgram("solid", cgl, lightVertexShaderBlinnPhongWithShadow,
-          lightFragmentShaderBlinnPhongWithShadow),
-      [perspective, illumination, uniforms]);
+      cgl,
+      lightVertexShaderBlinnPhongWithShadow,
+      lightFragmentShaderBlinnPhongWithShadow,
+    ),
+    [perspective, illumination, uniforms],
+  );
   phaseMain.add(sceneBasic);
 
   final Scene sceneFixed = Scene(
+    "solid",
+    RenderProgram(
       "solid",
-      RenderProgram(
-          "solid", cgl, solidColorVertexShader, solidColorFragmentShader),
-      [perspective, illumination]);
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    [perspective, illumination],
+  );
   phaseMain.add(sceneFixed);
 
   assert(
-      sceneFixed.program.HasDownwardCompatibleAttributesTo(sceneBasic.program));
+    sceneFixed.program.HasDownwardCompatibleAttributesTo(sceneBasic.program),
+  );
   AddShapesToScene(sceneBasic);
   for (Node n in sceneBasic.nodes) {
     shadowMap.AddShadowCaster(n);

@@ -159,8 +159,12 @@ void main() {
   canvas.width = width;
   canvas.height = height;
   perspective.AdjustAspect(width, height);
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
 
   theNodes.material = Material("matLogo")..SetUniform(uFadeFactor, 0.0);
 
@@ -169,46 +173,58 @@ void main() {
   phase.add(scene_pnvc);
 
   theNodes.knot = Node(
-      "knot",
-      ShapeTorusKnot(scene_pnvc.program, segmentsR: 512, segmentsT: 64),
-      theNodes.material)
-    ..enabled = false;
+    "knot",
+    ShapeTorusKnot(scene_pnvc.program, segmentsR: 512, segmentsT: 64),
+    theNodes.material,
+  )..enabled = false;
   scene_pnvc.add(theNodes.knot);
 
   // =========================================
-  final RenderProgram pnc_novertexmovement = RenderProgram("flying_logo", cgl,
-      perlinNoiseVertexShader, makePerlinNoiseColorFragmentShader(false));
+  final RenderProgram pnc_novertexmovement = RenderProgram(
+    "flying_logo",
+    cgl,
+    perlinNoiseVertexShader,
+    makePerlinNoiseColorFragmentShader(false),
+  );
 
-  final Scene scene_pnc_novertexmovement =
-      Scene("", pnc_novertexmovement, [perspective]);
+  final Scene scene_pnc_novertexmovement = Scene("", pnc_novertexmovement, [
+    perspective,
+  ]);
   phase.add(scene_pnc_novertexmovement);
 
   // =========================================
-  final RenderProgram pncb = RenderProgram("background", cgl,
-      perlinNoiseVertexShader, makePerlinNoiseColorFragmentShader(true));
+  final RenderProgram pncb = RenderProgram(
+    "background",
+    cgl,
+    perlinNoiseVertexShader,
+    makePerlinNoiseColorFragmentShader(true),
+  );
 
   final Scene scene_pncb = Scene("", pncb, [perspective]);
   phase.add(scene_pncb);
 
   theNodes.icoBig = Node(
-      "large_sphere",
-      ShapeIcosahedron(scene_pncb.program, subdivisions: 3, scale: 500),
-      theNodes.material)
-    ..enabled = false;
+    "large_sphere",
+    ShapeIcosahedron(scene_pncb.program, subdivisions: 3, scale: 500),
+    theNodes.material,
+  )..enabled = false;
   scene_pncb.add(theNodes.icoBig);
 
   // =========================================
   final RenderProgram pnc = RenderProgram(
-      "flying_deformaning_ball",
-      cgl,
-      deformingPerlinNoiseVertexShader,
-      makePerlinNoiseColorFragmentShader(false));
+    "flying_deformaning_ball",
+    cgl,
+    deformingPerlinNoiseVertexShader,
+    makePerlinNoiseColorFragmentShader(false),
+  );
 
   final Scene scene_pnc = Scene("", pnc, [perspective]);
   phase.add(scene_pnc);
-  theNodes.icoSmall = Node("small_sphere",
-      ShapeIcosahedron(scene_pnc.program, subdivisions: 4), theNodes.material)
-    ..enabled = false;
+  theNodes.icoSmall = Node(
+    "small_sphere",
+    ShapeIcosahedron(scene_pnc.program, subdivisions: 4),
+    theNodes.material,
+  )..enabled = false;
   scene_pnc.add(theNodes.icoSmall);
 
   var future = LoadRaw(modelFile)

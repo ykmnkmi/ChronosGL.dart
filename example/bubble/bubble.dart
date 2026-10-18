@@ -23,7 +23,7 @@ void main() {
     float m = 2.0 * length(r);
     ${vTexUV} = vec2(r.x/m + 0.5, r.y/m + 0.5);
 }
-  """
+  """,
   ]);
 
 ShaderObject sphereFragmentShader = ShaderObject("sphereF")
@@ -34,24 +34,36 @@ ShaderObject sphereFragmentShader = ShaderObject("sphereF")
 void main() {
     ${oFragColor} = texture(${uTexture}, ${vTexUV});
 }
-      """
+      """,
   ]);
 
 final List<Future<Object>> gLoadables = [];
 
 void main() {
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   final OrbitCamera orbit = OrbitCamera(5.0, 10.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective =
-      PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 1000.0);
+  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    orbit,
+    0.1,
+    1000.0,
+  );
 
-  final RenderProgram progSphere =
-      RenderProgram("spheres", cgl, sphereVertexShader, sphereFragmentShader);
+  final RenderProgram progSphere = RenderProgram(
+    "spheres",
+    cgl,
+    sphereVertexShader,
+    sphereFragmentShader,
+  );
   final MeshData mdSphere = ShapeIcosahedron(progSphere, subdivisions: 3);
   final VM.Matrix4 modelMat = VM.Matrix4.identity();
   final VM.Matrix3 normalMat = VM.Matrix3.identity();
@@ -67,7 +79,11 @@ void main() {
   gLoadables.add(future);
 
   final RenderProgram progStars = RenderProgram(
-      "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader);
+    "stars",
+    cgl,
+    pointSpritesVertexShader,
+    pointSpritesFragmentShader,
+  );
   final Material matStars = Utils.MakeStarMaterial(cgl)
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
   final MeshData mdStars = Utils.MakeStarMesh(progStars, 2000, 100.0);

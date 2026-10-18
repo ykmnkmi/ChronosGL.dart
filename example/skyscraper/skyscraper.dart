@@ -14,7 +14,7 @@ void main() {
     ${vPosition} = ${aPosition};
     ${vTexUV} = ${aTexUV};
 }
-"""
+""",
   ]);
 
 final ShaderObject skyScraperFragmentShader = ShaderObject("SkyScraperF")
@@ -36,12 +36,15 @@ void main() {
       //                       mod(vPosition.y*20.0,2.0),
       //                       mod(vPosition.z*10.0,2.0), 1. );
 }
-"""
+""",
   ]);
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   int w = canvas.clientWidth;
@@ -52,20 +55,30 @@ void main() {
   OrbitCamera orbit = OrbitCamera(25.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
 
   Scene sceneBuilding = Scene(
+    "building",
+    RenderProgram(
       "building",
-      RenderProgram(
-          "building", cgl, skyScraperVertexShader, skyScraperFragmentShader),
-      [perspective]);
+      cgl,
+      skyScraperVertexShader,
+      skyScraperFragmentShader,
+    ),
+    [perspective],
+  );
   phase.add(sceneBuilding);
 
   Scene sceneSky = Scene(
-      "sky",
-      RenderProgram("sky", cgl, demoVertexShader, demoFragmentShader),
-      [perspective]);
+    "sky",
+    RenderProgram("sky", cgl, demoVertexShader, demoFragmentShader),
+    [perspective],
+  );
   phase.add(sceneSky);
 
   Material mat = Material("mat");
@@ -78,14 +91,24 @@ void main() {
   // 0.01 and 0.99 is to remove some artifacts on the edges
   VM.Vector2 q = VM.Vector2(0.01, 0.01);
   GeometryBuilder gb = CubeGeometry(
-      x: 1.0, y: 2.0, z: 1.0, uMin: 0.01, uMax: 0.99, vMin: 0.01, vMax: 0.99);
+    x: 1.0,
+    y: 2.0,
+    z: 1.0,
+    uMin: 0.01,
+    uMax: 0.99,
+    vMin: 0.01,
+    vMax: 0.99,
+  );
   List uvs = gb.attributes[aTexUV]!;
   // change top and bottom face
   for (int i = 2 * 4; i < 4 * 4; i++) {
     uvs[i].setFrom(q);
   }
-  MeshData house =
-      GeometryBuilderToMeshData("house", sceneBuilding.program, gb);
+  MeshData house = GeometryBuilderToMeshData(
+    "house",
+    sceneBuilding.program,
+    gb,
+  );
 
   for (int x = -10; x < 10; x += 4) {
     for (int z = -10; z < 10; z += 4) {

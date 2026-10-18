@@ -17,7 +17,8 @@ final ShaderObject nullVertexShader = ShaderObject("nullShaderV")
   ..AddAttributeVars([aPosition])
   ..SetBody([NullVertexShaderString]);
 
-String shader = """
+String shader =
+    """
    #define D 3
    // default:
    // const float ampls[D] = float[](1.0, 0.5, 0.25);
@@ -88,10 +89,14 @@ final ShaderObject noiseFragmentShader = ShaderObject("noiseShaderF")
     uAmplMul,
     uFreqMul,
     uMode,
-    uSpeed
+    uSpeed,
   ])
-  ..SetBody(
-      [ColorFunctions, SimplexNoiseHelpers, SimplexNoiseFunction3, shader]);
+  ..SetBody([
+    ColorFunctions,
+    SimplexNoiseHelpers,
+    SimplexNoiseFunction3,
+    shader,
+  ]);
 
 void main() {
   IntroduceNewShaderVar(uFreqMul, const ShaderVarDesc("float", ""));
@@ -102,8 +107,11 @@ void main() {
   IntroduceNewShaderVar(uMode, const ShaderVarDesc("float", ""));
   IntroduceNewShaderVar(uSpeed, const ShaderVarDesc("float", ""));
 
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final int w = canvas.clientWidth;
@@ -113,8 +121,12 @@ void main() {
 
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
-  final RenderProgram programPerlin =
-      RenderProgram("perlin", cgl, nullVertexShader, noiseFragmentShader);
+  final RenderProgram programPerlin = RenderProgram(
+    "perlin",
+    cgl,
+    nullVertexShader,
+    noiseFragmentShader,
+  );
 
   final MeshData quad = ShapeQuad(programPerlin, 1);
 

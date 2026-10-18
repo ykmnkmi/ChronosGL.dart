@@ -9,14 +9,14 @@ GeometryBuilder QuadGeometry(num size) {
     VM.Vector3(-1.0 * size, -1.0 * size, 0.0),
     VM.Vector3(1.0 * size, -1.0 * size, 0.0),
     VM.Vector3(1.0 * size, 1.0 * size, 0.0),
-    VM.Vector3(-1.0 * size, 1.0 * size, 0.0)
+    VM.Vector3(-1.0 * size, 1.0 * size, 0.0),
   ];
 
   List<VM.Vector2> uvs = [
     VM.Vector2(0.0, 0.0),
     VM.Vector2(1.0, 0.0),
     VM.Vector2(1.0, 1.0),
-    VM.Vector2(0.0, 1.0)
+    VM.Vector2(0.0, 1.0),
   ];
 
   VM.Vector3 n = VM.Vector3(0.0, 0.0, 1.0);
@@ -34,19 +34,29 @@ GeometryBuilder QuadGeometry(num size) {
 /// Checkerboard with xstrips X ystrips fields of dim xlen X ylen centered
 /// around the origin
 GeometryBuilder GridGeometry(
-    int xstrips, int ystrips, double xlen, double ylen) {
+  int xstrips,
+  int ystrips,
+  double xlen,
+  double ylen,
+) {
   final double xoffset = xlen * 0.5;
   final double yoffset = ylen * 0.5;
   final double xdelta = xlen / xstrips;
   final double ydelta = xlen / ystrips;
 
   VM.Vector3 normal = VM.Vector3(0.0, 0.0, 1.0);
-  List<VM.Vector3> vertices =
-      List.generate((xstrips + 1) * (ystrips + 1), (i) => VM.Vector3.zero());
-  List<VM.Vector3> normals =
-      List.generate((xstrips + 1) * (ystrips + 1), (i) => VM.Vector3.zero());
-  List<VM.Vector2> uvs =
-      List.generate((xstrips + 1) * (ystrips + 1), (i) => VM.Vector2.zero());
+  List<VM.Vector3> vertices = List.generate(
+    (xstrips + 1) * (ystrips + 1),
+    (i) => VM.Vector3.zero(),
+  );
+  List<VM.Vector3> normals = List.generate(
+    (xstrips + 1) * (ystrips + 1),
+    (i) => VM.Vector3.zero(),
+  );
+  List<VM.Vector2> uvs = List.generate(
+    (xstrips + 1) * (ystrips + 1),
+    (i) => VM.Vector2.zero(),
+  );
 
   int index(int x, int y) {
     return x * (xstrips + 1) + y;
@@ -55,8 +65,11 @@ GeometryBuilder GridGeometry(
   for (int x = 0; x <= xstrips; ++x) {
     for (int y = 0; y <= ystrips; ++y) {
       final int ii = index(x, y);
-      vertices[ii] =
-          VM.Vector3(x * xdelta - xoffset, y * ydelta - yoffset, 0.0);
+      vertices[ii] = VM.Vector3(
+        x * xdelta - xoffset,
+        y * ydelta - yoffset,
+        0.0,
+      );
       normals[ii] = normal;
       uvs[ii] = VM.Vector2(x / xstrips, y / ystrips);
     }
@@ -66,7 +79,11 @@ GeometryBuilder GridGeometry(
   for (int x = 0; x < xstrips; ++x) {
     for (int y = 0; y < ystrips; ++y) {
       gb.AddFace4(
-          index(x, y), index(x + 1, y), index(x + 1, y + 1), index(x, y + 1));
+        index(x, y),
+        index(x + 1, y),
+        index(x + 1, y + 1),
+        index(x, y + 1),
+      );
     }
   }
   gb.EnableAttribute(aTexUV);

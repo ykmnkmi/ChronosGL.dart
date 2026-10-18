@@ -50,8 +50,13 @@ final Map<String, Easing> MapStringToEasing = {
 
 // returns a sequence of x,y coordinates  describing the bevel cur
 // through view (see above)
-List<VM.Vector2> BevelSupportPoints(double width, double height, int nSupports,
-    {Easing widthEasing = EasingCosine, Easing heightEasing = EasingSine}) {
+List<VM.Vector2> BevelSupportPoints(
+  double width,
+  double height,
+  int nSupports, {
+  Easing widthEasing = EasingCosine,
+  Easing heightEasing = EasingSine,
+}) {
   // out[0]
   List<VM.Vector2> out = List.generate(nSupports, (i) {
     // make sure t assumes zero and one at the extremes
@@ -69,8 +74,12 @@ List<VM.Vector2> BevelSupportPoints(double width, double height, int nSupports,
 // x-coordinate.
 // Typically supports[0] == (0,0) which means thet contour will appear
 // a level z=0 unchanged.
-List<List<VM.Vector3>> BevelStrips(List<VM.Vector2> contour,
-    List<VM.Vector2> gradient, List<VM.Vector2> supports, VM.Matrix3 m) {
+List<List<VM.Vector3>> BevelStrips(
+  List<VM.Vector2> contour,
+  List<VM.Vector2> gradient,
+  List<VM.Vector2> supports,
+  VM.Matrix3 m,
+) {
   assert(contour.length == gradient.length);
   List<List<VM.Vector3>> out = [];
   VM.Vector3 v = VM.Vector3.zero();

@@ -13,8 +13,11 @@ final HTML.InputElement gSobel =
 final List<Future<Object>> gLoadables = [];
 
 void main() {
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -31,11 +34,19 @@ void main() {
   final Framebuffer fb = Framebuffer.Default(cgl, width, height);
 
   final List<ShaderObject> greyShader = createPlane2GreyShader();
-  final RenderProgram progGrey =
-      RenderProgram("grey", cgl, greyShader[0], greyShader[1]);
+  final RenderProgram progGrey = RenderProgram(
+    "grey",
+    cgl,
+    greyShader[0],
+    greyShader[1],
+  );
 
-  final RenderProgram progSobel =
-      RenderProgram("ssao", cgl, sobelVertexShader, sobelFragmentShader);
+  final RenderProgram progSobel = RenderProgram(
+    "ssao",
+    cgl,
+    sobelVertexShader,
+    sobelFragmentShader,
+  );
 
   final UniformGroup uniforms = UniformGroup("plain")
     ..SetUniform(uCanvasSize, VM.Vector2(0.0 + width, 0.0 + height))

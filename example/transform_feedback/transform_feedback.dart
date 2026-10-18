@@ -1,4 +1,5 @@
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:math' as Math;
 import 'dart:html' as HTML;
 import 'dart:typed_data';
@@ -21,8 +22,13 @@ final HTML.InputElement gCpuCompute =
 
 final ShaderObject particleVertexShader = ShaderObject("ParticleV")
   ..AddAttributeVars([aPosition])
-  ..AddUniformVars(
-      [uPerspectiveViewMatrix, uModelMatrix, uPointSize, uSources, uSinks])
+  ..AddUniformVars([
+    uPerspectiveViewMatrix,
+    uModelMatrix,
+    uPointSize,
+    uSources,
+    uSinks,
+  ])
   ..AddTransformVars([tPosition])
   ..SetBody([
     """
@@ -77,7 +83,7 @@ void main() {
     // new position for next round
     ${tPosition} = Update(${aPosition}, gl_Position.xyz);
 }
-"""
+""",
   ]);
 
 final ShaderObject particleFragmentShader = ShaderObject("ParticleF")
@@ -87,7 +93,7 @@ final ShaderObject particleFragmentShader = ShaderObject("ParticleF")
 void main() {
       ${oFragColor} = texture( ${uTexture},  gl_PointCoord);
 }
-"""
+""",
   ]);
 
 String DumpVec(VM.Vector3 v) => "${v.x} ${v.y} ${v.z}";
@@ -152,9 +158,11 @@ class Ion {
 }
 
 VM.Vector3 RandomVector(Math.Random rng, double d) {
-  return VM.Vector3((rng.nextDouble() - 0.5), (rng.nextDouble() - 0.5),
-      (rng.nextDouble() - 0.5))
-    ..scale(d);
+  return VM.Vector3(
+    (rng.nextDouble() - 0.5),
+    (rng.nextDouble() - 0.5),
+    (rng.nextDouble() - 0.5),
+  )..scale(d);
 }
 
 List<Pole> MakeRowOfPoles(List<double> xx, double y, double z, double scale) {
@@ -190,12 +198,19 @@ void ExtractIonPos(List<Ion> ions, Float32List out) {
 
 void main() {
   IntroduceNewShaderVar(
-      uSources, const ShaderVarDesc(VarTypeVec3, "", arraySize: 5));
+    uSources,
+    const ShaderVarDesc(VarTypeVec3, "", arraySize: 5),
+  );
   IntroduceNewShaderVar(
-      uSinks, const ShaderVarDesc(VarTypeVec3, "", arraySize: 5));
+    uSinks,
+    const ShaderVarDesc(VarTypeVec3, "", arraySize: 5),
+  );
 
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   final Math.Random rng = Math.Random(0);
 
@@ -212,16 +227,32 @@ void main() {
     ..AdjustAspect(width, height);
 
   final RenderProgram programJS = RenderProgram(
-      "CPU", cgl, pointSpritesVertexShader, pointSpritesFragmentShader);
-  final RenderProgram programGPU =
-      RenderProgram("GPU", cgl, particleVertexShader, particleFragmentShader);
+    "CPU",
+    cgl,
+    pointSpritesVertexShader,
+    pointSpritesFragmentShader,
+  );
+  final RenderProgram programGPU = RenderProgram(
+    "GPU",
+    cgl,
+    particleVertexShader,
+    particleFragmentShader,
+  );
   final int bindingIndex = programGPU.GetTransformBindingIndex(tPosition);
   print("@@@@ ${bindingIndex}");
 
-  final List<Pole> srcPoles =
-      MakeRowOfPoles([2.0, 1.0, 0.0, -1.0, -2.0], 0.0, 2.0, 3.0);
-  final List<Pole> dstPoles =
-      MakeRowOfPoles([2.0, 1.0, 0.0, -1.0, -2.0], 0.0, -2.0, 3.0);
+  final List<Pole> srcPoles = MakeRowOfPoles(
+    [2.0, 1.0, 0.0, -1.0, -2.0],
+    0.0,
+    2.0,
+    3.0,
+  );
+  final List<Pole> dstPoles = MakeRowOfPoles(
+    [2.0, 1.0, 0.0, -1.0, -2.0],
+    0.0,
+    -2.0,
+    3.0,
+  );
 
   List<Ion> ions = [Ion(RandomVector(rng, kMaxDistance * 100.0))];
   Float32List ionsPos = Float32List(3 * ions.length);
@@ -263,7 +294,10 @@ void main() {
     mdOut.ChangeVertexData(ionsPos);
     mdIn.ChangeVertexData(ionsPos);
     cgl.bindBufferBase(
-        GL_TRANSFORM_FEEDBACK_BUFFER, bindingIndex, mdOut.GetBuffer(aPosition));
+      GL_TRANSFORM_FEEDBACK_BUFFER,
+      bindingIndex,
+      mdOut.GetBuffer(aPosition),
+    );
   }
 
   void UpdateIonsJS(double t) {
@@ -291,8 +325,13 @@ void main() {
       // use vertex shader output as input for next round
       cgl.bindBuffer(GL_ARRAY_BUFFER, mdIn.GetBuffer(aPosition));
       cgl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, mdOut.GetBuffer(aPosition));
-      cgl.copyBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, GL_ARRAY_BUFFER, 0, 0,
-          ions.length * 3 * 4);
+      cgl.copyBufferSubData(
+        GL_TRANSFORM_FEEDBACK_BUFFER,
+        GL_ARRAY_BUFFER,
+        0,
+        0,
+        ions.length * 3 * 4,
+      );
     }
     HTML.window.animationFrame.then(animate);
     fps.UpdateFrameCount(timeMs + 0.0);

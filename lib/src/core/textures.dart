@@ -33,7 +33,10 @@ class TextureProperties {
   void InstallLate(ChronosGL cgl, int type) {
     if (anisotropicFilterLevel != kNoAnisotropicFilterLevel) {
       cgl.texParameterf(
-          type, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropicFilterLevel + 0.0);
+        type,
+        GL_TEXTURE_MAX_ANISOTROPY_EXT,
+        anisotropicFilterLevel + 0.0,
+      );
     }
     cgl.texParameteri(type, GL_TEXTURE_MAG_FILTER, magFilter);
     cgl.texParameteri(type, GL_TEXTURE_MIN_FILTER, minFilter);
@@ -59,7 +62,10 @@ class TextureProperties {
       */
 
       cgl.texParameteri(
-          type, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        type,
+        GL_TEXTURE_COMPARE_MODE,
+        GL_COMPARE_REF_TO_TEXTURE,
+      );
     }
   }
 }
@@ -108,7 +114,7 @@ bool IsCubeChildTextureType(int t) {
 /// is the base class for all textures
 class Texture {
   Texture(this._cgl, this._textureType, this._url, this.properties)
-      : _texture = _cgl.createTexture();
+    : _texture = _cgl.createTexture();
 
   final String _url;
   final GlTexture _texture;
@@ -143,9 +149,14 @@ class Texture {
 
 // https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glTexImage2D.xhtml
 class TypedTexture extends Texture {
-  TypedTexture(ChronosGL cgl, String url, this._width, this._height,
-      this._internalFormat, TextureProperties prop)
-      : super(cgl, GL_TEXTURE_2D, url, prop) {
+  TypedTexture(
+    ChronosGL cgl,
+    String url,
+    this._width,
+    this._height,
+    this._internalFormat,
+    TextureProperties prop,
+  ) : super(cgl, GL_TEXTURE_2D, url, prop) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texStorage2D(GL_TEXTURE_2D, 1, _internalFormat, _width, _height);
     properties.InstallLate(_cgl, _textureType);
@@ -166,19 +177,28 @@ class TypedTexture extends Texture {
 
 class TypedTextureMutable extends Texture {
   TypedTextureMutable(
-      ChronosGL cgl,
-      String url,
-      this._width,
-      this._height,
-      this._internalFormat,
-      TextureProperties prop,
-      int format,
-      int datatype,
-      dynamic /* */ data)
-      : super(cgl, GL_TEXTURE_2D, url, prop) {
+    ChronosGL cgl,
+    String url,
+    this._width,
+    this._height,
+    this._internalFormat,
+    TextureProperties prop,
+    int format,
+    int datatype,
+    dynamic /* */ data,
+  ) : super(cgl, GL_TEXTURE_2D, url, prop) {
     _cgl.bindTexture(_textureType, _texture);
-    _cgl.texImage2D(GL_TEXTURE_2D, 0, _internalFormat, _width, _height, 0,
-        format, datatype, data);
+    _cgl.texImage2D(
+      GL_TEXTURE_2D,
+      0,
+      _internalFormat,
+      _width,
+      _height,
+      0,
+      format,
+      datatype,
+      data,
+    );
     properties.InstallLate(_cgl, _textureType);
     int err = _cgl.getError();
     assert(err == GL_NO_ERROR, "texture error ${err}");
@@ -191,16 +211,41 @@ class TypedTextureMutable extends Texture {
 
   void UpdateContent(Object data, int format, int datatype) {
     _cgl.bindTexture(_textureType, _texture);
-    _cgl.texImage2D(GL_TEXTURE_2D, 0, _internalFormat, _width, _height, 0,
-        format, datatype, data);
+    _cgl.texImage2D(
+      GL_TEXTURE_2D,
+      0,
+      _internalFormat,
+      _width,
+      _height,
+      0,
+      format,
+      datatype,
+      data,
+    );
     _cgl.bindTexture(_textureType, null);
   }
 
   void UpdateContentPartial(
-      Object data, int formatType, int scalarType, int x, int y, int w, int h) {
+    Object data,
+    int formatType,
+    int scalarType,
+    int x,
+    int y,
+    int w,
+    int h,
+  ) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texSubImage2D(
-        GL_TEXTURE_2D, 0, x, y, w, h, formatType, scalarType, data);
+      GL_TEXTURE_2D,
+      0,
+      x,
+      y,
+      w,
+      h,
+      formatType,
+      scalarType,
+      data,
+    );
     _cgl.bindTexture(_textureType, null);
   }
 
@@ -215,9 +260,13 @@ class TypedTextureMutable extends Texture {
 // TODO: We want to call  Install() in the constructor but this does not
 // seem to work for video elements.
 class ImageTexture extends Texture {
-  ImageTexture(ChronosGL cgl, String url, this._element,
-      [TextureProperties? tp, int textureType = GL_TEXTURE_2D])
-      : super(cgl, textureType, url, tp == null ? TextureProperties() : tp) {
+  ImageTexture(
+    ChronosGL cgl,
+    String url,
+    this._element, [
+    TextureProperties? tp,
+    int textureType = GL_TEXTURE_2D,
+  ]) : super(cgl, textureType, url, tp == null ? TextureProperties() : tp) {
     _cgl.bindTexture(_textureType, _texture);
 
     properties.InstallEarly(_cgl, _textureType);
@@ -233,7 +282,13 @@ class ImageTexture extends Texture {
   void SetImageData(Object data) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texImage2Dweb(
-        _textureType, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, data);
+      _textureType,
+      0,
+      GL_RGBA,
+      GL_RGBA,
+      GL_UNSIGNED_BYTE,
+      data,
+    );
   }
 
   void Update() {
@@ -253,15 +308,20 @@ const List<int> _kCubeModifier = [
 
 class CubeTexture extends Texture {
   CubeTexture(ChronosGL cgl, String url, List images)
-      : super(
-            cgl, GL_TEXTURE_CUBE_MAP, url, TextureProperties()..clamp = true) {
+    : super(cgl, GL_TEXTURE_CUBE_MAP, url, TextureProperties()..clamp = true) {
     assert(images.length == _kCubeModifier.length);
     properties.InstallEarly(_cgl, _textureType);
 
     _cgl.bindTexture(_textureType, _texture);
     for (int i = 0; i < _kCubeModifier.length; ++i) {
       _cgl.texImage2Dweb(
-          _kCubeModifier[i], 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, images[i]);
+        _kCubeModifier[i],
+        0,
+        GL_RGBA,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        images[i],
+      );
     }
     properties.InstallLate(_cgl, _textureType);
     int err = _cgl.getError();

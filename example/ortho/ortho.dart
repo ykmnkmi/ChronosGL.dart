@@ -3,8 +3,11 @@ import 'dart:html' as HTML;
 import 'package:chronosgl/chronosgl.dart';
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
@@ -13,7 +16,11 @@ void main() {
   double d = 20.0;
 
   RenderProgram prog = RenderProgram(
-      "textured", cgl, solidColorVertexShader, solidColorFragmentShader);
+    "textured",
+    cgl,
+    solidColorVertexShader,
+    solidColorFragmentShader,
+  );
 
   Orthographic orthographic = Orthographic(orbit, -d, d, -d, -d, 100.0);
   RenderPhase phaseOrthograhic = RenderPhase("shadow", cgl);

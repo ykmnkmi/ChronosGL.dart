@@ -2,7 +2,13 @@ part of core;
 
 /// Helper class for holding info produced by RenderProgram::Draw().
 class DrawStats {
-  DrawStats(this.name, this.numInstances, this.numItems, this.drawMode, this.duration);
+  DrawStats(
+    this.name,
+    this.numInstances,
+    this.numItems,
+    this.drawMode,
+    this.duration,
+  );
 
   final String name;
   final int numInstances;
@@ -17,11 +23,18 @@ class DrawStats {
 
 /// represents program (Fragment + Vertex Shader) running on the GPU with an API to invoke it.
 class RenderProgram extends NamedEntity {
-  RenderProgram(String name, this._cgl, this._shaderObjectV, this._shaderObjectF)
-      : _program = _cgl.CompileWholeProgram(
-            _shaderObjectV.shader!, _shaderObjectF.shader!, _shaderObjectV.transformVars),
-        _attributes = Set.from(_shaderObjectV.attributeVars),
-        super(name) {
+  RenderProgram(
+    String name,
+    this._cgl,
+    this._shaderObjectV,
+    this._shaderObjectF,
+  ) : _program = _cgl.CompileWholeProgram(
+        _shaderObjectV.shader!,
+        _shaderObjectF.shader!,
+        _shaderObjectV.transformVars,
+      ),
+      _attributes = Set.from(_shaderObjectV.attributeVars),
+      super(name) {
     for (String v in _shaderObjectV.uniformVars) {
       _uniformLocations[v] = _cgl.getUniformLocation(_program, v)!;
     }
@@ -54,7 +67,12 @@ class RenderProgram extends NamedEntity {
   }
 
   MeshData MakeMeshData(String name, int drawMode) {
-    return MeshData(name, _cgl, drawMode, _shaderObjectV.GetAttributeLayoutMap());
+    return MeshData(
+      name,
+      _cgl,
+      drawMode,
+      _shaderObjectV.GetAttributeLayoutMap(),
+    );
   }
 
   /// If you want to re-use meshes across programs you can use
@@ -148,7 +166,8 @@ class RenderProgram extends NamedEntity {
     // enable only for debug
     if (_uniformsInitialized.containsKey(canonical)) {
       LogError(
-          "${name}:  ${canonical} : group [${group}] overwrites [${canonical}] (${_uniformsInitialized[canonical]})");
+        "${name}:  ${canonical} : group [${group}] overwrites [${canonical}] (${_uniformsInitialized[canonical]})",
+      );
     }
     _uniformsInitialized[canonical] = group;
 
@@ -234,7 +253,8 @@ class RenderProgram extends NamedEntity {
 
   List<String> UninitializedInputs() {
     if (_uniformsInitialized.length == _uniformLocations.length &&
-        _attributesInitialized.length == _attributes.length) return [];
+        _attributesInitialized.length == _attributes.length)
+      return [];
     List<String> out = [];
     for (String u in _uniformLocations.keys) {
       if (!_uniformsInitialized.containsKey(u)) out.add(u);
@@ -267,7 +287,11 @@ class RenderProgram extends NamedEntity {
     LogDebug("setting ${count} var in ${delta}");
   }
 
-  void Draw(MeshData md, List<UniformGroup> uniforms, [List<DrawStats>? stats]) {
+  void Draw(
+    MeshData md,
+    List<UniformGroup> uniforms, [
+    List<DrawStats>? stats,
+  ]) {
     final DateTime start = DateTime.now();
     _cgl.useProgram(_program);
     _ClearState();
@@ -278,7 +302,10 @@ class RenderProgram extends NamedEntity {
     for (UniformGroup u in uniforms) {
       _ActivateUniforms(u.name, u.GetUniforms());
       if (u is Material) {
-        assert(!haveSeenMaterial, "in program ${name}: multiple materials specified");
+        assert(
+          !haveSeenMaterial,
+          "in program ${name}: multiple materials specified",
+        );
         haveSeenMaterial = true;
       }
     }
@@ -287,7 +314,10 @@ class RenderProgram extends NamedEntity {
     for (String a in md.GetAttributes()) {
       _attributesInitialized.add(a);
     }
-    if (debug) print("[${name}] draw points: ${md.drawMode} instances${md.GetNumInstances()}");
+    if (debug)
+      print(
+        "[${name}] draw points: ${md.drawMode} instances${md.GetNumInstances()}",
+      );
     // TODO: put this behind a flag
     List<String> uninitialized = UninitializedInputs();
     if (uninitialized.isNotEmpty) {
@@ -299,12 +329,25 @@ class RenderProgram extends NamedEntity {
 
     md.Activate();
     bool hasTransforms = _shaderObjectV.transformVars.length > 0;
-    _cgl.draw(md.drawMode, md.GetNumItems(), md.elementArrayBufferType, 0, md.GetNumInstances(),
-        hasTransforms);
+    _cgl.draw(
+      md.drawMode,
+      md.GetNumItems(),
+      md.elementArrayBufferType,
+      0,
+      md.GetNumInstances(),
+      hasTransforms,
+    );
     if (debug) print(_cgl.getProgramInfoLog(_program));
     if (stats != null) {
-      stats.add(DrawStats(name, md.GetNumInstances(), md.GetNumItems(), md.drawMode,
-          DateTime.now().difference(start)));
+      stats.add(
+        DrawStats(
+          name,
+          md.GetNumInstances(),
+          md.GetNumItems(),
+          md.drawMode,
+          DateTime.now().difference(start),
+        ),
+      );
     }
   }
 }

@@ -4,7 +4,7 @@ part of core;
 class Orthographic extends UniformGroup {
   // d = "down", up is computed dynamically based on height & width
   Orthographic(this._camera, this._l, this._r, this._d, this._f, this._b)
-      : super("othrogrpahic") {
+    : super("othrogrpahic") {
     Update();
   }
 
@@ -46,9 +46,12 @@ class Orthographic extends UniformGroup {
 /// the uPerspectiveViewMatrix Uniform which also requires a **Camera**
 /// for view matrix.
 class Perspective extends UniformGroup {
-  Perspective(this._camera, this._near, this._far,
-      [String name = "perspective"])
-      : super(name) {
+  Perspective(
+    this._camera,
+    this._near,
+    this._far, [
+    String name = "perspective",
+  ]) : super(name) {
     Update();
   }
 

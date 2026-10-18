@@ -13,8 +13,11 @@ final HTML.InputElement gSSAO =
     HTML.document.querySelector('#activate') as HTML.InputElement;
 
 void main() {
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -32,10 +35,18 @@ void main() {
   final Framebuffer fb = Framebuffer.Default(cgl, width, height);
 
   final RenderProgram progSolid = RenderProgram(
-      "solid", cgl, solidColorVertexShader, solidColorFragmentShader);
+    "solid",
+    cgl,
+    solidColorVertexShader,
+    solidColorFragmentShader,
+  );
 
-  final RenderProgram progSSAO =
-      RenderProgram("ssao", cgl, ssaoVertexShader, ssaoFragmentShader);
+  final RenderProgram progSSAO = RenderProgram(
+    "ssao",
+    cgl,
+    ssaoVertexShader,
+    ssaoFragmentShader,
+  );
 
   final UniformGroup uniforms = UniformGroup("plain")
     ..SetUniform(uCameraNear, 0.1)

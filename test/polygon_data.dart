@@ -2,34 +2,11 @@ library polygon_data;
 
 import 'package:vector_math/vector_math.dart' as VM;
 
-final List<double> SquareData = [
-  1.0,
-  -1.0,
-  1.0,
-  1.0,
-  -1.0,
-  1.0,
-  -1.0,
-  -1.0,
-];
+final List<double> SquareData = [1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0];
 
-final List<double> TriangleData = [
-  1.0,
-  -1.0,
-  1.0,
-  1.0,
-  -1.0,
-  1.0,
-];
+final List<double> TriangleData = [1.0, -1.0, 1.0, 1.0, -1.0, 1.0];
 
-final List<double> TriangleData2 = [
-  0.0,
-  0.0,
-  1.0,
-  0.0,
-  -1.0,
-  1.0,
-];
+final List<double> TriangleData2 = [0.0, 0.0, 1.0, 0.0, -1.0, 1.0];
 
 final List<double> BirdData = [
   4.57998, 4.03402, 4.06435, 4.06435, 3.51839, 4.21601, 3.09376, 4.42832, //
@@ -126,7 +103,7 @@ final List<int> HardExample1Data = [
   440, 4152, 440, 4208, 296, 4192, 368, 4192,
   //
   400, 4200, 400, 4176, 368, 4192, 296, 4192,
-  264, 4200, 288, 4160, 296, 4192
+  264, 4200, 288, 4160, 296, 4192,
 ];
 
 final List<double> HardExample2Data = [
@@ -145,13 +122,21 @@ final List<double> HardExample2Data = [
   155.759527283749781, 64.880160826258362,
 ];
 
-List<VM.Vector2> MakeContour(List<num> data, double scalex, double scaley,
-    [double offsetx = 0.0, double offsety = 0.0]) {
+List<VM.Vector2> MakeContour(
+  List<num> data,
+  double scalex,
+  double scaley, [
+  double offsetx = 0.0,
+  double offsety = 0.0,
+]) {
   assert(data.length & 1 == 0);
   List<VM.Vector2> out = List.generate(
-      data.length ~/ 2,
-      (i) => VM.Vector2((data[2 * i] + offsetx) * scalex,
-          (data[2 * i + 1] + offsety) * scaley));
+    data.length ~/ 2,
+    (i) => VM.Vector2(
+      (data[2 * i] + offsetx) * scalex,
+      (data[2 * i + 1] + offsety) * scaley,
+    ),
+  );
 
   return out;
 }
@@ -163,11 +148,26 @@ final List<VM.Vector2> Triangle = MakeContour(TriangleData, 1.0, 1.0);
 final List<VM.Vector2> Triangle2 = MakeContour(TriangleData2, 1.0, 1.0);
 final List<VM.Vector2> Bird = MakeContour(BirdData, 0.1, 0.1);
 
-final List<VM.Vector2> Building =
-    MakeContour(BuildingData, 0.01, 0.01, -700.0, -100.0);
+final List<VM.Vector2> Building = MakeContour(
+  BuildingData,
+  0.01,
+  0.01,
+  -700.0,
+  -100.0,
+);
 
-final List<VM.Vector2> HardExample1 =
-    MakeContour(HardExample1Data, 0.005, 0.005, -350.0, -4150.0);
+final List<VM.Vector2> HardExample1 = MakeContour(
+  HardExample1Data,
+  0.005,
+  0.005,
+  -350.0,
+  -4150.0,
+);
 
-final List<VM.Vector2> HardExample2 =
-    MakeContour(HardExample2Data, 0.03, 0.03, -155.0, -70.0);
+final List<VM.Vector2> HardExample2 = MakeContour(
+  HardExample2Data,
+  0.03,
+  0.03,
+  -155.0,
+  -70.0,
+);

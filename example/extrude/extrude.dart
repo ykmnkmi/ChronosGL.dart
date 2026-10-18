@@ -24,28 +24,49 @@ MeshData MakeBevelMesh(RenderProgram prog) {
   Easing easingWidth = MapStringToEasing[gEasingWidth.value]!;
   Easing easingHeight = MapStringToEasing[gEasingHeight.value]!;
   int segments = gSegments.valueAsNumber!.toInt();
-  List<VM.Vector2> supports = BevelSupportPoints(width, height, segments,
-      widthEasing: easingWidth, heightEasing: easingHeight);
-  List<List<VM.Vector3>> strips =
-      BevelStrips(gBase, gGrad, supports, VM.Matrix3.identity());
+  List<VM.Vector2> supports = BevelSupportPoints(
+    width,
+    height,
+    segments,
+    widthEasing: easingWidth,
+    heightEasing: easingHeight,
+  );
+  List<List<VM.Vector3>> strips = BevelStrips(
+    gBase,
+    gGrad,
+    supports,
+    VM.Matrix3.identity(),
+  );
   GeometryBuilder gb = GeometryBuilder();
   gb.AddFaces4Strips(strips, true);
   return GeometryBuilderToMeshDataWireframe("", prog, gb);
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective =
-      PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 1000.0);
+  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    orbit,
+    0.1,
+    1000.0,
+  );
   final RenderProgram prog = RenderProgram(
-      "basic", cgl, solidColorVertexShader, solidColorFragmentShader);
+    "basic",
+    cgl,
+    solidColorVertexShader,
+    solidColorFragmentShader,
+  );
 
   final Material matWire = Material("wire")
     ..SetUniform(uColor, ColorYellow)

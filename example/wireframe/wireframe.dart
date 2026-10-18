@@ -9,8 +9,11 @@ final HTML.InputElement gOpaque =
     HTML.document.querySelector('#opaque') as HTML.InputElement;
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -18,14 +21,18 @@ void main() {
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
 
   Scene scene = Scene(
-      "wireframe",
-      RenderProgram(
-          "main", cgl, wireframeVertexShader, wireframeFragmentShader),
-      [perspective]);
+    "wireframe",
+    RenderProgram("main", cgl, wireframeVertexShader, wireframeFragmentShader),
+    [perspective],
+  );
   phase.add(scene);
 
   final Material matWireframe = Material("wire")
@@ -37,63 +44,77 @@ void main() {
     GeometryBuilder gb = IcosahedronGeometry(subdivisions: 2)
       ..GenerateWireframeCenters();
     Node ico = Node(
-        "sphere",
-        GeometryBuilderToMeshData("icosahedron", scene.program, gb),
-        matWireframe)
-      ..setPos(0.0, 0.0, 0.0);
+      "sphere",
+      GeometryBuilderToMeshData("icosahedron", scene.program, gb),
+      matWireframe,
+    )..setPos(0.0, 0.0, 0.0);
     scene.add(ico);
   }
 
   {
     GeometryBuilder gb = CubeGeometry()..GenerateWireframeCenters();
-    Node cube = Node("cube",
-        GeometryBuilderToMeshData("cube", scene.program, gb), matWireframe)
-      ..setPos(-5.0, 0.0, -5.0);
+    Node cube = Node(
+      "cube",
+      GeometryBuilderToMeshData("cube", scene.program, gb),
+      matWireframe,
+    )..setPos(-5.0, 0.0, -5.0);
     scene.add(cube);
   }
 
   {
     GeometryBuilder gb = WedgeGeometry()..GenerateWireframeCenters();
-    Node wedge = Node("wedge",
-        GeometryBuilderToMeshData("wedge", scene.program, gb), matWireframe)
-      ..setPos(0.0, -5.0, 0.0);
+    Node wedge = Node(
+      "wedge",
+      GeometryBuilderToMeshData("wedge", scene.program, gb),
+      matWireframe,
+    )..setPos(0.0, -5.0, 0.0);
     scene.add(wedge);
   }
 
   {
     GeometryBuilder gb = CylinderGeometryWireframeFriendly(3.0, 4.0, 2.0, 16)
       ..GenerateWireframeCenters();
-    Node cyl = Node("cylinder",
-        GeometryBuilderToMeshData("cylinder", scene.program, gb), matWireframe)
-      ..setPos(5.0, 0.0, -5.0);
+    Node cyl = Node(
+      "cylinder",
+      GeometryBuilderToMeshData("cylinder", scene.program, gb),
+      matWireframe,
+    )..setPos(5.0, 0.0, -5.0);
     scene.add(cyl);
   }
 
   {
     GeometryBuilder gb = QuadGeometry(2)..GenerateWireframeCenters();
-    Node quad = Node("quad",
-        GeometryBuilderToMeshData("quad", scene.program, gb), matWireframe)
-      ..setPos(-5.0, 0.0, 5.0);
+    Node quad = Node(
+      "quad",
+      GeometryBuilderToMeshData("quad", scene.program, gb),
+      matWireframe,
+    )..setPos(-5.0, 0.0, 5.0);
     scene.add(quad);
   }
 
   {
-    GeometryBuilder gb =
-        TorusKnotGeometryWireframeFriendly(radius: 1.0, tubeRadius: 0.4)
-          ..GenerateWireframeCenters();
-    Node torus = Node("torus",
-        GeometryBuilderToMeshData("torus", scene.program, gb), matWireframe)
-      ..setPos(5.0, 0.0, 5.0);
+    GeometryBuilder gb = TorusKnotGeometryWireframeFriendly(
+      radius: 1.0,
+      tubeRadius: 0.4,
+    )..GenerateWireframeCenters();
+    Node torus = Node(
+      "torus",
+      GeometryBuilderToMeshData("torus", scene.program, gb),
+      matWireframe,
+    )..setPos(5.0, 0.0, 5.0);
     scene.add(torus);
   }
 
   {
     GeometryBuilder gb = TorusKnotGeometryTriangularWireframeFriendly(
-        radius: 1.0, tubeRadius: 0.4)
-      ..GenerateWireframeCenters();
-    Node torus = Node("torus",
-        GeometryBuilderToMeshData("torus", scene.program, gb), matWireframe)
-      ..setPos(0.0, 5.0, 0.0);
+      radius: 1.0,
+      tubeRadius: 0.4,
+    )..GenerateWireframeCenters();
+    Node torus = Node(
+      "torus",
+      GeometryBuilderToMeshData("torus", scene.program, gb),
+      matWireframe,
+    )..setPos(0.0, 5.0, 0.0);
     scene.add(torus);
   }
 
@@ -103,8 +124,10 @@ void main() {
     _lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    matWireframe.ForceUniform(cBlendEquation,
-        gOpaque.checked! ? BlendEquationNone : BlendEquationStandard);
+    matWireframe.ForceUniform(
+      cBlendEquation,
+      gOpaque.checked! ? BlendEquationNone : BlendEquationStandard,
+    );
     phase.Draw();
 
     HTML.window.animationFrame.then(animate);

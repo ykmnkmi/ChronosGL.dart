@@ -1,6 +1,5 @@
 // This is not really a test
 @TestOn("dartium")
-
 import 'dart:html' as HTML;
 import 'dart:web_gl' as WEBGL;
 
@@ -15,8 +14,9 @@ void main() {
     for (var e in exts) {
       print(e);
     }
-    WEBGL.DebugRendererInfo di = chronosGL
-        .getExtension('WEBGL_debug_renderer_info') as WEBGL.DebugRendererInfo;
+    WEBGL.DebugRendererInfo di = chronosGL.getExtension(
+      'WEBGL_debug_renderer_info',
+    ) as WEBGL.DebugRendererInfo;
     print(di);
     print(chronosGL.getParameter(GL_UNMASKED_VENDOR_WEBGL));
     print(chronosGL.getParameter(GL_UNMASKED_RENDERER_WEBGL));

@@ -10,7 +10,7 @@ final VM.Vector3 _up2 = VM.Vector3(0.0, 0.0, 1.0);
 /// a **UnformGroup*.
 abstract class Light extends NamedEntity {
   Light(String name, this.type, VM.Vector3 diffuse, VM.Vector3 specular)
-      : super(name) {
+    : super(name) {
     colorDiffuse.setFrom(diffuse);
     colorSpecular.setFrom(specular);
   }
@@ -26,9 +26,13 @@ abstract class Light extends NamedEntity {
 
 /// light is emanating from a single point in all directions
 class PointLight extends Light {
-  PointLight(String name, this.pos, VM.Vector3 colorDiffuse,
-      VM.Vector3 colorSpecular, this.range)
-      : super(name, lightTypePoint, colorDiffuse, colorSpecular);
+  PointLight(
+    String name,
+    this.pos,
+    VM.Vector3 colorDiffuse,
+    VM.Vector3 colorSpecular,
+    this.range,
+  ) : super(name, lightTypePoint, colorDiffuse, colorSpecular);
 
   VM.Vector3 pos;
 
@@ -67,9 +71,13 @@ class PointLight extends Light {
 /// Conceptually a directional light is emanating from a infinitely large source
 /// at infinite distance.
 class DirectionalLight extends Light {
-  DirectionalLight(String name, VM.Vector3 this.dir, VM.Vector3 colorDiffuse,
-      VM.Vector3 colorSpecular, this.dim)
-      : super(name, lightTypeDirectional, colorDiffuse, colorSpecular);
+  DirectionalLight(
+    String name,
+    VM.Vector3 this.dir,
+    VM.Vector3 colorDiffuse,
+    VM.Vector3 colorSpecular,
+    this.dim,
+  ) : super(name, lightTypeDirectional, colorDiffuse, colorSpecular);
 
   final VM.Vector3 dir;
   final double dim;
@@ -220,7 +228,10 @@ class Illumination extends UniformGroup {
   }
 
   static void _SetLightInfo(
-      Float32List descs, Float32List types, List<Light> lights) {
+    Float32List descs,
+    Float32List types,
+    List<Light> lights,
+  ) {
     // maybe only do this as needed
     descs.fillRange(0, descs.length, 0.0);
     types.fillRange(0, types.length, lightTypeInvalid + 0.0);

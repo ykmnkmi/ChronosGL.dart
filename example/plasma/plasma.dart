@@ -37,7 +37,7 @@ void main() {
     vec3 col = mix(col1, col2, sin(u_time)*.5+.5);
     ${oFragColor} = vec4(col*.5 + .5, 1.0);
 }
-"""
+""",
   ]);
 
 final ShaderObject plasmaVertexShader2 = ShaderObject("Plasma2V")
@@ -59,7 +59,7 @@ void main() {
               sin(sqrt(y * y + x * x) * 40.0);
     ${oFragColor} = vec4(1, v,1,1);
 }
-  """
+  """,
   ]);
 
 final ShaderObject plasmaVertexShader3 = ShaderObject("Plasma3V")
@@ -85,48 +85,60 @@ void main() {
     float c3 = abs(sin(c2+cos(mov1+mov2+c2)+cos(mov2)+sin(x/1000.)));
     ${oFragColor} = vec4( c1,c2,c3,1.0);
 }
-  """
+  """,
   ]);
 
 Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
+    "stars",
+    RenderProgram(
       "stars",
-      RenderProgram(
-          "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader),
-      [perspective]);
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
+    [perspective],
+  );
   scene.add(Utils.MakeParticles(scene.program, num));
   return scene;
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(65.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
   // A scene is tied to a single shader, so we must create a separate
   // shader for each plasma type.
   List<Scene> scenes = [
     Scene(
-        "plasma1",
-        RenderProgram(
-            "plasma1", cgl, plasmaVertexShader1, plasmaFragmentShader1),
-        [perspective]),
+      "plasma1",
+      RenderProgram("plasma1", cgl, plasmaVertexShader1, plasmaFragmentShader1),
+      [perspective],
+    ),
     Scene(
-        "plasma2",
-        RenderProgram(
-            "plasma2", cgl, plasmaVertexShader2, plasmaFragmentShader2),
-        [perspective]),
+      "plasma2",
+      RenderProgram("plasma2", cgl, plasmaVertexShader2, plasmaFragmentShader2),
+      [perspective],
+    ),
     Scene(
-        "plasma3",
-        RenderProgram(
-            "plasma3", cgl, plasmaVertexShader3, plasmaFragmentShader3),
-        [perspective]),
+      "plasma3",
+      RenderProgram("plasma3", cgl, plasmaVertexShader3, plasmaFragmentShader3),
+      [perspective],
+    ),
   ];
   for (Scene s in scenes) phase.add(s);
 

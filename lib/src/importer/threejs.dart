@@ -151,11 +151,16 @@ List<GeometryBuilder> ImportGeometryFromThreeJsJson(Map json) {
 }
 
 SkeletalAnimation ImportAnimationFromThreeJsJson(
-    Map json, List<Bone> skeleton) {
+  Map json,
+  List<Bone> skeleton,
+) {
   final Map animation = json["animation"];
   final List hierarchy = animation["hierarchy"];
   SkeletalAnimation s = SkeletalAnimation(
-      animation["name"], animation["length"], hierarchy.length);
+    animation["name"],
+    animation["length"],
+    hierarchy.length,
+  );
   assert(hierarchy.length == json["bones"].length);
   for (int i = 0; i < hierarchy.length; ++i) {
     List<double> pTimes = [];
@@ -183,7 +188,14 @@ SkeletalAnimation ImportAnimationFromThreeJsJson(
       }
     }
     BoneAnimation ba = BoneAnimation(
-        skeleton[i], pTimes, pValues, rTimes, rValues, sTimes, sValues);
+      skeleton[i],
+      pTimes,
+      pValues,
+      rTimes,
+      rValues,
+      sTimes,
+      sValues,
+    );
     s.InsertBone(ba);
   }
   print("anim-bones: ${s.animList.length}");

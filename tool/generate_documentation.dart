@@ -30,7 +30,7 @@ void MaybeEmitDocumentation(List<String> comment_block, String line) {
     }
     print("");
   } else if (line.startsWith("class") || line.startsWith("abstract")) {
-    print ("## ${line.substring(0, line.length-1)}");
+    print("## ${line.substring(0, line.length - 1)}");
     for (String line in comment_block) {
       print(line);
     }
@@ -70,8 +70,10 @@ void main(List<String> args) {
   for (String d in args) {
     if (FileSystemEntity.isDirectorySync(d)) {
       var dir = new Directory(d);
-      List<FileSystemEntity> content =
-          dir.listSync(recursive: true, followLinks: false);
+      List<FileSystemEntity> content = dir.listSync(
+        recursive: true,
+        followLinks: false,
+      );
       for (FileSystemEntity f in content) {
         if (f is File) {
           ExtractDoc(f);

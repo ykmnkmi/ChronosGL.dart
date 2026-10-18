@@ -1,4 +1,5 @@
 import 'dart:html' as HTML;
+
 // import 'dart:web' as JS;
 
 // https://users.cs.cf.ac.uk/dave/Multimedia/node158.html
@@ -18,7 +19,8 @@ void LogEvent(String kind, String device_channel, dynamic data) {
     gTab.children.removeAt(0);
   }
   gTab.innerHtml =
-      gTab.innerHtml! + "<tr><td>${kind}</td><td>${device_channel}</td><td>${data}</td></tr>";
+      gTab.innerHtml! +
+      "<tr><td>${kind}</td><td>${device_channel}</td><td>${data}</td></tr>";
 }
 
 // MIDI NOT CURRENTLY AVAILABLE VIA dart:web

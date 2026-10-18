@@ -8,7 +8,11 @@ MeshData EmptyLightVisualizer(RenderProgram prog, String name) {
 }
 
 void UpdateDirectionalLightVisualizer(
-    MeshData md, double dim, double delta, VM.Vector3 dir) {
+  MeshData md,
+  double dim,
+  double delta,
+  VM.Vector3 dir,
+) {
   if (dir.y == 0.0) {
     return;
   }
@@ -61,7 +65,12 @@ VM.Vector3 GetOrthogonalVector3(VM.Vector3 dir) {
 }
 
 void UpdateSpotLightVisualizer(
-    MeshData md, VM.Vector3 pos, VM.Vector3 dir, double range, double angle) {
+  MeshData md,
+  VM.Vector3 pos,
+  VM.Vector3 dir,
+  double range,
+  double angle,
+) {
   final int kSpines = 8;
   VM.Vector3 center = pos + dir.normalized() * range;
   List<VM.Vector3> points = [pos, center];

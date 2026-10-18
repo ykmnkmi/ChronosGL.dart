@@ -13,12 +13,13 @@ List<ShaderObject> createPlane2GreyShader() {
       ]),
     ShaderObject("Plane2GreyF")
       ..AddVaryingVars([vColor])
-      ..SetBodyWithMain(["${oFragColor} = vec4(${vColor}, 1.0);"])
+      ..SetBodyWithMain(["${oFragColor} = vec4(${vColor}, 1.0);"]),
   ];
 }
 
 // by patapom at stackoverflow.com
-const String _VertexShaderPlane2ColorV = """
+const String _VertexShaderPlane2ColorV =
+    """
 vec3 HSV2RGB( vec3 hsv )
 {
     hsv.x = mod( 100.0 + hsv.x, 1.0 ); // Ensure [0,1[
@@ -53,6 +54,6 @@ List<ShaderObject> createPlane2ColorShader() {
       ..SetBody([_VertexShaderPlane2ColorV]),
     ShaderObject("Plane2ColorF")
       ..AddVaryingVars([vColor])
-      ..SetBodyWithMain(["${oFragColor} = vec4( vColor, 1.0 );"])
+      ..SetBodyWithMain(["${oFragColor} = vec4( vColor, 1.0 );"]),
   ];
 }

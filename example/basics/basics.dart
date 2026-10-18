@@ -5,10 +5,15 @@ import 'package:chronosgl/chronosgl.dart';
 
 Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
+    "stars",
+    RenderProgram(
       "stars",
-      RenderProgram(
-          "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader),
-      [perspective]);
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
+    [perspective],
+  );
   scene.add(Utils.MakeParticles(scene.program, num));
   return scene;
 }
@@ -17,10 +22,15 @@ final List<Future<Object>> gLoadables = [];
 
 Scene MakeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   final Scene scene = Scene(
-      "objects",
-      RenderProgram(
-          "textured", cgl, texturedVertexShader, texturedFragmentShader),
-      uniforms);
+    "objects",
+    RenderProgram(
+      "textured",
+      cgl,
+      texturedVertexShader,
+      texturedFragmentShader,
+    ),
+    uniforms,
+  );
   // textures will be set after they are loaded
   final Material matWood = Material("wood")..SetUniform(uColor, ColorBlack);
   var f3 = LoadImage("../wood.jpg")
@@ -51,8 +61,10 @@ Scene MakeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
 
   {
     Node ico = Node(
-        "sphere", ShapeIcosahedron(scene.program, subdivisions: 3), matWood)
-      ..setPos(0.0, 0.0, 0.0);
+      "sphere",
+      ShapeIcosahedron(scene.program, subdivisions: 3),
+      matWood,
+    )..setPos(0.0, 0.0, 0.0);
     scene.add(ico);
   }
   {
@@ -63,8 +75,10 @@ Scene MakeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
 
   {
     Node cyl = Node(
-        "cylinder", ShapeCylinder(scene.program, 3.0, 6.0, 2.0, 32), matTrans)
-      ..setPos(5.0, 0.0, -5.0);
+      "cylinder",
+      ShapeCylinder(scene.program, 3.0, 6.0, 2.0, 32),
+      matTrans,
+    )..setPos(5.0, 0.0, -5.0);
     scene.add(cyl);
   }
   {
@@ -74,10 +88,10 @@ Scene MakeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   }
   {
     Node torus = Node(
-        "torus",
-        ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
-        matGradient)
-      ..setPos(5.0, 0.0, 5.0);
+      "torus",
+      ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+      matGradient,
+    )..setPos(5.0, 0.0, 5.0);
     scene.add(torus);
   }
 
@@ -85,8 +99,11 @@ Scene MakeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -94,8 +111,12 @@ void main() {
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
 
   phase.add(MakeMainScene(cgl, [perspective]));
   phase.add(MakeStarScene(cgl, perspective, 2000));

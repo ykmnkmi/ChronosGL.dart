@@ -36,8 +36,7 @@ VM.Vector4 GetBounds(List<VM.Vector2> contour) {
   return VM.Vector4(minX, minY, maxX, maxY);
 }
 
-bool IsInTriangle(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c,
-    VM.Vector2 p) {
+bool IsInTriangle(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c, VM.Vector2 p) {
   VM.Vector2 ap = a - p;
   VM.Vector2 bp = b - p;
   VM.Vector2 cp = c - p;
@@ -48,8 +47,12 @@ bool IsInTriangle(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c,
 
 // http://stackoverflow.com/questions/2931573/determining-if-two-rays-intersect
 // http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
-VM.Vector2? LineIntersection(VM.Vector2 pointa, VM.Vector2 dira,
-    VM.Vector2 pointb, VM.Vector2 dirb) {
+VM.Vector2? LineIntersection(
+  VM.Vector2 pointa,
+  VM.Vector2 dira,
+  VM.Vector2 pointb,
+  VM.Vector2 dirb,
+) {
   double det = dira.cross(dirb);
   // Parallel check
   if (det == 0.0) return null;
@@ -116,8 +119,7 @@ bool IsInPolygon(List<VM.Vector2> contour, VM.Vector2 p) {
 }
 
 // http://mathoverflow.net/questions/44096/detecting-whether-directed-cycle-is-clockwise-or-counterclockwise
-bool IsCounterClockWise(
-    VM.Vector2 a, VM.Vector2 b, VM.Vector2 c) {
+bool IsCounterClockWise(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c) {
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) >= 0;
 }
 
@@ -147,8 +149,10 @@ VM.Vector2 _getMovement(VM.Vector2 prev, VM.Vector2 curr, VM.Vector2 next) {
   VM.Vector2 cp_ortho = VM.Vector2(cp.y, -cp.x)..normalize();
   VM.Vector2 nc_ortho = VM.Vector2(nc.y, -nc.x)..normalize();
 
-  assert(nc.dot(cp_ortho) != 0.0,
-      "possibly colinear points in contour? use FilterDupsAndColinear");
+  assert(
+    nc.dot(cp_ortho) != 0.0,
+    "possibly colinear points in contour? use FilterDupsAndColinear",
+  );
 
   VM.Vector2 prev_shifted = prev + cp_ortho;
   VM.Vector2 next_shifted = next + nc_ortho;
@@ -176,8 +180,11 @@ List<VM.Vector2> GetContourGradient(List<VM.Vector2> contour) {
   return out;
 }
 
-List<VM.Vector2> ContourCircle(int nSegmemts, double radius,
-    [bool ccw = true]) {
+List<VM.Vector2> ContourCircle(
+  int nSegmemts,
+  double radius, [
+  bool ccw = true,
+]) {
   List<VM.Vector2> out = List.generate(nSegmemts, (i) {
     double angle = Math.pi * 2 * i / nSegmemts * (ccw ? 1.0 : -1.0);
     return VM.Vector2(radius * Math.cos(angle), radius * Math.sin(angle));

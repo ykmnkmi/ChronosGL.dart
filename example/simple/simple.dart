@@ -22,7 +22,7 @@ void main() {
     ${vColor}.g = cos(${aPosition}.y)/2.0+0.5;
     ${vColor}.b = sin(${aPosition}.z)/2.0+0.5;
 }
-"""
+""",
   ]);
 
 final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
@@ -32,7 +32,7 @@ final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
 void main() {
     ${oFragColor}.rgb = ${vColor};
 }
-    """
+    """,
   ]);
 
 void main() {
@@ -46,19 +46,32 @@ void main() {
 
   // Create interactive camera, listening to 'body' element for
   // control inputs like mouse drag events.
-  final OrbitCamera orbit =
-      OrbitCamera(5.0, 0.0, 0.0, HTML.document.body as HTML.Element);
+  final OrbitCamera orbit = OrbitCamera(
+    5.0,
+    0.0,
+    0.0,
+    HTML.document.body as HTML.Element,
+  );
   // Create a perspective. We use a combined view+perspective matrix,
   // which is obtained by combining te view matrix from the camera with
   // the perspective matrix.
   // The perspective also make sure canvas has full screen resolution
   // and that we respond to resize events.
-  final PerspectiveResizeAware perspective =
-      PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 1000.0);
+  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    orbit,
+    0.1,
+    1000.0,
+  );
 
   // Create the main shader program for displaying the torus.
-  final RenderProgram prog =
-      RenderProgram("basic", cgl, demoVertexShader, demoFragmentShader);
+  final RenderProgram prog = RenderProgram(
+    "basic",
+    cgl,
+    demoVertexShader,
+    demoFragmentShader,
+  );
 
   // Create the Material, basically a container for uniforms, which provides
   // uModelMatrix and controls basic settings for depth buffers and blending.
@@ -71,7 +84,11 @@ void main() {
   // Create the second shader program and the point sprites. The details are
   // hidden in the library functions.
   final RenderProgram progSprites = RenderProgram(
-      "basic", cgl, pointSpritesVertexShader, pointSpritesFragmentShader);
+    "basic",
+    cgl,
+    pointSpritesVertexShader,
+    pointSpritesFragmentShader,
+  );
   final Material materialStars = Utils.MakeStarMaterial(cgl)
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
   final MeshData stars = Utils.MakeStarMesh(progSprites, 2000, 100.0);

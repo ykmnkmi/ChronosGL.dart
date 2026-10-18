@@ -28,7 +28,8 @@ String makeGaussianPdfKernelString(int radius, double sigma) {
   return "float kernel[$radius] = float[$radius](${sb.toString()});";
 }
 
-const String _kernelFragment = """
+const String _kernelFragment =
+    """
 void main() {
     vec2 invSize = 1.0 / vec2(textureSize(${uTexture}, 0));
     vec3 sum = texture(${uTexture}, ${vTexUV}).rgb * kernel[0];
@@ -65,7 +66,7 @@ void main() {
 	                vec4(${uColor}, 1.0) *
 	                texture(${uTexture2}, ${vTexUV});
 }
-"""
+""",
   ]);
 
 final ShaderObject scaledLuminosityHighPassFragmentShader =
@@ -84,5 +85,5 @@ void main() {
     float alpha = smoothstep(${uRange}.x, ${uRange}.y, luma);
     ${oFragColor} = mix(${uColorAlpha}, color, alpha );
 }
- """
+ """,
       ]);

@@ -1,14 +1,20 @@
 import 'package:chronosgl/chronosgl.dart';
 
 import 'package:vector_math/vector_math.dart' as VM;
+
 import 'dart:html' as HTML;
 
 Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
+    "stars",
+    RenderProgram(
       "stars",
-      RenderProgram(
-          "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader),
-      [perspective]);
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
+    [perspective],
+  );
   scene.add(Utils.MakeParticles(scene.program, num));
   return scene;
 }
@@ -47,10 +53,15 @@ void main() {
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
 
   final Scene scene = Scene(
-      "objects",
-      RenderProgram(
-          "solid", cgl, solidColorVertexShader, solidColorFragmentShader),
-      [perspective]);
+    "objects",
+    RenderProgram(
+      "solid",
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    [perspective],
+  );
 
   scene.add(MakeHead(scene.program));
 

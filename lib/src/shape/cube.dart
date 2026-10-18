@@ -9,23 +9,24 @@ final List<VM.Vector3> _CubeNormals = [
   VM.Vector3(0.0, 1.0, 0.0),
   // Bottom face
   VM.Vector3(0.0, -1.0, 0.0),
-// Right face
+  // Right face
   VM.Vector3(1.0, 0.0, 0.0),
   // Left face
-  VM.Vector3(-1.0, 0.0, 0.0)
+  VM.Vector3(-1.0, 0.0, 0.0),
 ];
 
 /// Returns a GeometryBuilder for Cube with TexUVs and optionally
 /// Normals.
-GeometryBuilder CubeGeometry(
-    {double x = 1.0,
-    double y = 1.0,
-    double z = 1.0,
-    double uMin = 0.0,
-    double uMax = 1.0,
-    double vMin = 0.0,
-    double vMax = 1.0,
-    bool computeNormals = true}) {
+GeometryBuilder CubeGeometry({
+  double x = 1.0,
+  double y = 1.0,
+  double z = 1.0,
+  double uMin = 0.0,
+  double uMax = 1.0,
+  double vMin = 0.0,
+  double vMax = 1.0,
+  bool computeNormals = true,
+}) {
   List<VM.Vector3> vertices = [
     // Front face
     VM.Vector3(-x, -y, z),
@@ -61,7 +62,7 @@ GeometryBuilder CubeGeometry(
     VM.Vector3(-x, -y, -z),
     VM.Vector3(-x, -y, z),
     VM.Vector3(-x, y, z),
-    VM.Vector3(-x, y, -z)
+    VM.Vector3(-x, y, -z),
   ];
 
   List<VM.Vector2> uvs = [
@@ -99,7 +100,7 @@ GeometryBuilder CubeGeometry(
     VM.Vector2(uMin, vMin),
     VM.Vector2(uMax, vMin),
     VM.Vector2(uMax, vMax),
-    VM.Vector2(uMin, vMax)
+    VM.Vector2(uMin, vMax),
   ];
 
   GeometryBuilder gb = GeometryBuilder();
@@ -134,15 +135,16 @@ final List<VM.Vector3> _WedgeNormals = [
 
 /// A Wedge is the lower part of a cube that was cut in half
 /// through the plane: (-x, y, -z) (-x, y, z), (x, -y, -z), (x, -y, z)
-GeometryBuilder WedgeGeometry(
-    {double x = 1.0,
-    double y = 1.0,
-    double z = 1.0,
-    double uMin = 0.0,
-    double uMax = 1.0,
-    double vMin = 0.0,
-    double vMax = 1.0,
-    bool computeNormals = true}) {
+GeometryBuilder WedgeGeometry({
+  double x = 1.0,
+  double y = 1.0,
+  double z = 1.0,
+  double uMin = 0.0,
+  double uMax = 1.0,
+  double vMin = 0.0,
+  double vMax = 1.0,
+  bool computeNormals = true,
+}) {
   List<VM.Vector3> vertices3 = [
     // Front face3
     VM.Vector3(-x, -y, z),
@@ -173,7 +175,7 @@ GeometryBuilder WedgeGeometry(
     VM.Vector3(-x, -y, -z),
     VM.Vector3(-x, -y, z),
     VM.Vector3(-x, y, z),
-    VM.Vector3(-x, y, -z)
+    VM.Vector3(-x, y, -z),
   ];
 
   List<VM.Vector2> uvs3 = [
@@ -205,7 +207,7 @@ GeometryBuilder WedgeGeometry(
     VM.Vector2(uMin, vMin),
     VM.Vector2(uMax, vMin),
     VM.Vector2(uMax, vMax),
-    VM.Vector2(uMin, vMax)
+    VM.Vector2(uMin, vMax),
   ];
 
   GeometryBuilder gb = GeometryBuilder();

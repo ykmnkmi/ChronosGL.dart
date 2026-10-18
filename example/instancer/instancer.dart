@@ -23,7 +23,7 @@ void main() {
                      cos(${aPosition}.y)/2.0+0.5, 
                      sin(${aPosition}.z)/2.0+0.5);
 }
-"""
+""",
   ]);
 
 final ShaderObject instancedFragmentShader = ShaderObject("InstancedF")
@@ -33,7 +33,7 @@ final ShaderObject instancedFragmentShader = ShaderObject("InstancedF")
 void main() {  
      ${oFragColor} = vec4( ${vColor}, 1. );
 }
-     """
+     """,
   ]);
 
 void AddInstanceData(MeshData md) {
@@ -48,8 +48,9 @@ void AddInstanceData(MeshData md) {
       for (int z = -5; z < 5; z++) {
         spatial.setPos(x * 40.0, y * 40.0, z * 30.0);
         translations.setAll(pos * 3, spatial.getPos().storage);
-        VM.Quaternion q =
-            VM.Quaternion.fromRotation(spatial.transform.getRotation());
+        VM.Quaternion q = VM.Quaternion.fromRotation(
+          spatial.transform.getRotation(),
+        );
         rotations.setAll(pos * 4, q.storage);
         pos++;
       }
@@ -61,25 +62,41 @@ void AddInstanceData(MeshData md) {
 }
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
 
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(265.0, 0.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective =
-      PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 1000.0);
+  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    orbit,
+    0.1,
+    1000.0,
+  );
 
   final RenderProgram progInstanced = RenderProgram(
-      "instanced", cgl, instancedVertexShader, instancedFragmentShader);
+    "instanced",
+    cgl,
+    instancedVertexShader,
+    instancedFragmentShader,
+  );
   final Material mat = Material("mat")
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
   final MeshData md = ShapeTorusKnot(progInstanced, radius: 12.0);
   AddInstanceData(md);
 
   final RenderProgram progStars = RenderProgram(
-      "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader);
+    "stars",
+    cgl,
+    pointSpritesVertexShader,
+    pointSpritesFragmentShader,
+  );
   final Material matStars = Utils.MakeStarMaterial(cgl)
     ..SetUniform(uModelMatrix, VM.Matrix4.identity());
   final MeshData mdStars = Utils.MakeStarMesh(progStars, 2000, 100.0);

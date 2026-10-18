@@ -29,7 +29,9 @@ List<List<int>> _ListIntify(List lst) {
 
 //Also fills in the offsets for skeleton
 GeometryBuilder ImportGeometryFromAssimp2JsonMesh(
-    Map<String, dynamic> mesh, List<Bone> skeleton) {
+  Map<String, dynamic> mesh,
+  List<Bone> skeleton,
+) {
   GeometryBuilder gb = GeometryBuilder();
   String name = mesh['name'];
 
@@ -43,7 +45,9 @@ GeometryBuilder ImportGeometryFromAssimp2JsonMesh(
     assert(mesh["texturecoords"].length == 1);
     gb.EnableAttribute(aTexUV);
     gb.AddAttributesVector2(
-        aTexUV, ConvertToVector2List(mesh['texturecoords'][0]));
+      aTexUV,
+      ConvertToVector2List(mesh['texturecoords'][0]),
+    );
   }
   if (mesh.containsKey("tangents")) {
     gb.EnableAttribute(aTangent);
@@ -52,7 +56,9 @@ GeometryBuilder ImportGeometryFromAssimp2JsonMesh(
   if (mesh.containsKey("bitangents")) {
     gb.EnableAttribute(aBitangent);
     gb.AddAttributesVector3(
-        aBitangent, ConvertToVector3List(mesh['bitangents']));
+      aBitangent,
+      ConvertToVector3List(mesh['bitangents']),
+    );
   }
   List<List<int>> faces = _ListIntify(mesh['faces']);
   assert(faces != null, "no faces");
@@ -105,8 +111,9 @@ List<Bone> ImportSkeletonFromAssimp2Json(Map<String, dynamic> json) {
   void dfs(Map<String, dynamic> node, int parent) {
     final String name = node["name"];
 
-    final VM.Matrix4 transform =
-        VM.Matrix4.fromList(_Floatify(node["transformation"]));
+    final VM.Matrix4 transform = VM.Matrix4.fromList(
+      _Floatify(node["transformation"]),
+    );
     transform.transpose();
 
     final VM.Matrix4 offset = VM.Matrix4.identity();
@@ -132,7 +139,9 @@ List<Bone> ImportSkeletonFromAssimp2Json(Map<String, dynamic> json) {
 }
 
 SkeletalAnimation ImportAnimationFromAssimp2Json(
-    Map<String, dynamic> json, List<Bone> skeleton) {
+  Map<String, dynamic> json,
+  List<Bone> skeleton,
+) {
   Map<String, Bone> name2bone = <String, Bone>{};
   skeleton.forEach((b) => name2bone[b.boneName] = b);
 
@@ -168,8 +177,17 @@ SkeletalAnimation ImportAnimationFromAssimp2Json(
       scaleValues.add(MakeVector3(sca[1]));
     }
 
-    anim.InsertBone(BoneAnimation(bone, positionTimes, positionValues,
-        rotationTimes, rotationValues, scaleTimes, scaleValues));
+    anim.InsertBone(
+      BoneAnimation(
+        bone,
+        positionTimes,
+        positionValues,
+        rotationTimes,
+        rotationValues,
+        scaleTimes,
+        scaleValues,
+      ),
+    );
   }
 
   return anim;

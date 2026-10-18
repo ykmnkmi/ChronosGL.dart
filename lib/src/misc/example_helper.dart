@@ -1,7 +1,7 @@
 part of misc;
 
 class Utils {
-/*
+  /*
   Texture createCheckerboardTexture() {
     var pixels = new Uint8List.fromList(
         [255, 255, 255, 0, 0, 0, 0, 0, 0, 255, 255, 255]);
@@ -19,8 +19,10 @@ class Utils {
   }
 */
 
-  static Texture createParticleTexture(ChronosGL cgl,
-      [String name = "Utils::Particles"]) {
+  static Texture createParticleTexture(
+    ChronosGL cgl, [
+    String name = "Utils::Particles",
+  ]) {
     return ImageTexture(cgl, name, createParticleCanvas());
   }
 
@@ -54,7 +56,10 @@ class Utils {
   static Math.Random rand = Math.Random();
 
   static MeshData MakeStarMesh(
-      RenderProgram prog, int numPoints, double dimension) {
+    RenderProgram prog,
+    int numPoints,
+    double dimension,
+  ) {
     final String name = 'stars_${numPoints}';
     Float32List pos = Float32List(numPoints * 3);
     for (var i = 0; i < numPoints * 3; i++) {
@@ -69,74 +74,115 @@ class Utils {
       ..SetUniform(uPointSize, size);
   }
 
-  static Node MakeParticles(RenderProgram prog, int numPoints,
-      [double dimension = 100.0]) {
+  static Node MakeParticles(
+    RenderProgram prog,
+    int numPoints, [
+    double dimension = 100.0,
+  ]) {
     Material mat = MakeStarMaterial(prog.getContext());
     MeshData md = MakeStarMesh(prog, numPoints, dimension);
     return Node(md.name, md, mat);
   }
 }
 
-MeshData ShapeCube(RenderProgram prog,
-    {double x = 1.0,
-    double y = 1.0,
-    double z = 1.0,
-    double uMin = 0.0,
-    double uMax = 1.0,
-    double vMin = 0.0,
-    double vMax = 1.0,
-    bool computeNormals = true}) {
+MeshData ShapeCube(
+  RenderProgram prog, {
+  double x = 1.0,
+  double y = 1.0,
+  double z = 1.0,
+  double uMin = 0.0,
+  double uMax = 1.0,
+  double vMin = 0.0,
+  double vMax = 1.0,
+  bool computeNormals = true,
+}) {
   GeometryBuilder gb = CubeGeometry(
-      x: x, y: y, z: z, uMin: uMin, uMax: uMax, vMin: vMin, vMax: vMax);
+    x: x,
+    y: y,
+    z: z,
+    uMin: uMin,
+    uMax: uMax,
+    vMin: vMin,
+    vMax: vMax,
+  );
   return GeometryBuilderToMeshData("cube", prog, gb);
 }
 
-MeshData ShapeWedge(RenderProgram prog,
-    {double x = 1.0,
-    double y = 1.0,
-    double z = 1.0,
-    double uMin = 0.0,
-    double uMax = 1.0,
-    double vMin = 0.0,
-    double vMax = 1.0}) {
+MeshData ShapeWedge(
+  RenderProgram prog, {
+  double x = 1.0,
+  double y = 1.0,
+  double z = 1.0,
+  double uMin = 0.0,
+  double uMax = 1.0,
+  double vMin = 0.0,
+  double vMax = 1.0,
+}) {
   GeometryBuilder gb = WedgeGeometry(
-      x: x, y: y, z: z, uMin: uMin, uMax: uMax, vMin: vMin, vMax: vMax);
+    x: x,
+    y: y,
+    z: z,
+    uMin: uMin,
+    uMax: uMax,
+    vMin: vMin,
+    vMax: vMax,
+  );
   return GeometryBuilderToMeshData("wedge", prog, gb);
 }
 
-MeshData ShapeCylinder(RenderProgram prog, double radTop, double radBot,
-    double height, int radialSubdivisions,
-    [bool computeNormals = true]) {
+MeshData ShapeCylinder(
+  RenderProgram prog,
+  double radTop,
+  double radBot,
+  double height,
+  int radialSubdivisions, [
+  bool computeNormals = true,
+]) {
   GeometryBuilder gb = CylinderGeometry(
-      radTop, radBot, height, radialSubdivisions, computeNormals);
+    radTop,
+    radBot,
+    height,
+    radialSubdivisions,
+    computeNormals,
+  );
   return GeometryBuilderToMeshData("cylinder-${radialSubdivisions}", prog, gb);
 }
 
-MeshData ShapeIcosahedron(RenderProgram prog,
-    {int subdivisions = 4, double scale = 1.0, bool computeNormals = true}) {
+MeshData ShapeIcosahedron(
+  RenderProgram prog, {
+  int subdivisions = 4,
+  double scale = 1.0,
+  bool computeNormals = true,
+}) {
   GeometryBuilder gb = IcosahedronGeometry(
-      subdivisions: subdivisions, scale: scale, computeNormals: computeNormals);
+    subdivisions: subdivisions,
+    scale: scale,
+    computeNormals: computeNormals,
+  );
   return GeometryBuilderToMeshData("icosahedron-${subdivisions}", prog, gb);
 }
 
-MeshData ShapeTorusKnot(RenderProgram prog,
-    {double radius = 20.0,
-    double tubeRadius = 4.0,
-    int segmentsR = 128,
-    int segmentsT = 16,
-    int p = 2,
-    int q = 3,
-    double heightScale = 1.0,
-    bool computeNormals = true}) {
+MeshData ShapeTorusKnot(
+  RenderProgram prog, {
+  double radius = 20.0,
+  double tubeRadius = 4.0,
+  int segmentsR = 128,
+  int segmentsT = 16,
+  int p = 2,
+  int q = 3,
+  double heightScale = 1.0,
+  bool computeNormals = true,
+}) {
   GeometryBuilder gb = TorusKnotGeometry(
-      radius: radius,
-      tubeRadius: tubeRadius,
-      segmentsR: segmentsR,
-      segmentsT: segmentsT,
-      p: p,
-      q: q,
-      heightScale: heightScale,
-      computeNormals: computeNormals);
+    radius: radius,
+    tubeRadius: tubeRadius,
+    segmentsR: segmentsR,
+    segmentsT: segmentsT,
+    p: p,
+    q: q,
+    heightScale: heightScale,
+    computeNormals: computeNormals,
+  );
   return GeometryBuilderToMeshData("torusknot", prog, gb);
 }
 
@@ -146,7 +192,12 @@ MeshData ShapeQuad(RenderProgram prog, int size) {
 }
 
 MeshData ShapeGrid(
-    RenderProgram prog, int xstrips, int ystrips, double xlen, double ylen) {
+  RenderProgram prog,
+  int xstrips,
+  int ystrips,
+  double xlen,
+  double ylen,
+) {
   GeometryBuilder gb = GridGeometry(xstrips, ystrips, xlen, ylen);
   return GeometryBuilderToMeshData("strips", prog, gb);
 }
@@ -188,8 +239,11 @@ final VM.Vector3 ColorLiteCyan = VM.Vector3(0.0, 0.5, 0.5);
 /// This assumes that the canvas is always "full screen".
 class RenderPhaseResizeAware extends RenderPhase {
   RenderPhaseResizeAware(
-      String name, ChronosGL cgl, this._canvas, this._perspective)
-      : super(name, cgl) {
+    String name,
+    ChronosGL cgl,
+    this._canvas,
+    this._perspective,
+  ) : super(name, cgl) {
     resolutionChange(null);
     HTML.window.onResize.listen(resolutionChange);
   }
@@ -211,8 +265,12 @@ class RenderPhaseResizeAware extends RenderPhase {
 
 class PerspectiveResizeAware extends Perspective {
   PerspectiveResizeAware(
-      this._cgl, this._canvas, Spatial camera, double near, double far)
-      : super(camera, near, far) {
+    this._cgl,
+    this._canvas,
+    Spatial camera,
+    double near,
+    double far,
+  ) : super(camera, near, far) {
     resolutionChange(null);
     HTML.window.onResize.listen(resolutionChange);
   }

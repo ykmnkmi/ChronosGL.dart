@@ -9,10 +9,7 @@ final ShaderObject stencilVertexShader = ShaderObject("stencilV")
   ..SetBody([NullVertexShaderString]);
 
 final ShaderObject stencilFragmentShader = ShaderObject("stencilF")
-  ..AddUniformVars([
-    uTime,
-    uCanvasSize,
-  ])
+  ..AddUniformVars([uTime, uCanvasSize])
   ..SetBody([
     """
 void main() {
@@ -27,24 +24,36 @@ void main() {
       discard;
    }
 }
-"""
+""",
   ]);
 final TheStencilFunction StencilAlways = TheStencilFunction(GL_ALWAYS, 1, 0xff);
 
-final TheStencilFunction StencilEqualZero =
-    TheStencilFunction(GL_EQUAL, 0, 0xff);
+final TheStencilFunction StencilEqualZero = TheStencilFunction(
+  GL_EQUAL,
+  0,
+  0xff,
+);
 
-final TheStencilFunction StencilNotEqualZero =
-    TheStencilFunction(GL_NOTEQUAL, 0, 0xff);
+final TheStencilFunction StencilNotEqualZero = TheStencilFunction(
+  GL_NOTEQUAL,
+  0,
+  0xff,
+);
 
-final TheStencilOp StencilWriteIfPixelSet =
-    TheStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+final TheStencilOp StencilWriteIfPixelSet = TheStencilOp(
+  GL_KEEP,
+  GL_KEEP,
+  GL_REPLACE,
+);
 
 final TheStencilOp StencilWriteNever = TheStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -73,10 +82,10 @@ void main() {
     ..ForceUniform(cDepthTest, false);
   {
     Scene scene = Scene(
-        "stencil",
-        RenderProgram(
-            "stencil", cgl, stencilVertexShader, stencilFragmentShader),
-        []);
+      "stencil",
+      RenderProgram("stencil", cgl, stencilVertexShader, stencilFragmentShader),
+      [],
+    );
     phase.add(scene);
     scene.add(Node("unit", ShapeQuad(scene.program, 1), matGenStencil));
   }
@@ -101,30 +110,47 @@ void main() {
 
   {
     Scene scene = Scene(
+      "onstencil",
+      RenderProgram(
         "onstencil",
-        RenderProgram(
-            "onstencil", cgl, solidColorVertexShader, solidColorFragmentShader),
-        [perspective]);
+        cgl,
+        solidColorVertexShader,
+        solidColorFragmentShader,
+      ),
+      [perspective],
+    );
     phase.add(scene);
-    scene.add(Node("cylinder", ShapeCylinder(scene.program, 2.0, 4.0, 4.0, 32),
-        matOnStencil)
-      ..setPos(10.0, 0.0, -10.0));
+    scene.add(
+      Node(
+        "cylinder",
+        ShapeCylinder(scene.program, 2.0, 4.0, 4.0, 32),
+        matOnStencil,
+      )..setPos(10.0, 0.0, -10.0),
+    );
 
-    scene.add(Node(
+    scene.add(
+      Node(
         "torus",
         ShapeTorusKnot(scene.program, radius: 2.5, tubeRadius: 0.8),
-        matOnStencil)
-      ..setPos(10.0, 0.0, 10.0));
+        matOnStencil,
+      )..setPos(10.0, 0.0, 10.0),
+    );
 
-    scene.add(Node(
+    scene.add(
+      Node(
         "sphere",
         ShapeIcosahedron(scene.program, subdivisions: 3, scale: 5.0),
-        matOffStencil)
-      ..setPos(0.0, 0.0, 0.0));
+        matOffStencil,
+      )..setPos(0.0, 0.0, 0.0),
+    );
 
-    scene.add(Node(
-        "cube", ShapeCube(scene.program, x: 2.0, y: 2.0, z: 2.0), matOffStencil)
-      ..setPos(-10.0, 0.0, -10.0));
+    scene.add(
+      Node(
+        "cube",
+        ShapeCube(scene.program, x: 2.0, y: 2.0, z: 2.0),
+        matOffStencil,
+      )..setPos(-10.0, 0.0, -10.0),
+    );
   }
   orbit.azimuth = 1.1;
   double _lastTimeMs = 0.0;

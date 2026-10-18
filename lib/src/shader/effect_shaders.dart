@@ -8,9 +8,9 @@ final ShaderObject copyVertexShader = effectVertexShader;
 
 final ShaderObject copyFragmentShader = ShaderObject("copyF")
   ..AddUniformVars([uTexture])
-  ..SetBodyWithMain(
-      ["${oFragColor} = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0);"]);
-
+  ..SetBodyWithMain([
+    "${oFragColor} = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0);",
+  ]);
 
 final ShaderObject scalingCopyVertexShader = ShaderObject("nullUV")
   ..AddAttributeVars([aPosition, aTexUV])
@@ -20,8 +20,7 @@ final ShaderObject scalingCopyVertexShader = ShaderObject("nullUV")
 final ShaderObject scalingCopyFragmentShader = ShaderObject("copyF")
   ..AddUniformVars([uTexture])
   ..AddVaryingVars([vTexUV])
-  ..SetBodyWithMain(
-      ["${oFragColor} = texture(${uTexture}, ${vTexUV});"]);
+  ..SetBodyWithMain(["${oFragColor} = texture(${uTexture}, ${vTexUV});"]);
 
 const String _libFragment = """
 vec3 RGBtoHSV(vec3 rgb) {
@@ -81,7 +80,8 @@ vec3 HSVtoRGB(vec3 hsv) {
 
 // Inspired by
 // http://coding-experiments.blogspot.sg/2011/01/toon-pixel-shader.html
-String _toonFragment = """
+String _toonFragment =
+    """
 
 vec3 config = vec3(1.0 / 80.0, 6.0, 3.0);
 // vec3 config = vec3(0.2, 2.0, 2.0);
@@ -140,7 +140,8 @@ final ShaderObject toonFragmentShader = ShaderObject("ToonF")
 // The edges of a hexagon centered at 0,0 with diameter 1.0 are:
 // where is the height of an equilateral triangle with edge length 1.0
 // H = sqrt(0.75)  = 0.866025404;
-const String _hexPixelateFragment = """
+const String _hexPixelateFragment =
+    """
 
 float S = 0.86602540378;
 
@@ -212,11 +213,12 @@ void main() {
     vec2 tex = center - ${uCenter2};
 		${oFragColor} = vec4( vec3( average * 10.0 - 5.0 + pattern(tex) ), color.a );
 }
-"""
+""",
   ]);
 
 // Inspired by https://www.shadertoy.com/view/4dBGzK
-const String _tvDistortionFragment = """
+const String _tvDistortionFragment =
+    """
 float rand(vec2 co)  {
     float a = 12.9898;
     float b = 78.233;
@@ -274,7 +276,7 @@ void main() {
     vec2 uv = ${uCenter2} + kaleidoscope(p - ${uCenter2}, ${uScale});
     ${oFragColor} = texelFetch(${uTexture}, ivec2(uv * dim), 0);
 }
-"""
+""",
   ]);
 
 final ShaderObject lumidotsFragmentShader = ShaderObject("LumidotsF")
@@ -299,7 +301,7 @@ void main() {
                               distance(center, uv) / lum / r);
     ${oFragColor}.rgb = col.rgb * alpha;
 }
-"""
+""",
   ]);
 
 final ShaderObject squarePixelateFragmentShader =
@@ -312,7 +314,7 @@ void main() {
     vec2 center = floor(gl_FragCoord.xy / r / 2.0) * 2.0 * r + r;
     ${oFragColor} = texelFetch(${uTexture}, ivec2(center), 0);
 }
-"""
+""",
       ]);
 
 final ShaderObject luminosityHighPassFragmentShader =
@@ -330,7 +332,7 @@ void main() {
     float alpha = smoothstep(${uRange}.x, ${uRange}.y, luma);
     ${oFragColor} = mix(${uColorAlpha}, color, alpha );
 }
- """
+ """,
       ]);
 
 final ShaderObject fisheyeFragmentShader = ShaderObject("FisheyePassF")
@@ -354,7 +356,7 @@ void main() {
     vec2 uv = vec2(pixel.x, normalized_arc_length); 
     ${oFragColor} = texelFetch(${uTexture}, ivec2(dim *uv), 0); 
 }
-"""
+""",
   ]);
 
 final ShaderObject filmFragmentShader = ShaderObject("FilmPassF")
@@ -405,31 +407,85 @@ void main() {
     uv = vec2(pixel.x, mod(uv.y, 1.));
     ${oFragColor} = vec4(scene(uv, pixel, dim), 1.);
 }
-"""
+""",
   ]);
 
-final VM.Matrix3 ConvolutionMatrixEmboss =
-    VM.Matrix3(-1.0, 0.0, -1.0, 0.0, 4.0, 0.0, -1.0, 0.0, -1.0);
+final VM.Matrix3 ConvolutionMatrixEmboss = VM.Matrix3(
+  -1.0,
+  0.0,
+  -1.0,
+  0.0,
+  4.0,
+  0.0,
+  -1.0,
+  0.0,
+  -1.0,
+);
 final VM.Vector3 ConvolutionOffsetEmboss = VM.Vector3(0.5, 0.5, 0.5);
 
-final VM.Matrix3 ConvolutionMatrixEmboss2 =
-    VM.Matrix3(2.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0);
+final VM.Matrix3 ConvolutionMatrixEmboss2 = VM.Matrix3(
+  2.0,
+  0.0,
+  0.0,
+  0.0,
+  -1.0,
+  0.0,
+  0.0,
+  0.0,
+  -1.0,
+);
 final VM.Vector3 ConvolutionOffsetEmboss2 = VM.Vector3(0.5, 0.5, 0.5);
 
-final VM.Matrix3 ConvolutionMatrixEngrave =
-    VM.Matrix3(-2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0);
+final VM.Matrix3 ConvolutionMatrixEngrave = VM.Matrix3(
+  -2.0,
+  0.0,
+  0.0,
+  0.0,
+  2.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+);
 final VM.Vector3 ConvolutionOffsetEngrave = VM.Vector3(0.37, 0.37, 0.37);
 
-final VM.Matrix3 ConvolutionMatrixSharpen =
-    VM.Matrix3(0.0, -2.0, 0.0, -2.0, 11.0, -2.0, 0.0, -2.0, 0.0)..scale(0.333);
+final VM.Matrix3 ConvolutionMatrixSharpen = VM.Matrix3(
+  0.0,
+  -2.0,
+  0.0,
+  -2.0,
+  11.0,
+  -2.0,
+  0.0,
+  -2.0,
+  0.0,
+)..scale(0.333);
 final VM.Vector3 ConvolutionOffsetSharpen = VM.Vector3(0.0, 0.0, 0.0);
 
-final VM.Matrix3 ConvolutionMatrixEdges =
-    VM.Matrix3(-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0);
+final VM.Matrix3 ConvolutionMatrixEdges = VM.Matrix3(
+  -1.0,
+  -1.0,
+  -1.0,
+  -1.0,
+  8.0,
+  -1.0,
+  -1.0,
+  -1.0,
+  -1.0,
+);
 final VM.Vector3 ConvolutionOffsetEdges = VM.Vector3(0.0, 0.0, 0.0);
 
-final VM.Matrix3 ConvolutionMatrixBlur =
-    VM.Matrix3(1.0, 2.0, 1.0, 2.0, 4.0, 2.0, 1.0, 2.0, 1.0)..scale(1.0 / 16.0);
+final VM.Matrix3 ConvolutionMatrixBlur = VM.Matrix3(
+  1.0,
+  2.0,
+  1.0,
+  2.0,
+  4.0,
+  2.0,
+  1.0,
+  2.0,
+  1.0,
+)..scale(1.0 / 16.0);
 final VM.Vector3 ConvolutionOffsetBlur = VM.Vector3(0.0, 0.0, 0.0);
 
 final ShaderObject convolution3x3FragmentShader =
@@ -449,7 +505,7 @@ void main() {
     ${oFragColor}.rgb = ${uColor} + sum;
 }
 
-"""
+""",
       ]);
 
 final ShaderObject scanlineFragmentShader = ShaderObject("ScanlinePixelateF")
@@ -472,7 +528,7 @@ void main() {
               dot(comp.xy * sin(pixel / dim * sine_coord), vec2(1.0, 1.0));
     ${oFragColor} = vec4(color * m, 1.0);
 }
-"""
+""",
   ]);
 
 final ShaderObject waterFragmentShader = ShaderObject("WaterPixelateF")
@@ -499,7 +555,7 @@ void main() {
     res += wave(uv, -1.0, 1.4, t);
     ${oFragColor} = vec4(color * (0.9 + 0.012 * res), 1.0);
 }
-"""
+""",
   ]);
 
 ShaderObject CrosshatchFragmentShader(int mode) {
@@ -560,7 +616,7 @@ void main()  {
     ${oFragColor} = vec4(vec3(color), 1.0);  
 }      
 
-"""
+""",
     ]);
 }
 
@@ -658,7 +714,7 @@ void main() {
     // float gray = dot(color, vec3(0.2126, 0.7152, 0.0723));
     ${oFragColor} = vec4(SepiaColor(gray, ${uScale}), 1.0);
 }
-"""
+""",
   ]);
 
 final ShaderObject techicolorFragmentShader =
@@ -671,7 +727,7 @@ void main() {
     vec3 color = texelFetch(${uTexture}, ivec2(gl_FragCoord.xy), 0).rgb;
     ${oFragColor} = vec4(Technicolor3(color, 0.5), 1.0);
 }
-"""
+""",
       ]);
 
 final ShaderObject vignettingFragmentShader =
@@ -686,7 +742,7 @@ void main() {
     float v = VignettingFactor(gl_FragCoord.xy / dim, ${uRange}.x, ${uRange}.y);
     ${oFragColor} = vec4(color * v, 1.0);
 }
-"""
+""",
       ]);
 
 final ShaderObject blur1DShader9 = ShaderObject("blurF")
@@ -708,7 +764,7 @@ void main() {
     sum  += texelFetch(${uTexture}, ivec2(c + 4.0 * d), 0) * 0.0510;
     ${oFragColor} = sum;
 }
-"""
+""",
   ]);
 
 final ShaderObject blur1DShader7 = ShaderObject("blurF")
@@ -728,7 +784,7 @@ void main() {
     sum  += texelFetch(${uTexture}, ivec2(c + 3.0 * d), 0) * (1.0 / 64.0);
     ${oFragColor} = sum;
 }
-"""
+""",
   ]);
 
 final ShaderObject blur1DShader5 = ShaderObject("blurF")
@@ -746,7 +802,7 @@ void main() {
     sum  += texelFetch(${uTexture}, ivec2(c + 2.0 * d), 0) * (1.0 / 16.0);
     ${oFragColor} = sum;
 }
-"""
+""",
   ]);
 
 /*

@@ -1,6 +1,7 @@
 import 'dart:html' as HTML;
 import 'dart:async';
 import 'dart:math' as Math;
+
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as VM;
 
@@ -9,17 +10,29 @@ const String modelFile = "../ct_logo.obj";
 final List<Future<Object>> gLoadables = [];
 
 void main() {
-  final StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  final StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   final HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(25.0, 0.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective =
-      PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 1000.0);
+  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    orbit,
+    0.1,
+    1000.0,
+  );
 
-  final RenderProgram progDemo =
-      RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader);
+  final RenderProgram progDemo = RenderProgram(
+    "demo",
+    cgl,
+    demoVertexShader,
+    demoFragmentShader,
+  );
 
   late MeshData ctLogo; // we be initialized when loaded
   var future = LoadRaw(modelFile)

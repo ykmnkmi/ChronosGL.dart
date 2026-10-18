@@ -12,16 +12,28 @@ void main() {
     RenderProgram program;
 
     program = RenderProgram(
-        "prog", cgl, texturedVertexShader, texturedFragmentShader);
+      "prog",
+      cgl,
+      texturedVertexShader,
+      texturedFragmentShader,
+    );
     print("${program}");
     phase.add(Scene("scene", program));
 
     program = RenderProgram(
-        "prog", cgl, lightVertexShaderGourad, lightFragmentShaderGourad);
+      "prog",
+      cgl,
+      lightVertexShaderGourad,
+      lightFragmentShaderGourad,
+    );
     print("${program}");
 
-    program = RenderProgram("prog", cgl, lightVertexShaderBlinnPhong,
-        lightFragmentShaderBlinnPhong);
+    program = RenderProgram(
+      "prog",
+      cgl,
+      lightVertexShaderBlinnPhong,
+      lightFragmentShaderBlinnPhong,
+    );
     print("${program}");
     /*
     program = phase.createProgram(createLightShaderBlinnPhongWithShadow());
@@ -35,8 +47,12 @@ void main() {
     program = RenderProgram("prog", cgl, ssaoVertexShader, ssaoFragmentShader);
     print("${program}");
 
-    program =
-        RenderProgram("prog", cgl, sobelVertexShader, sobelFragmentShader);
+    program = RenderProgram(
+      "prog",
+      cgl,
+      sobelVertexShader,
+      sobelFragmentShader,
+    );
     print("${program}");
   });
 

@@ -13,7 +13,7 @@ void main() {
     ${StdVertexBody} 
     ${vColor} = normalize(${aNormal} / 2.0 + vec3(0.5) );
 }
-      """
+      """,
   ]);
 
 final ShaderObject normal2ColorFragmentShader = ShaderObject("Normal2ColorF")
@@ -23,7 +23,7 @@ final ShaderObject normal2ColorFragmentShader = ShaderObject("Normal2ColorF")
 void main() {  
     ${oFragColor} = vec4( ${vColor}, 1.0 );
 }
-    """
+    """,
   ]);
 
 const String modelFile = "../ct_logo.obj";
@@ -37,13 +37,22 @@ void main() {
   final OrbitCamera orbit = OrbitCamera(25.0, -45.0, 0.3, canvas);
   final Perspective perspective = Perspective(orbit, 0.1, 2520.0);
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
   final Scene scene = Scene(
-      "objects",
-      RenderProgram(
-          "test", cgl, normal2ColorVertexShader, normal2ColorFragmentShader),
-      [perspective]);
+    "objects",
+    RenderProgram(
+      "test",
+      cgl,
+      normal2ColorVertexShader,
+      normal2ColorFragmentShader,
+    ),
+    [perspective],
+  );
   phase.add(scene);
   final Material mat = Material("mat");
 
@@ -52,14 +61,14 @@ void main() {
       List<GeometryBuilder> geos = [
         ImportGeometryFromWavefront(content),
         CylinderGeometry(1.0, 1.0, 2.0, 16, false),
-        CubeGeometry(computeNormals: false)
+        CubeGeometry(computeNormals: false),
       ];
 
       for (var i = 0; i < geos.length; i++) {
         geos[i].GenerateNormalsAssumingTriangleMode();
         MeshData md = GeometryBuilderToMeshData("", scene.program, geos[i]);
         Node mesh = Node(md.name, md, mat)..setPos(-5.0 + i * 7, 4.0, 0.0);
-        if (i == 0 /* ctLogo*/) {
+        if (i == 0 /* ctLogo*/ ) {
           mesh
             ..rotX(3.14 / 2)
             ..rotZ(3.14);

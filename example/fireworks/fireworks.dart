@@ -1,4 +1,5 @@
 import 'package:chronosgl/chronosgl.dart';
+
 import 'dart:math' as Math;
 import 'dart:html' as HTML;
 
@@ -21,14 +22,14 @@ void main() {
     gl_Position = ${uPerspectiveViewMatrix} * ${uModelMatrix} * vec4(vp, 1.0);
     gl_PointSize = 100.0/gl_Position.z;
 }
-"""
+""",
   ]);
 
 final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
   ..AddUniformVars([
     uTime,
     //uColor,
-    uTexture
+    uTexture,
   ])
   ..SetBody([
     """
@@ -42,7 +43,7 @@ void main() {
        ${oFragColor}.a -= (t-3.0);
     }
 }
-"""
+""",
   ]);
 
 MeshData getRocket(RenderProgram prog) {
@@ -53,8 +54,13 @@ MeshData getRocket(RenderProgram prog) {
   List<VM.Vector3> normals = [];
   for (var i = 0; i < numPoints; i++) {
     vertices.add(VM.Vector3(0.0, 0.0, 0.0));
-    normals.add(VM.Vector3(rand.nextDouble() - 0.5, rand.nextDouble() - 0.5,
-        rand.nextDouble() - 0.5));
+    normals.add(
+      VM.Vector3(
+        rand.nextDouble() - 0.5,
+        rand.nextDouble() - 0.5,
+        rand.nextDouble() - 0.5,
+      ),
+    );
   }
 
   return prog.MakeMeshData("firefwork-particles", GL_POINTS)
@@ -77,10 +83,18 @@ void main() {
   perspective.AdjustAspect(w, h);
 
   final RenderProgram progSprites = RenderProgram(
-      "basic", cgl, pointSpritesVertexShader, pointSpritesFragmentShader);
+    "basic",
+    cgl,
+    pointSpritesVertexShader,
+    pointSpritesFragmentShader,
+  );
 
   final RenderProgram progFireworks = RenderProgram(
-      "fireworks", cgl, fireworksVertexShader, fireworksFragmentShader);
+    "fireworks",
+    cgl,
+    fireworksVertexShader,
+    fireworksFragmentShader,
+  );
 
   // used for both stars and fireworks
   final Material material = Utils.MakeStarMaterial(cgl)

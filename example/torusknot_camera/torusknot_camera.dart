@@ -8,9 +8,12 @@ VM.Vector3 p1 = VM.Vector3.zero();
 
 // Camera flying through a TorusKnot like through a tunnel
 class TorusKnotCamera extends Spatial {
-  TorusKnotCamera(
-      {this.radius = 20.0, this.p = 2, this.q = 3, this.heightScale = 1.0})
-      : super("camera:torusknot");
+  TorusKnotCamera({
+    this.radius = 20.0,
+    this.p = 2,
+    this.q = 3,
+    this.heightScale = 1.0,
+  }) : super("camera:torusknot");
 
   final double radius;
   final int p;
@@ -38,8 +41,12 @@ void updateTorusTexture(double time, HTML.CanvasElement canvas) {
   double n = (sint + 1) / 2;
   ctx.rect(0, 0, canvas.width!, canvas.height!);
   // Direction of gradient is diagonal
-  HTML.CanvasGradient grad =
-      ctx.createLinearGradient(0, 0, canvas.width! * n, canvas.height!);
+  HTML.CanvasGradient grad = ctx.createLinearGradient(
+    0,
+    0,
+    canvas.width! * n,
+    canvas.height!,
+  );
   double cs1 = (360 * n).floorToDouble();
   double cs2 = (90 * n).floorToDouble();
   grad.addColorStop(0, 'hsla($cs1, 100%, 40%, 1)');
@@ -64,11 +71,12 @@ MeshData TorusKnotWithCustumUV(RenderProgram program) {
   final int h = 128;
 
   final GeometryBuilder gb = TorusKnotGeometry(
-      segmentsR: h,
-      segmentsT: w,
-      computeUVs: false,
-      computeNormals: false,
-      wrap: true);
+    segmentsR: h,
+    segmentsT: w,
+    computeUVs: false,
+    computeNormals: false,
+    wrap: true,
+  );
   //assert(gb.vertices.length == w * h);
 
   gb.EnableAttribute(aTexUV);
@@ -83,8 +91,10 @@ MeshData TorusKnotWithCustumUV(RenderProgram program) {
 }
 
 void AddHexagonalWireframeCenters(GeometryBuilder gb) {
-  List<VM.Vector4> center =
-      List.generate(gb.vertices.length, (i) => VM.Vector4.zero());
+  List<VM.Vector4> center = List.generate(
+    gb.vertices.length,
+    (i) => VM.Vector4.zero(),
+  );
 
   List<VM.Vector4> center3 = [
     VM.Vector4(1.0, 100.0, 0.0, 0.0),
@@ -143,7 +153,11 @@ class SimpleScene {
 class SceneStars extends SimpleScene {
   SceneStars(ChronosGL cgl, int num, double dim) {
     program = RenderProgram(
-        "stars", cgl, pointSpritesVertexShader, pointSpritesFragmentShader);
+      "stars",
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    );
     mat = Utils.MakeStarMaterial(cgl)
       ..SetUniform(uModelMatrix, VM.Matrix4.identity());
     mesh = Utils.MakeStarMesh(program, 2000, dim);
@@ -160,7 +174,11 @@ class SceneTextured extends SimpleScene {
       ..SetUniform(uModelMatrix, VM.Matrix4.identity())
       ..SetUniform(uColor, VM.Vector3.zero());
     program = RenderProgram(
-        "textured", cgl, texturedVertexShader, texturedFragmentShader);
+      "textured",
+      cgl,
+      texturedVertexShader,
+      texturedFragmentShader,
+    );
     mesh = TorusKnotWithCustumUV(program);
   }
 
@@ -186,29 +204,40 @@ class SceneWireframe extends SimpleScene {
       ..SetUniform(uColorAlpha2, VM.Vector4(0.0, 0.0, 0.1, 0.1));
 
     program = RenderProgram(
-        "wf", cgl, wireframeVertexShader, wireframeFragmentShader);
+      "wf",
+      cgl,
+      wireframeVertexShader,
+      wireframeFragmentShader,
+    );
 
     mesh = GeometryBuilderToMeshData("wf", program, torus);
   }
 
   factory SceneWireframe.Quad(ChronosGL cgl) {
     final GeometryBuilder torus = TorusKnotGeometryWireframeFriendly(
-        computeUVs: false, computeNormals: false, inside: true);
+      computeUVs: false,
+      computeNormals: false,
+      inside: true,
+    );
 
     torus.GenerateWireframeCenters();
     return SceneWireframe(cgl, torus);
   }
 
   factory SceneWireframe.Triangle(ChronosGL cgl) {
-    final GeometryBuilder torus =
-        TorusKnotGeometryTriangularWireframeFriendly(inside: true);
+    final GeometryBuilder torus = TorusKnotGeometryTriangularWireframeFriendly(
+      inside: true,
+    );
     torus.GenerateWireframeCenters();
     return SceneWireframe(cgl, torus);
   }
 
   factory SceneWireframe.Hexagon(ChronosGL cgl) {
     final GeometryBuilder torus = TorusKnotGeometryTriangularWireframeFriendly(
-        segmentsR: 192, segmentsT: 48, inside: true);
+      segmentsR: 192,
+      segmentsT: 48,
+      inside: true,
+    );
     AddHexagonalWireframeCenters(torus);
     return SceneWireframe(cgl, torus);
   }
@@ -226,8 +255,13 @@ void main() {
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final TorusKnotCamera tkc = TorusKnotCamera();
-  final Perspective perspective =
-      PerspectiveResizeAware(cgl, canvas, tkc, 0.1, 1000.0)..UpdateFov(100.0);
+  final Perspective perspective = PerspectiveResizeAware(
+    cgl,
+    canvas,
+    tkc,
+    0.1,
+    1000.0,
+  )..UpdateFov(100.0);
 
   final SceneStars sceneStars = SceneStars(cgl, 2000, 1000);
   final SceneTextured sceneTextures = SceneTextured(cgl);

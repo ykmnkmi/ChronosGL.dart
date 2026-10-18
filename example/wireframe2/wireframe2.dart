@@ -14,8 +14,11 @@ HTML.InputElement gShowWires =
     HTML.document.querySelector('#wires') as HTML.InputElement;
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
 
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
@@ -23,13 +26,22 @@ void main() {
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
   Scene scene = Scene(
+    "solid",
+    RenderProgram(
       "solid",
-      RenderProgram(
-          "solid", cgl, solidColorVertexShader, solidColorFragmentShader),
-      [perspective]);
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    [perspective],
+  );
   phase.add(scene);
 
   final Material matWire = Material("wire")..SetUniform(uColor, ColorYellow);
@@ -52,23 +64,27 @@ void main() {
     fps.UpdateFrameCount(_lastTimeMs);
   }
 
-  List<Future<Object>> futures = [
-    LoadRaw(meshFile),
-  ];
+  List<Future<Object>> futures = [LoadRaw(meshFile)];
 
   Future.wait(futures).then((List list) {
     GeometryBuilder gb = ImportGeometryFromWavefront(list[0]);
     print(gb);
-    MeshData mdWire =
-        GeometryBuilderToMeshDataWireframe(meshFile, scene.program, gb);
+    MeshData mdWire = GeometryBuilderToMeshDataWireframe(
+      meshFile,
+      scene.program,
+      gb,
+    );
     print(mdWire);
 
     nodeWire = Node(mdWire.name, mdWire, matWire);
     nodeWire.lookAt(VM.Vector3(100.0, 0.0, 0.0));
     scene.add(nodeWire);
 
-    MeshData mdNorm =
-        GeometryBuilderToWireframeNormals(scene.program, gb, 0.05);
+    MeshData mdNorm = GeometryBuilderToWireframeNormals(
+      scene.program,
+      gb,
+      0.05,
+    );
     nodeNorm = Node(mdNorm.name, mdNorm, matNorm);
     nodeNorm.lookAt(VM.Vector3(100.0, 0.0, 0.0));
     scene.add(nodeNorm);

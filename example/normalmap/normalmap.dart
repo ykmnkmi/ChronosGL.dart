@@ -23,15 +23,16 @@ void main() {
     ${vNormal} = ${uNormalMatrix} * ${aNormal};
     ${vTexUV} = ${aTexUV};
 }
-"""
+""",
   ]);
 
 final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongF")
   ..AddVaryingVars([vPosition, vNormal, vTexUV])
   ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
   ..AddUniformVars([uEyePosition, uColor, uTexture])
-  ..SetBody([
-    """
+  ..SetBody(
+    [
+      """
 void main() {
     ColorComponents acc = CombinedLight(${vPosition} - ${uEyePosition},
                                         ${vNormal},
@@ -46,10 +47,10 @@ void main() {
     ${oFragColor}.a = 1.0;
 }
 
-"""
-  ], prolog: [
-    StdLibShader
-  ]);
+""",
+    ],
+    prolog: [StdLibShader],
+  );
 
 VM.Vector3 posLight = VM.Vector3(0.5, 1.0, 0.0);
 VM.Vector3 dirLight = VM.Vector3(0.0, 10.0, 0.0);
@@ -57,8 +58,11 @@ VM.Vector3 colDiffuse = VM.Vector3.all(0.866);
 VM.Vector3 colSpecular = VM.Vector3.all(0.133);
 
 void main() {
-  StatsFps fps =
-      StatsFps(HTML.document.getElementById("stats")!, "blue", "gray");
+  StatsFps fps = StatsFps(
+    HTML.document.getElementById("stats")!,
+    "blue",
+    "gray",
+  );
   HTML.CanvasElement canvas =
       HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
@@ -66,32 +70,54 @@ void main() {
   OrbitCamera orbit = OrbitCamera(0.5, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 100.0);
   Illumination illumination = Illumination();
-  illumination.AddLight(SpotLight("spot", posLight, posLight, colDiffuse,
-      colSpecular, 50.0, 0.95, 2.0, 1.0, 50.0));
+  illumination.AddLight(
+    SpotLight(
+      "spot",
+      posLight,
+      posLight,
+      colDiffuse,
+      colSpecular,
+      50.0,
+      0.95,
+      2.0,
+      1.0,
+      50.0,
+    ),
+  );
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective);
+  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
+    "main",
+    cgl,
+    canvas,
+    perspective,
+  );
   Scene sceneFixed = Scene(
+    "Fixed",
+    RenderProgram(
       "Fixed",
-      RenderProgram(
-          "Fixed", cgl, solidColorVertexShader, solidColorFragmentShader),
-      [perspective, illumination]);
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+    [perspective, illumination],
+  );
   phase.add(sceneFixed);
 
   Material lightSourceMat = Material("light")
     ..SetUniform(uColor, ColorYellow)
     ..SetUniform(uShininess, 25.0);
   Node shapePointLight = Node(
-      "pointLight",
-      ShapeIcosahedron(sceneFixed.program, subdivisions: 4, scale: 0.1),
-      lightSourceMat)
-    ..setPosFromVec(posLight);
+    "pointLight",
+    ShapeIcosahedron(sceneFixed.program, subdivisions: 4, scale: 0.1),
+    lightSourceMat,
+  )..setPosFromVec(posLight);
   sceneFixed.add(shapePointLight);
 
   Scene sceneMain = Scene(
-      "main",
-      RenderProgram("main", cgl, vertexShader, fragmentShader),
-      [perspective, illumination]);
+    "main",
+    RenderProgram("main", cgl, vertexShader, fragmentShader),
+    [perspective, illumination],
+  );
   phase.add(sceneMain);
 
   double _lastTimeMs = 0.0;
@@ -133,8 +159,11 @@ void main() {
     // Setup Mesh
     List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(list[0]);
     print(gbs[0]);
-    MeshData md =
-        GeometryBuilderToMeshData(modelFile, sceneMain.program, gbs[0]);
+    MeshData md = GeometryBuilderToMeshData(
+      modelFile,
+      sceneMain.program,
+      gbs[0],
+    );
 
     Node mesh = Node(md.name, md, mat);
     Node n = Node.Container("wrapper", mesh);

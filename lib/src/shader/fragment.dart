@@ -6,21 +6,23 @@ const String StdVertexBody =
 const String StdVertexNormalForward =
     "${vNormal} = ${uNormalMatrix} * ${aNormal};";
 
-
-const String NullVertexShaderString = """
+const String NullVertexShaderString =
+    """
 void main() {
   gl_Position = vec4(${aPosition}, 1.0);
 }
 """;
 
-const String NullVertexShaderWithTextureForwardString = """
+const String NullVertexShaderWithTextureForwardString =
+    """
 void main() {
   gl_Position = vec4(${aPosition}, 1.0);
   ${vTexUV} = ${aTexUV};
 }
 """;
 
-const String StdVertexShaderWithTextureForwardString = """
+const String StdVertexShaderWithTextureForwardString =
+    """
 void main() {
   gl_Position = ${uPerspectiveViewMatrix} * 
                 ${uModelMatrix} * 
@@ -30,7 +32,8 @@ void main() {
 """;
 
 // No globals, no dependencies on Shader variables
-const String StdLibShader = """
+const String StdLibShader =
+    """
 // ============================================================
 // MISC
 // ============================================================

@@ -42,13 +42,23 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
     if (array[0] == "g") {
       groups[array[1]] = vertices.length;
     } else if (array[0] == "v") {
-      vertices.add(VM.Vector3(double.parse(array[1]), double.parse(array[2]),
-          double.parse(array[3])));
+      vertices.add(
+        VM.Vector3(
+          double.parse(array[1]),
+          double.parse(array[2]),
+          double.parse(array[3]),
+        ),
+      );
     } else if (array[0] == "vt") {
       uvs.add(VM.Vector2(double.parse(array[1]), double.parse(array[2])));
     } else if (array[0] == "vn") {
-      normals.add(VM.Vector3(double.parse(array[1]), double.parse(array[2]),
-          double.parse(array[3])));
+      normals.add(
+        VM.Vector3(
+          double.parse(array[1]),
+          double.parse(array[2]),
+          double.parse(array[3]),
+        ),
+      );
     } else if (array[0] == "f") {
       // face
       if (array.length != 4 && array.length != 5) {

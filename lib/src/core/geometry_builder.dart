@@ -25,7 +25,12 @@ class Face4 {
 }
 
 bool NormalFromPoints(
-    VM.Vector3 a, VM.Vector3 b, VM.Vector3 c, VM.Vector3 temp, VM.Vector3 normal) {
+  VM.Vector3 a,
+  VM.Vector3 b,
+  VM.Vector3 c,
+  VM.Vector3 temp,
+  VM.Vector3 normal,
+) {
   temp
     ..setFrom(b)
     ..sub(a);
@@ -40,8 +45,7 @@ bool NormalFromPoints(
     return false;
   }
 
-  normal.scale(-1 /
-      len); // normalize // added the minus to make it the correct normal compared to the base cube
+  normal.scale(-1 / len); // normalize // added the minus to make it the correct normal compared to the base cube
 
   return true;
 }
@@ -65,7 +69,8 @@ class Edge3 {
   String toString() => "${v1} -> ${v2}";
 
   @override
-  bool operator ==(Object other) => other is Edge3 && v1 == other.v1 && v2 == other.v2;
+  bool operator ==(Object other) =>
+      other is Edge3 && v1 == other.v1 && v2 == other.v2;
 
   @override
   int get hashCode => hashVector3(v1) ^ hashVector3(v2);
@@ -86,7 +91,10 @@ class GeometryBuilder {
   final Map<String, List> attributes = {};
 
   void EnableAttribute(String canonical) {
-    assert(!attributes.containsKey(canonical), "attribute ${canonical} already exists");
+    assert(
+      !attributes.containsKey(canonical),
+      "attribute ${canonical} already exists",
+    );
     assert(canonical.startsWith("a"), "${canonical} is not an attribute");
     ShaderVarDesc desc = RetrieveShaderVarDesc(canonical);
     switch (desc.type) {
@@ -217,16 +225,27 @@ class GeometryBuilder {
     assert(maxIndexFace4 < n, "${maxIndexFace4} vs $n");
 
     for (String canonical in attributes.keys) {
-      assert(attributes[canonical]!.length == vertices.length, "bad attribute ${canonical}");
+      assert(
+        attributes[canonical]!.length == vertices.length,
+        "bad attribute ${canonical}",
+      );
     }
   }
 
-  void MergeAndTakeOwnership(GeometryBuilder other, [VM.Matrix4? mat, VM.Matrix3? matNormal]) {
+  void MergeAndTakeOwnership(
+    GeometryBuilder other, [
+    VM.Matrix4? mat,
+    VM.Matrix3? matNormal,
+  ]) {
     other.ApplyTransform(mat, matNormal);
     MergeAndTakeOwnershipSimple(other);
   }
 
-  void MergeAndTakeOwnership2(GeometryBuilder other, VM.Quaternion rot, VM.Vector3 translation) {
+  void MergeAndTakeOwnership2(
+    GeometryBuilder other,
+    VM.Quaternion rot,
+    VM.Vector3 translation,
+  ) {
     other.ApplyTransform2(rot, translation);
     MergeAndTakeOwnershipSimple(other);
   }
@@ -320,7 +339,10 @@ class GeometryBuilder {
     }
   }
 
-  void AddAttributesVector2TakeOwnership(String canonical, List<VM.Vector2> lst) {
+  void AddAttributesVector2TakeOwnership(
+    String canonical,
+    List<VM.Vector2> lst,
+  ) {
     attributes[canonical]!.addAll(lst);
   }
 
@@ -336,7 +358,10 @@ class GeometryBuilder {
     }
   }
 
-  void AddAttributesVector3TakeOwnership(String canonical, List<VM.Vector3> lst) {
+  void AddAttributesVector3TakeOwnership(
+    String canonical,
+    List<VM.Vector3> lst,
+  ) {
     List<VM.Vector3> ts = attributes[canonical] as List<VM.Vector3>;
     ts.addAll(lst);
   }
@@ -353,7 +378,10 @@ class GeometryBuilder {
     }
   }
 
-  void AddAttributesVector4TakeOwnership(String canonical, List<VM.Vector4> lst) {
+  void AddAttributesVector4TakeOwnership(
+    String canonical,
+    List<VM.Vector4> lst,
+  ) {
     List<VM.Vector4> ts = attributes[canonical] as List<VM.Vector4>;
     ts.addAll(lst);
   }
@@ -390,7 +418,11 @@ class GeometryBuilder {
     }
   }
 
-  void AddFaces4Strips(List<List<VM.Vector3>> strips, bool closed, [bool flip = false]) {
+  void AddFaces4Strips(
+    List<List<VM.Vector3>> strips,
+    bool closed, [
+    bool flip = false,
+  ]) {
     for (int i = 0; i < strips.length - 1; ++i) {
       if (flip) {
         AddFaces4Strip(strips[i], strips[i + 1], closed);
@@ -404,7 +436,10 @@ class GeometryBuilder {
   // Its main purpose is to convert Face4 into two triangles
   List<int> GenerateFaceIndices() {
     assert(faces3.length > 0 || faces4.length > 0);
-    List<int> faces = List.generate(faces3.length * 3 + faces4.length * 6, (i) => 0);
+    List<int> faces = List.generate(
+      faces3.length * 3 + faces4.length * 6,
+      (i) => 0,
+    );
     int i = 0;
     for (Face3 f3 in faces3) {
       faces[i + 0] = f3.a;
@@ -427,7 +462,10 @@ class GeometryBuilder {
   }
 
   List<int> GenerateLineIndices() {
-    List<int> lines = List.generate(faces3.length * 6 + faces4.length * 8, (i) => 0);
+    List<int> lines = List.generate(
+      faces3.length * 6 + faces4.length * 8,
+      (i) => 0,
+    );
     int i = 0;
     for (Face3 f3 in faces3) {
       lines[i + 0] = f3.a;
@@ -454,18 +492,33 @@ class GeometryBuilder {
   }
 
   void GenerateNormalsAssumingTriangleMode() {
-    List<VM.Vector3> normals = List.generate(vertices.length, (i) => VM.Vector3.zero());
+    List<VM.Vector3> normals = List.generate(
+      vertices.length,
+      (i) => VM.Vector3.zero(),
+    );
     VM.Vector3 temp = VM.Vector3.zero();
     VM.Vector3 norm = VM.Vector3.zero();
     for (Face3 f3 in faces3) {
-      NormalFromPoints(vertices[f3.a], vertices[f3.b], vertices[f3.c], temp, norm);
+      NormalFromPoints(
+        vertices[f3.a],
+        vertices[f3.b],
+        vertices[f3.c],
+        temp,
+        norm,
+      );
       normals[f3.a] = norm.clone();
       normals[f3.b] = norm.clone();
       normals[f3.c] = norm.clone();
     }
 
     for (Face4 f4 in faces4) {
-      NormalFromPoints(vertices[f4.a], vertices[f4.b], vertices[f4.c], temp, norm);
+      NormalFromPoints(
+        vertices[f4.a],
+        vertices[f4.b],
+        vertices[f4.c],
+        temp,
+        norm,
+      );
       normals[f4.a] = norm.clone();
       normals[f4.b] = norm.clone();
       normals[f4.c] = norm.clone();
@@ -493,7 +546,13 @@ class GeometryBuilder {
     }
 
     for (Face3 f3 in faces3) {
-      NormalFromPoints(vertices[f3.a], vertices[f3.b], vertices[f3.c], temp, norm);
+      NormalFromPoints(
+        vertices[f3.a],
+        vertices[f3.b],
+        vertices[f3.c],
+        temp,
+        norm,
+      );
       VM.Vector3 n = norm.clone();
       add(f3.a, n);
       add(f3.b, n);
@@ -501,7 +560,13 @@ class GeometryBuilder {
     }
 
     for (Face4 f4 in faces4) {
-      NormalFromPoints(vertices[f4.a], vertices[f4.b], vertices[f4.c], temp, norm);
+      NormalFromPoints(
+        vertices[f4.a],
+        vertices[f4.b],
+        vertices[f4.c],
+        temp,
+        norm,
+      );
       VM.Vector3 n = norm.clone()..scale(2.0);
       add(f4.a, n);
       add(f4.b, n);
@@ -512,7 +577,10 @@ class GeometryBuilder {
     for (VM.Vector3 key in avg.keys) {
       avg[key] = avg[key]!..normalize();
     }
-    List<VM.Vector3> normals = List.generate(vertices.length, (i) => avg[vertices[i]]!);
+    List<VM.Vector3> normals = List.generate(
+      vertices.length,
+      (i) => avg[vertices[i]]!,
+    );
 
     attributes[aNormal] = normals;
   }
@@ -527,9 +595,12 @@ class GeometryBuilder {
     attributes[aNormal] = normals;
   }
 
-// populate aCenter Input
+  // populate aCenter Input
   void GenerateWireframeCenters() {
-    List<VM.Vector4> center = List.generate(vertices.length, (i) => VM.Vector4.zero());
+    List<VM.Vector4> center = List.generate(
+      vertices.length,
+      (i) => VM.Vector4.zero(),
+    );
 
     VM.Vector4 a3 = VM.Vector4(1.0, 0.0, 0.0, 0.0);
     VM.Vector4 b3 = VM.Vector4(0.0, 1.0, 0.0, 0.0);
@@ -571,7 +642,12 @@ class GeometryBuilder {
     assert(uvs.length == w * h, "grid uvs lengths mismatch");
   }
 
-  void GenerateRegularGridFaces(int w, int h, bool wrapped, [bool reverse = false]) {
+  void GenerateRegularGridFaces(
+    int w,
+    int h,
+    bool wrapped, [
+    bool reverse = false,
+  ]) {
     assert(vertices.length == w * h);
     for (int i = 0; i < h - (wrapped ? 0 : 1); ++i) {
       for (int j = 0; j < w - (wrapped ? 0 : 1); ++j) {
@@ -593,7 +669,8 @@ class GeometryBuilder {
 
   // http://pages.mtu.edu/~shene/COURSES/cs3621/SLIDES/Mesh.pdf
   bool IsOrientableManifoldWithBoundaries() {
-    final LinkedHashMap<Edge3, Object> incidenceE = LinkedHashMap<Edge3, Object>();
+    final LinkedHashMap<Edge3, Object> incidenceE =
+        LinkedHashMap<Edge3, Object>();
 
     bool addEdge(VM.Vector3 v1, VM.Vector3 v2, Object face) {
       final Edge3 edge = Edge3(v1, v2);
@@ -685,7 +762,7 @@ class GeometryBuilder {
       "GB:",
       "V[${vertices.length}]",
       "f3[${faces3.length}]",
-      "f4[${faces4.length}]"
+      "f4[${faces4.length}]",
     ];
     for (String canonical in attributes.keys) {
       String type = RetrieveShaderVarDesc(canonical).type;

@@ -64,7 +64,7 @@ final List<VM.Vector3> IcosahedronVertexList = [
   VM.Vector3(t, 0.0, -1.0)..normalize(),
   VM.Vector3(t, 0.0, 1.0)..normalize(),
   VM.Vector3(-t, 0.0, -1.0)..normalize(),
-  VM.Vector3(-t, 0.0, 1.0)..normalize()
+  VM.Vector3(-t, 0.0, 1.0)..normalize(),
 ];
 
 // This produces the mash for an icosahedron when subdivisions == 0
@@ -75,8 +75,11 @@ final List<VM.Vector3> IcosahedronVertexList = [
 //   2            320          312
 //   3           1280         1272
 //   4           5120         5112
-GeometryBuilder IcosahedronGeometry(
-    {int subdivisions = 4, double scale = 1.0, bool computeNormals = true}) {
+GeometryBuilder IcosahedronGeometry({
+  int subdivisions = 4,
+  double scale = 1.0,
+  bool computeNormals = true,
+}) {
   List<Face3> faces = [];
   List<VM.Vector3> vertices = [];
 

@@ -11,8 +11,8 @@ class Scene extends NamedEntity {
   /// @param this.program
   /// @param unis
   Scene(String name, this.program, [List<UniformGroup>? unis])
-      : uniforms = unis == null ? <UniformGroup>[] : unis,
-        super(name);
+    : uniforms = unis == null ? <UniformGroup>[] : unis,
+      super(name);
 
   final RenderProgram program;
   final List<UniformGroup> uniforms;
@@ -35,8 +35,13 @@ class Scene extends NamedEntity {
   }
 }
 
-void drawRecursively(RenderProgram prog, Node node, VM.Matrix4 parent, List<DrawStats>? stats,
-    List<UniformGroup> uniforms) {
+void drawRecursively(
+  RenderProgram prog,
+  Node node,
+  VM.Matrix4 parent,
+  List<DrawStats>? stats,
+  List<UniformGroup> uniforms,
+) {
   if (!node.enabled) return;
   // m is read-only!
   final VM.Matrix4 m = node.UpdateModelMatrix(parent);
@@ -55,8 +60,10 @@ void drawRecursively(RenderProgram prog, Node node, VM.Matrix4 parent, List<Draw
 /// represents a sequence of Scenes.
 class RenderPhase extends NamedEntity {
   RenderPhase(String name, this._cgl, [Framebuffer? framebuffer])
-      : _framebuffer = framebuffer != null ? framebuffer : Framebuffer.Screen(_cgl),
-        super(name);
+    : _framebuffer = framebuffer != null
+          ? framebuffer
+          : Framebuffer.Screen(_cgl),
+      super(name);
 
   late Framebuffer _framebuffer;
   final ChronosGL _cgl;
@@ -97,7 +104,13 @@ class RenderPhase extends NamedEntity {
 
   // Draw all scenes in order of registration
   void Draw([List<DrawStats>? stats]) {
-    _framebuffer.Activate(_clear_mode, viewPortX, viewPortY, viewPortW, viewPortH);
+    _framebuffer.Activate(
+      _clear_mode,
+      viewPortX,
+      viewPortY,
+      viewPortW,
+      viewPortH,
+    );
 
     for (Scene scene in _scenes) {
       if (!scene.enabled) continue;

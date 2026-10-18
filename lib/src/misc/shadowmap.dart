@@ -63,11 +63,11 @@ void main() {
     gl_Position = ${uLightPerspectiveViewMatrix} * ${uModelMatrix} *
                   vec4(${aPosition}, 1.0);
 }
-    """
+    """,
   ]);
 
 final ShaderObject shadowFragmentShaderDepth =
-// What we care about here is the internal update of the depth buffer
+    // What we care about here is the internal update of the depth buffer
     ShaderObject("ShadowMapF")..SetBodyWithMain(["${oFragColor}.r = 1.0;"]);
 
 final ShaderObject visualizeShadowmapVertexShaderLinearDepth16 =
@@ -82,7 +82,7 @@ final ShaderObject visualizeShadowmapFragmentShaderLinearDepth16 =
       ..AddUniformVars([
         uTexture,
         // uCutOff,
-        uCameraFar, uCameraNear
+        uCameraFar, uCameraNear,
       ])
       ..SetBody([
         """
@@ -95,21 +95,39 @@ void main() {
    // ${oFragColor}.rgb = vec3(d >= ${uCutOff} ? d : 0.0);
    // ${oFragColor}.rgb = vec3(d);
 }
-"""
+""",
       ]);
 
 class ShadowMap {
   // Other options for format:  GL_DEPTH_COMPONENT32F
-  ShadowMap(this._cgl, int w, int h, double near, double far,
-      {int format = GL_DEPTH_COMPONENT24}) {
+  ShadowMap(
+    this._cgl,
+    int w,
+    int h,
+    double near,
+    double far, {
+    int format = GL_DEPTH_COMPONENT24,
+  }) {
     _mapSize = VM.Vector2(w + 0.0, h + 0.0);
     // We do not really need a proper frame buffer texture as we are only
     // concerned about updated the depth buffer.
     // TODO: is there a way to disable the framebuffer writes altogether?
     Texture dummy = TypedTexture(
-        _cgl, "frame::color", w, h, GL_RGBA8, TexturePropertiesFramebuffer);
+      _cgl,
+      "frame::color",
+      w,
+      h,
+      GL_RGBA8,
+      TexturePropertiesFramebuffer,
+    );
     _depthTexture = TypedTexture(
-        _cgl, "frame::depth", w, h, format, TexturePropertiesShadowMap);
+      _cgl,
+      "frame::depth",
+      w,
+      h,
+      format,
+      TexturePropertiesShadowMap,
+    );
     _shadowBuffer = Framebuffer(_cgl, dummy, _depthTexture);
     _phaseCompute = RenderPhase("compute-shadow", _cgl, _shadowBuffer)
       ..viewPortW = w
@@ -123,10 +141,15 @@ class ShadowMap {
       ..SetUniform(uCameraFar, far);
 
     _programCompute = Scene(
+      "shadowCompute",
+      RenderProgram(
         "shadowCompute",
-        RenderProgram("shadowCompute", _cgl, shadowVertexShaderDepth,
-            shadowFragmentShaderDepth),
-        [_uniforms]);
+        _cgl,
+        shadowVertexShaderDepth,
+        shadowFragmentShaderDepth,
+      ),
+      [_uniforms],
+    );
     _phaseCompute.add(_programCompute);
 
     // We do not clear the color buffer for visualization, so Visualize
@@ -135,13 +158,15 @@ class ShadowMap {
       ..clearColorBuffer = false;
 
     _programVisualize = Scene(
+      "shadowVisualize",
+      RenderProgram(
         "shadowVisualize",
-        RenderProgram(
-            "shadowVisualize",
-            _cgl,
-            visualizeShadowmapVertexShaderLinearDepth16,
-            visualizeShadowmapFragmentShaderLinearDepth16),
-        [_uniforms]);
+        _cgl,
+        visualizeShadowmapVertexShaderLinearDepth16,
+        visualizeShadowmapFragmentShaderLinearDepth16,
+      ),
+      [_uniforms],
+    );
 
     _programVisualize.add(UnitNode(_programVisualize.program));
     _phaseVisualize.add(_programVisualize);
@@ -194,7 +219,10 @@ class ShadowMap {
 
     _cgl.bindTexture(GL_TEXTURE_2D, _depthTexture.GetTexture());
     _cgl.texParameteri(
-        GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+      GL_TEXTURE_2D,
+      GL_TEXTURE_COMPARE_MODE,
+      GL_COMPARE_REF_TO_TEXTURE,
+    );
     _cgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     _cgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     _cgl.bindTexture(GL_TEXTURE_2D, null);

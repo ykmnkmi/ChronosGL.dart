@@ -3,6 +3,7 @@
 
 import 'dart:io';
 import 'dart:convert';
+
 import 'package:args/args.dart';
 import 'package:vector_math/vector_math.dart' as VM;
 
@@ -176,7 +177,13 @@ void main(List<String> arguments) {
     VM.Matrix4 globalOffsetTransform = new VM.Matrix4.identity();
 
     AnimatedSkeleton animatedSkeleton = new AnimatedSkeleton(skeleton.length);
-    UpdateAnimatedSkeleton(skeleton, globalOffsetTransform, anim, animatedSkeleton, 0.0);
+    UpdateAnimatedSkeleton(
+      skeleton,
+      globalOffsetTransform,
+      anim,
+      animatedSkeleton,
+      0.0,
+    );
 
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
     print(">>>>>>>>>> Animated");
