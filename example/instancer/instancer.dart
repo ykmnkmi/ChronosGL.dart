@@ -1,15 +1,15 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 final ShaderObject instancedVertexShader = ShaderObject("InstancedV")
-  ..AddAttributeVars([aPosition])
-  ..AddAttributeVars([iaRotation, iaTranslation])
-  ..AddVaryingVars([vColor])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..SetBody([
+  ..addAttributeVars([aPosition])
+  ..addAttributeVars([iaRotation, iaTranslation])
+  ..addVaryingVars([vColor])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..setBody([
     """
 vec3 rotate_vertex_position(vec3 pos, vec4 rot) {
     return pos + 2.0 * cross(rot.xyz, cross(rot.xyz, pos) + rot.w * pos);
@@ -27,8 +27,8 @@ void main() {
   ]);
 
 final ShaderObject instancedFragmentShader = ShaderObject("InstancedF")
-  ..AddVaryingVars([vColor])
-  ..SetBody([
+  ..addVaryingVars([vColor])
+  ..setBody([
     """
 void main() {
      $oFragColor = vec4( $vColor, 1. );
@@ -36,7 +36,7 @@ void main() {
      """,
   ]);
 
-void AddInstanceData(MeshData md) {
+void addInstanceData(MeshData md) {
   int count = 1000;
   Float32List translations = Float32List(count * 3);
   Float32List rotations = Float32List(count * 4);
@@ -48,7 +48,7 @@ void AddInstanceData(MeshData md) {
       for (int z = -5; z < 5; z++) {
         spatial.setPos(x * 40.0, y * 40.0, z * 30.0);
         translations.setAll(pos * 3, spatial.getPos().storage);
-        VM.Quaternion q = VM.Quaternion.fromRotation(
+        vm.Quaternion q = vm.Quaternion.fromRotation(
           spatial.transform.getRotation(),
         );
         rotations.setAll(pos * 4, q.storage);
@@ -57,18 +57,18 @@ void AddInstanceData(MeshData md) {
     }
   }
 
-  md.AddAttribute(iaRotation, rotations, 4);
-  md.AddAttribute(iaTranslation, translations, 3);
+  md.addAttribute(iaRotation, rotations, 4);
+  md.addAttribute(iaTranslation, translations, 3);
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
 
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(265.0, 0.0, 0.0, canvas);
@@ -87,9 +87,9 @@ void main() {
     instancedFragmentShader,
   );
   final Material mat = Material("mat")
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
-  final MeshData md = ShapeTorusKnot(progInstanced, radius: 12.0);
-  AddInstanceData(md);
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
+  final MeshData md = shapeTorusKnot(progInstanced, radius: 12.0);
+  addInstanceData(md);
 
   final RenderProgram progStars = RenderProgram(
     "stars",
@@ -97,9 +97,9 @@ void main() {
     pointSpritesVertexShader,
     pointSpritesFragmentShader,
   );
-  final Material matStars = Utils.MakeStarMaterial(cgl)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
-  final MeshData mdStars = Utils.MakeStarMesh(progStars, 2000, 100.0);
+  final Material matStars = Utils.makeStarMaterial(cgl)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
+  final MeshData mdStars = Utils.makeStarMesh(progStars, 2000, 100.0);
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -108,11 +108,11 @@ void main() {
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
-    progInstanced.Draw(md, [mat, perspective]);
-    progStars.Draw(mdStars, [matStars, perspective]);
+    progInstanced.draw(md, [mat, perspective]);
+    progStars.draw(mdStars, [matStars, perspective]);
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

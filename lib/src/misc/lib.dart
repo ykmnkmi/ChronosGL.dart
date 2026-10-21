@@ -2,10 +2,10 @@ library;
 
 // This library does not depend on "dart:html"
 import 'dart:typed_data';
-import 'dart:math' as Math;
-import 'dart:html' as HTML;
+import 'dart:math' as math;
+import 'dart:html' as html;
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import "../core/lib.dart";
 import "../shader/lib.dart";

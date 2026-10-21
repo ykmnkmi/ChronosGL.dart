@@ -1,9 +1,9 @@
 part of 'lib.dart';
 
-final int RIGHTX = 0, RIGHTY = 4, RIGHTZ = 8;
-final int UPX = 1, UPY = 5, UPZ = 9;
-final int BACKX = 2, BACKY = 6, BACKZ = 10;
-final int POSX = 12, POSY = 13, POSZ = 14;
+final int rightX = 0, rightY = 4, rightZ = 8;
+final int upX = 1, upY = 5, upZ = 9;
+final int backX = 2, backY = 6, backZ = 10;
+final int posX = 12, posY = 13, posZ = 14;
 
 /// is a base class for object that need to be transformed, e.g.
 /// moved, scaled, rotated. It is also used as a Camera abstraction.
@@ -15,62 +15,62 @@ class Spatial extends NamedEntity {
   // Might be better to use Quaternions anyways
   // regular lookAt calls could "repair" the matrix
   // (or an optimized variant of lookAt).
-  final VM.Matrix4 transform = VM.Matrix4.identity();
+  final vm.Matrix4 transform = vm.Matrix4.identity();
 
   // temp variables to avoid creating new objects:
   // CHANGES TO THE VALUES WILL NOT IMPACT THE MATRIX AND MIGHT BE SHARED WITH OTHER USERS
-  final VM.Vector3 _pos = VM.Vector3.zero();
-  final VM.Vector3 _back = VM.Vector3.zero();
-  final VM.Vector3 _up = VM.Vector3.zero();
-  final VM.Vector3 _right = VM.Vector3.zero();
+  final vm.Vector3 _pos = vm.Vector3.zero();
+  final vm.Vector3 _back = vm.Vector3.zero();
+  final vm.Vector3 _up = vm.Vector3.zero();
+  final vm.Vector3 _right = vm.Vector3.zero();
 
-  void getViewMatrix(VM.Matrix4 m) {
+  void getViewMatrix(vm.Matrix4 m) {
     m.setFrom(transform);
   }
 
-  VM.Vector3 getEyePosition() {
+  vm.Vector3 getEyePosition() {
     return getPos();
   }
 
-  VM.Vector3 getPos() {
-    _pos[0] = transform[POSX];
-    _pos[1] = transform[POSY];
-    _pos[2] = transform[POSZ];
+  vm.Vector3 getPos() {
+    _pos[0] = transform[posX];
+    _pos[1] = transform[posY];
+    _pos[2] = transform[posZ];
     return _pos;
   }
 
   // get the values from column 2. They represent the trail direction of this matrx
   // return ReadOnly vec3
-  VM.Vector3 getBack() {
-    _back[0] = transform[BACKX];
-    _back[1] = transform[BACKY];
-    _back[2] = transform[BACKZ];
+  vm.Vector3 getBack() {
+    _back[0] = transform[backX];
+    _back[1] = transform[backY];
+    _back[2] = transform[backZ];
     return _back;
   }
 
   // get the values from column 1. They represent the up vector of this matrx
   // return ReadOnly vec3
-  VM.Vector3 getUp() {
-    _up[0] = transform[UPX];
-    _up[1] = transform[UPY];
-    _up[2] = transform[UPZ];
+  vm.Vector3 getUp() {
+    _up[0] = transform[upX];
+    _up[1] = transform[upY];
+    _up[2] = transform[upZ];
     return _up;
   }
 
   // get the values from column 0. They represent the right vector of this matrx
   // return ReadOnly vec3
-  VM.Vector3 getRight() {
-    _right[0] = transform[RIGHTX];
-    _right[1] = transform[RIGHTY];
-    _right[2] = transform[RIGHTZ];
+  vm.Vector3 getRight() {
+    _right[0] = transform[rightX];
+    _right[1] = transform[rightY];
+    _right[2] = transform[rightZ];
     return _right;
   }
 
   void setPos(double x, double y, double z) // TODO: make dynamic
   {
-    transform[POSX] = x;
-    transform[POSY] = y;
-    transform[POSZ] = z;
+    transform[posX] = x;
+    transform[posY] = y;
+    transform[posZ] = z;
   }
   /*
   void scale(num x, num y, num z) {
@@ -83,35 +83,35 @@ class Spatial extends NamedEntity {
     translate(x, y, z); // alias
   }
 
-  void addPosFromVec(VM.Vector3 vector) {
+  void addPosFromVec(vm.Vector3 vector) {
     translateFromVec(vector); // alias
   }
 
-  void setPosFromVec(VM.Vector3 vector) {
-    transform[POSX] = vector[0];
-    transform[POSY] = vector[1];
-    transform[POSZ] = vector[2];
+  void setPosFromVec(vm.Vector3 vector) {
+    transform[posX] = vector[0];
+    transform[posY] = vector[1];
+    transform[posZ] = vector[2];
   }
 
   void setPosFromSpherical(double radius, double azimuth, double polar) {
-    double rcp = radius * Math.cos(polar);
+    double rcp = radius * math.cos(polar);
     setPos(
-      rcp * Math.cos(azimuth),
-      radius * Math.sin(polar),
-      rcp * Math.sin(azimuth),
+      rcp * math.cos(azimuth),
+      radius * math.sin(polar),
+      rcp * math.sin(azimuth),
     );
   }
 
   void translate(double x, double y, double z, [double factor = 1.0]) {
-    transform[POSX] += x * factor;
-    transform[POSY] += y * factor;
-    transform[POSZ] += z * factor;
+    transform[posX] += x * factor;
+    transform[posY] += y * factor;
+    transform[posZ] += z * factor;
   }
 
-  void translateFromVec(VM.Vector3 vector, [double factor = 1.0]) {
-    transform[POSX] += vector[0] * factor;
-    transform[POSY] += vector[1] * factor;
-    transform[POSZ] += vector[2] * factor;
+  void translateFromVec(vm.Vector3 vector, [double factor = 1.0]) {
+    transform[posX] += vector[0] * factor;
+    transform[posY] += vector[1] * factor;
+    transform[posZ] += vector[2] * factor;
   }
 
   void moveForward(double amount) {
@@ -119,15 +119,15 @@ class Spatial extends NamedEntity {
   }
 
   void moveBackward(double amount) {
-    transform[POSX] += transform[BACKX] * amount;
-    transform[POSY] += transform[BACKY] * amount;
-    transform[POSZ] += transform[BACKZ] * amount;
+    transform[posX] += transform[backX] * amount;
+    transform[posY] += transform[backY] * amount;
+    transform[posZ] += transform[backZ] * amount;
   }
 
   void moveUp(double amount) {
-    transform[POSX] += transform[UPX] * amount;
-    transform[POSY] += transform[UPY] * amount;
-    transform[POSZ] += transform[UPZ] * amount;
+    transform[posX] += transform[upX] * amount;
+    transform[posY] += transform[upY] * amount;
+    transform[posZ] += transform[upZ] * amount;
   }
 
   void moveDown(double amount) {
@@ -139,9 +139,9 @@ class Spatial extends NamedEntity {
   }
 
   void moveRight(double amount) {
-    transform[POSX] += transform[RIGHTX] * amount;
-    transform[POSY] += transform[RIGHTY] * amount;
-    transform[POSZ] += transform[RIGHTZ] * amount;
+    transform[posX] += transform[rightX] * amount;
+    transform[posY] += transform[rightY] * amount;
+    transform[posZ] += transform[rightZ] * amount;
   }
 
   void rotX(double angle) {
@@ -180,8 +180,8 @@ class Spatial extends NamedEntity {
     transform.rotate(getUp(), amount);
   }
 
-  void lookAt(VM.Vector3 target, [VM.Vector3? up]) {
-    up ??= VM.Vector3(0.0, 1.0, 0.0);
-    VM.setViewMatrix(transform, getPos(), target, up);
+  void lookAt(vm.Vector3 target, [vm.Vector3? up]) {
+    up ??= vm.Vector3(0.0, 1.0, 0.0);
+    vm.setViewMatrix(transform, getPos(), target, up);
   }
 }

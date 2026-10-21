@@ -1,7 +1,7 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 // A very simple shaders - many other are available out of the box.
 // aPosition will be provided by the MeshData object `torus`
@@ -9,10 +9,10 @@ import 'package:vector_math/vector_math.dart' as VM;
 // uPerspectiveViewMatrix will be provided by the Material object `materialBasic`
 // uModelMatrix will be provided by the Material object `materialBasic`
 final ShaderObject demoVertexShader = ShaderObject("demoVertexShader")
-  ..AddAttributeVars([aPosition])
-  ..AddVaryingVars([vColor])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..SetBody([
+  ..addAttributeVars([aPosition])
+  ..addVaryingVars([vColor])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..setBody([
     """
 void main() {
     gl_Position = $uPerspectiveViewMatrix *
@@ -26,8 +26,8 @@ void main() {
   ]);
 
 final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
-  ..AddVaryingVars([vColor])
-  ..SetBody([
+  ..addVaryingVars([vColor])
+  ..setBody([
     """
 void main() {
     $oFragColor.rgb = $vColor;
@@ -37,8 +37,8 @@ void main() {
 
 void main() {
   // The canvas is what we render the 3d scene into.
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
 
   gLogLevel = 1; // enable more logging
   // Create a ChronosGL object for the canvas.
@@ -50,7 +50,7 @@ void main() {
     5.0,
     0.0,
     0.0,
-    HTML.document.body as HTML.Element,
+    html.document.body as html.Element,
   );
   // Create a perspective. We use a combined view+perspective matrix,
   // which is obtained by combining te view matrix from the camera with
@@ -76,10 +76,10 @@ void main() {
   // Create the Material, basically a container for uniforms, which provides
   // uModelMatrix and controls basic settings for depth buffers and blending.
   final Material material = Material("torus-mat")
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
   // Make a torus and add it to the first program providing the
   // aPosition attribute.
-  final MeshData torus = ShapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4);
+  final MeshData torus = shapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4);
 
   // Create the second shader program and the point sprites. The details are
   // hidden in the library functions.
@@ -89,9 +89,9 @@ void main() {
     pointSpritesVertexShader,
     pointSpritesFragmentShader,
   );
-  final Material materialStars = Utils.MakeStarMaterial(cgl)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
-  final MeshData stars = Utils.MakeStarMesh(progSprites, 2000, 100.0);
+  final Material materialStars = Utils.makeStarMaterial(cgl)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
+  final MeshData stars = Utils.makeStarMesh(progSprites, 2000, 100.0);
 
   // Main loop body
   double lastTimeMs = 0.0;
@@ -104,10 +104,10 @@ void main() {
     orbit.animate(elapsed);
 
     // use default framebuffer which also auto clears itself
-    prog.Draw(torus, [perspective, material]);
-    progSprites.Draw(stars, [perspective, materialStars]);
+    prog.draw(torus, [perspective, material]);
+    progSprites.draw(stars, [perspective, materialStars]);
 
-    HTML.window.animationFrame.then(animate);
+    html.window.animationFrame.then(animate);
   }
 
   animate(0.0);

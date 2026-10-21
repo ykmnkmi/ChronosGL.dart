@@ -1,14 +1,14 @@
 @TestOn("chrome")
 library;
 
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
 import "package:test/test.dart";
 
 void main() {
   test("shader_syntax", () {
-    HTML.CanvasElement canvas = HTML.CanvasElement(width: 200, height: 200);
+    html.CanvasElement canvas = html.CanvasElement(width: 200, height: 200);
     ChronosGL cgl = ChronosGL(canvas);
     RenderPhase phase = RenderPhase("test", cgl);
     RenderProgram program;

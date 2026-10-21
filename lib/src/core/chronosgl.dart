@@ -1,6 +1,6 @@
 part of 'lib.dart';
 
-const String NO_WEBGL_MESSAGE = """
+const String noWebglMessage = """
 Calling canvas.getContext("webgl2") failed,
 make sure you run on a computer that supports WebGL2.
 
@@ -12,7 +12,7 @@ option: --enable-unsafe-es3-apis)
 
 const int kNoAnisotropicFilterLevel = 1;
 
-String _AddLineNumbers(String text) {
+String _addLineNumbers(String text) {
   List<String> out = text.split("\n");
   for (int i = 0; i < out.length; ++i) {
     out[i] = "${i + 1}: ${out[i]}";
@@ -20,20 +20,20 @@ String _AddLineNumbers(String text) {
   return out.join("\n");
 }
 
-GlShader _CompileShader(WEBGL.RenderingContext2 gl, int type, String text) {
+GlShader _compileShader(webgl.RenderingContext2 gl, int type, String text) {
   GlShader shader = gl.createShader(type);
 
   gl.shaderSource(shader, text);
   gl.compileShader(shader);
 
-  bool result = gl.getShaderParameter(shader, GL_COMPILE_STATUS) as bool;
+  bool result = gl.getShaderParameter(shader, glCompileStatus) as bool;
   if (!result) {
     String error =
         gl.getShaderInfoLog(shader) ?? 'Unknown shader compilation error';
-    LogError("Compilation failed:");
-    LogError(_AddLineNumbers(text));
-    LogError("Failure:");
-    LogError(error);
+    logError("Compilation failed:");
+    logError(_addLineNumbers(text));
+    logError("Failure:");
+    logError(error);
     throw error;
   }
   return shader;
@@ -59,39 +59,39 @@ class ChronosGL {
     };
 
     final context =
-        _canvas.getContext("webgl2", attributes) as WEBGL.RenderingContext2?;
+        _canvas.getContext("webgl2", attributes) as webgl.RenderingContext2?;
     if (context == null) {
-      throw Exception(NO_WEBGL_MESSAGE);
+      throw Exception(noWebglMessage);
     }
     _gl = context;
 
     final actual = _gl.getContextAttributes();
-    LogInfo("ChronosGL Config: $actual");
+    logInfo("ChronosGL Config: $actual");
 
     _gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    _gl.enable(GL_DEPTH_TEST);
+    _gl.enable(glDepthTest);
     if (faceCulling) {
-      _gl.enable(GL_CULL_FACE);
+      _gl.enable(glCullFace);
     }
   }
 
-  late final WEBGL.RenderingContext2 _gl;
+  late final webgl.RenderingContext2 _gl;
 
   // Keep the HTML dependency out of core. The WebGL context is checked once
   // at this browser boundary and is statically typed everywhere after that.
   final dynamic _canvas;
 
-  GlProgram CompileWholeProgram(
+  GlProgram compileWholeProgram(
     String vertShaderText,
     String fragShaderText,
     List<String> transformVarying,
   ) {
     GlProgram program = _gl.createProgram();
-    GlShader vs = _CompileShader(_gl, GL_VERTEX_SHADER, vertShaderText);
+    GlShader vs = _compileShader(_gl, glVertexShader, vertShaderText);
     _gl.attachShader(program, vs);
     // delete shader vs?
 
-    GlShader fs = _CompileShader(_gl, GL_FRAGMENT_SHADER, fragShaderText);
+    GlShader fs = _compileShader(_gl, glFragmentShader, fragShaderText);
     _gl.attachShader(program, fs);
     // delete shader fs?
 
@@ -99,54 +99,54 @@ class ChronosGL {
       _gl.transformFeedbackVaryings(
         program,
         transformVarying,
-        GL_INTERLEAVED_ATTRIBS,
+        glInterleavedAttribs,
       );
     }
 
     _gl.linkProgram(program);
 
-    if (!(_gl.getProgramParameter(program, GL_LINK_STATUS) as bool)) {
+    if (!(_gl.getProgramParameter(program, glLinkStatus) as bool)) {
       throw _gl.getProgramInfoLog(program) ?? 'Unknown program linking error';
     }
 
     return program;
   }
 
-  void ChangeArrayBuffer(GlBuffer buffer, List<num> data) {
-    _gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
-    _gl.bufferData(GL_ARRAY_BUFFER, data, GL_DYNAMIC_DRAW);
+  void changeArrayBuffer(GlBuffer buffer, List<num> data) {
+    _gl.bindBuffer(glArrayBuffer, buffer);
+    _gl.bufferData(glArrayBuffer, data, glDynamicDraw);
   }
 
-  void GetArrayBuffer(GlBuffer buffer, TypedData data) {
-    _gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
-    _gl.getBufferSubData(GL_ARRAY_BUFFER, 0, data);
+  void getArrayBuffer(GlBuffer buffer, TypedData data) {
+    _gl.bindBuffer(glArrayBuffer, buffer);
+    _gl.getBufferSubData(glArrayBuffer, 0, data);
   }
 
-  void BufferDataSetSize(int kind, GlBuffer buf, int size, int usage) {
+  void bufferDataSetSize(int kind, GlBuffer buf, int size, int usage) {
     _gl.bindBuffer(kind, buf);
     _gl.bufferData(kind, size, usage);
     _gl.bindBuffer(kind, null);
   }
 
-  void GetTransformBuffer(GlBuffer buf, TypedData data) {
-    _gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    _gl.getBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, data);
+  void getTransformBuffer(GlBuffer buf, TypedData data) {
+    _gl.bindBuffer(glTransformFeedbackBuffer, buf);
+    _gl.getBufferSubData(glTransformFeedbackBuffer, 0, data);
   }
 
   GlBuffer createBuffer() {
     return _gl.createBuffer();
   }
 
-  void ChangeElementArrayBuffer(GlBuffer buf, TypedData data) {
+  void changeElementArrayBuffer(GlBuffer buf, TypedData data) {
     assert((data is Uint16List) || (data is Uint32List) || (data is Uint8List));
-    _gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
-    _gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, data, GL_DYNAMIC_DRAW);
+    _gl.bindBuffer(glElementArrayBuffer, buf);
+    _gl.bufferData(glElementArrayBuffer, data, glDynamicDraw);
   }
 
   // Not really useful other than tesying
-  void ChangeTransformBuffer(GlBuffer buffer, List<num> data) {
-    _gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
-    _gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, data, GL_DYNAMIC_DRAW);
+  void changeTransformBuffer(GlBuffer buffer, List<num> data) {
+    _gl.bindBuffer(glTransformFeedbackBuffer, buffer);
+    _gl.bufferData(glTransformFeedbackBuffer, data, glDynamicDraw);
   }
 
   // Why all these shims?
@@ -215,13 +215,13 @@ class ChronosGL {
   }
 
   void bindTransformFeedback(GlTransformFeedback transform) {
-    //_gl.bindTransformFeedback(GL_TRANSFORM_FEEDBACK, null);
-    _gl.bindTransformFeedback(GL_TRANSFORM_FEEDBACK, transform);
+    //_gl.bindTransformFeedback(glTransformFeedback, null);
+    _gl.bindTransformFeedback(glTransformFeedback, transform);
   }
 
   void bindBufferBase(int kind, int offset, GlBuffer? buffer) {
     // in case buffer is still bound
-    // _gl.bindBuffer(GL_ARRAY_BUFFER, null);
+    // _gl.bindBuffer(glArrayBuffer, null);
     _gl.bindBufferBase(kind, offset, buffer);
   }
 
@@ -319,7 +319,7 @@ class ChronosGL {
     int stride,
     int offset,
   ) {
-    _gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
+    _gl.bindBuffer(glArrayBuffer, buffer);
     _gl.vertexAttribPointer(index, size, type, normalized, stride, offset);
   }
 
@@ -402,7 +402,7 @@ class ChronosGL {
     try {
       return _gl.getUniformLocation(program, uniform);
     } catch (e) {
-      LogError("Unknown uniform [$uniform] for $program");
+      logError("Unknown uniform [$uniform] for $program");
       return null;
     }
   }
@@ -456,21 +456,21 @@ class ChronosGL {
     return _gl.getExtension(name);
   }
 
-  Object? GetGlExtensionAnisotropic() {
+  Object? getGlExtensionAnisotropic() {
     Object? ext = getExtension("EXT_texture_filter_anisotropic");
     if (ext == null) {
-      LogWarn("ExtensionAnisotropic NOT SUPPORTED");
+      logWarn("ExtensionAnisotropic NOT SUPPORTED");
     }
     return ext;
   }
 
-  int MaxAnisotropicFilterLevel() {
-    var ext = GetGlExtensionAnisotropic();
+  int maxAnisotropicFilterLevel() {
+    var ext = getGlExtensionAnisotropic();
     if (ext == null) {
       return kNoAnisotropicFilterLevel;
     }
     return (getParameter(
-      WEBGL.ExtTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT,
+      webgl.ExtTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT,
     ) as num).toInt();
   }
 

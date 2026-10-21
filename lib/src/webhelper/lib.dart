@@ -1,11 +1,11 @@
 library;
 
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import "dart:async";
 import 'dart:convert';
-import 'dart:math' as Math;
+import 'dart:math' as math;
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import '../core/lib.dart';
 

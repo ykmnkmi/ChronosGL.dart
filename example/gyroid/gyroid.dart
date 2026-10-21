@@ -1,8 +1,8 @@
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 // Simple Gyroid Isosurface (spherical crop)
 //
@@ -16,7 +16,7 @@ import 'package:vector_math/vector_math.dart' as VM;
 //https://www.shadertoy.com/view/Md23Rd
 //https://www.shadertoy.com/view/Ms2Gzd
 
-const String _FragmentShader =
+const String _fragmentShader =
     """
 #define MaxSteps 60
 #define MinimumDistance 0.01
@@ -194,16 +194,16 @@ void main()
 """;
 
 final ShaderObject gyroidVertexShader = ShaderObject("SphericalGyroid")
-  ..AddAttributeVars([aPosition])
-  ..SetBody([NullVertexShaderString]);
+  ..addAttributeVars([aPosition])
+  ..setBody([nullVertexShaderString]);
 
 final ShaderObject gyroidFragmentShader = ShaderObject("SphericalGyroidF")
-  ..AddUniformVars([uCanvasSize, uTime])
-  ..SetBody([_FragmentShader]);
+  ..addUniformVars([uCanvasSize, uTime])
+  ..setBody([_fragmentShader]);
 
 void main() {
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   // Make sure canvas is really full screen
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
@@ -218,13 +218,13 @@ void main() {
     gyroidFragmentShader,
   );
   UniformGroup uniforms = UniformGroup("plain");
-  MeshData unitQuad = ShapeQuad(program, 1);
+  MeshData unitQuad = shapeQuad(program, 1);
 
   void animate(num timeMs) {
-    uniforms.ForceUniform(uTime, timeMs / 1000.0);
-    uniforms.ForceUniform(uCanvasSize, VM.Vector2(0.0 + w, 0.0 + h));
-    program.Draw(unitQuad, [uniforms]);
-    HTML.window.animationFrame.then(animate);
+    uniforms.forceUniform(uTime, timeMs / 1000.0);
+    uniforms.forceUniform(uCanvasSize, vm.Vector2(0.0 + w, 0.0 + h));
+    program.draw(unitQuad, [uniforms]);
+    html.window.animationFrame.then(animate);
   }
 
   animate(0.0);

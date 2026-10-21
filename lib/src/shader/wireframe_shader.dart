@@ -2,7 +2,7 @@ part of 'lib.dart';
 
 // http://codeflow.org/entries/2012/aug/02/easy-wireframe-display-with-barycentric-coordinates/
 
-const String _WireframeF =
+const String _wireframeF =
     """
 // the 3 vertices of a Face3 (w == 0) have the centers:
 // (1, 0, 0, 0)) 
@@ -38,12 +38,12 @@ void main() {
 """;
 
 final ShaderObject wireframeVertexShader = ShaderObject("WireframeV")
-  ..AddAttributeVars([aPosition, aCenter])
-  ..AddVaryingVars([vCenter])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..SetBodyWithMain([StdVertexBody, "$vCenter = $aCenter;"]);
+  ..addAttributeVars([aPosition, aCenter])
+  ..addVaryingVars([vCenter])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..setBodyWithMain([stdVertexBody, "$vCenter = $aCenter;"]);
 
 final ShaderObject wireframeFragmentShader = ShaderObject("WireframeF")
-  ..AddVaryingVars([vCenter])
-  ..AddUniformVars([uColorAlpha, uColorAlpha2, uThickness])
-  ..SetBody([_WireframeF]);
+  ..addVaryingVars([vCenter])
+  ..addUniformVars([uColorAlpha, uColorAlpha2, uThickness])
+  ..setBody([_wireframeF]);

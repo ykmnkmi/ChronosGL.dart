@@ -1,12 +1,12 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-final HTML.InputElement gLuminance =
-    HTML.document.querySelector('#luminance') as HTML.InputElement;
-final HTML.InputElement gIntensity =
-    HTML.document.querySelector('#intensity') as HTML.InputElement;
+final html.InputElement gLuminance =
+    html.document.querySelector('#luminance') as html.InputElement;
+final html.InputElement gIntensity =
+    html.document.querySelector('#intensity') as html.InputElement;
 
 class BloomEffect {
   BloomEffect(
@@ -19,8 +19,8 @@ class BloomEffect {
     this.fbOut,
   ) : wSmall = w ~/ scale,
       hSmall = h ~/ scale,
-      fb1 = Framebuffer.Default(cgl, w ~/ scale, h ~/ scale),
-      fb2 = Framebuffer.Default(cgl, w ~/ scale, h ~/ scale) {
+      fb1 = Framebuffer.defaultFramebuffer(cgl, w ~/ scale, h ~/ scale),
+      fb2 = Framebuffer.defaultFramebuffer(cgl, w ~/ scale, h ~/ scale) {
     progHighPass = RenderProgram(
       "highpass",
       cgl,
@@ -32,7 +32,7 @@ class BloomEffect {
       "bloom",
       cgl,
       uvPassthruVertexShader,
-      CreateBloomTextureFragmentShader(radius, radius * 1.0),
+      createBloomTextureFragmentShader(radius, radius * 1.0),
     );
 
     progApplyBloom = RenderProgram(
@@ -43,34 +43,34 @@ class BloomEffect {
     );
 
     assert(
-      progHighPass.HasDownwardCompatibleAttributesTo(progApplyBloom),
+      progHighPass.hasDownwardCompatibleAttributesTo(progApplyBloom),
       "highpass incompatible attributes",
     );
     assert(
-      progApplyBloom.HasCompatibleAttributesTo(progBloom),
+      progApplyBloom.hasCompatibleAttributesTo(progBloom),
       "bloom incompatible attributes",
     );
-    unitQuad = ShapeQuad(progApplyBloom, 1);
+    unitQuad = shapeQuad(progApplyBloom, 1);
 
     // Note: the input uTexture varies between the various UniformGroups
     uniformsHighPass = UniformGroup("uniformsHighPass")
-      ..SetUniform(uRange, VM.Vector2(0.65, 0.65 + 0.01))
-      ..SetUniform(uColorAlpha, VM.Vector4.zero())
-      ..SetUniform(uTexture, fbIn.colorTexture!);
+      ..setUniform(uRange, vm.Vector2(0.65, 0.65 + 0.01))
+      ..setUniform(uColorAlpha, vm.Vector4.zero())
+      ..setUniform(uTexture, fbIn.colorTexture!);
 
     uniformsBloomH = UniformGroup("Bloom Horizontal")
-      ..SetUniform(uDirection, VM.Vector2(1.5, 0.0))
-      ..SetUniform(uTexture, fb2.colorTexture!);
+      ..setUniform(uDirection, vm.Vector2(1.5, 0.0))
+      ..setUniform(uTexture, fb2.colorTexture!);
 
     uniformsBloomV = UniformGroup("Bloom Vertical")
-      ..SetUniform(uDirection, VM.Vector2(0.0, 1.5))
-      ..SetUniform(uTexture, fb1.colorTexture!);
+      ..setUniform(uDirection, vm.Vector2(0.0, 1.5))
+      ..setUniform(uTexture, fb1.colorTexture!);
 
     uniformsApply = UniformGroup("uniformApply")
-      ..SetUniform(uTexture, fbIn.colorTexture!)
-      ..SetUniform(uScale, 0.6)
-      ..SetUniform(uColor, ColorWhite)
-      ..SetUniform(uTexture2, fb2.colorTexture!);
+      ..setUniform(uTexture, fbIn.colorTexture!)
+      ..setUniform(uScale, 0.6)
+      ..setUniform(uColor, colorWhite)
+      ..setUniform(uTexture2, fb2.colorTexture!);
   }
 
   final int radius;
@@ -87,38 +87,38 @@ class BloomEffect {
       uniformsApply;
   late MeshData unitQuad;
 
-  void Draw(double luminosity, double intensity) {
+  void draw(double luminosity, double intensity) {
     // Copy high intensity areas from fb to fb2
-    fb2.Activate(GL_CLEAR_ALL, 0, 0, wSmall, hSmall);
-    uniformsHighPass.ForceUniform(
+    fb2.activate(glClearAll, 0, 0, wSmall, hSmall);
+    uniformsHighPass.forceUniform(
       uRange,
-      VM.Vector2(luminosity, luminosity + 0.01),
+      vm.Vector2(luminosity, luminosity + 0.01),
     );
-    progHighPass.Draw(unitQuad, [uniformsHighPass]);
+    progHighPass.draw(unitQuad, [uniformsHighPass]);
 
     // Blur fb2 to fb1 horizontally
-    fb1.Activate(GL_CLEAR_ALL, 0, 0, wSmall, hSmall);
-    progBloom.Draw(unitQuad, [uniformsBloomH]);
+    fb1.activate(glClearAll, 0, 0, wSmall, hSmall);
+    progBloom.draw(unitQuad, [uniformsBloomH]);
 
     // Blur fb1 to fb2 vertically
-    fb2.Activate(GL_CLEAR_ALL, 0, 0, wSmall, hSmall);
-    progBloom.Draw(unitQuad, [uniformsBloomV]);
+    fb2.activate(glClearAll, 0, 0, wSmall, hSmall);
+    progBloom.draw(unitQuad, [uniformsBloomV]);
 
     // Put all together: combine un-bloomed fb with fb2 and show result on screen
-    fbOut.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-    uniformsApply.ForceUniform(uScale, intensity);
-    progApplyBloom.Draw(unitQuad, [uniformsApply]);
+    fbOut.activate(glClearAll, 0, 0, w, h);
+    uniformsApply.forceUniform(uScale, intensity);
+    progApplyBloom.draw(unitQuad, [uniformsApply]);
   }
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(165.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -127,10 +127,10 @@ void main() {
   final height = canvas.clientHeight;
   canvas.width = width;
   canvas.height = height;
-  perspective.AdjustAspect(width, height);
+  perspective.adjustAspect(width, height);
 
-  final Framebuffer screen = Framebuffer.Screen(cgl);
-  final Framebuffer fb = Framebuffer.Default(cgl, width, height);
+  final Framebuffer screen = Framebuffer.screen(cgl);
+  final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, width, height);
 
   final RenderProgram progPerlinNoise = RenderProgram(
     "perlin",
@@ -140,10 +140,10 @@ void main() {
   );
 
   final Material material = Material("mat")
-    ..SetUniform(uTransformationMatrix, VM.Matrix4.identity())
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
+    ..setUniform(uTransformationMatrix, vm.Matrix4.identity())
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
-  final MeshData torus = ShapeTorusKnot(progPerlinNoise);
+  final MeshData torus = shapeTorusKnot(progPerlinNoise);
 
   final BloomEffect bloom = BloomEffect(cgl, width, height, 6, 4, fb, screen);
 
@@ -153,18 +153,18 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.01;
     orbit.animate(elapsed);
-    material.ForceUniform(uTime, timeMs / 1000.0);
+    material.forceUniform(uTime, timeMs / 1000.0);
 
     // Draw un-bloomed object to fb
-    fb.Activate(GL_CLEAR_ALL, 0, 0, width, height);
-    progPerlinNoise.Draw(torus, [perspective, material]);
-    bloom.Draw(
+    fb.activate(glClearAll, 0, 0, width, height);
+    progPerlinNoise.draw(torus, [perspective, material]);
+    bloom.draw(
       gLuminance.valueAsNumber! * 1.0,
       gIntensity.valueAsNumber! * 1.0,
     );
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

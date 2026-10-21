@@ -1,25 +1,25 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 // import 'dart:web' as JS;
 
 // https://users.cs.cf.ac.uk/dave/Multimedia/node158.html
-const MIDI_NOTE_OFF = 8;
-const MIDI_NOTE_ON = 9;
-const MIDI_POLYPHONIC_KEY_PRESSURE = 10;
-const MIDI_CONTROL_CHANGE = 11;
-const MIDI_PROGRAM_CHANGE = 12;
-const MIDI_CHANNEL_PRESSURE = 13;
-const MIDI_PITCH_BEND = 14;
+const midiNoteOff = 8;
+const midiNoteOn = 9;
+const midiPolyphonicKeyPressure = 10;
+const midiControlChange = 11;
+const midiProgramChange = 12;
+const midiChannelPressure = 13;
+const midiPitchBend = 14;
 
-HTML.Element gTab = HTML.document.getElementById("tab")!;
+html.Element gTab = html.document.getElementById("tab")!;
 
-void LogEvent(String kind, String device_channel, dynamic data) {
-  print("$kind $device_channel $data");
+void logEvent(String kind, String deviceChannel, dynamic data) {
+  print("$kind $deviceChannel $data");
   if (gTab.children.length > 20) {
     gTab.children.removeAt(0);
   }
   gTab.innerHtml =
-      "${gTab.innerHtml!}<tr><td>$kind</td><td>$device_channel</td><td>$data</td></tr>";
+      "${gTab.innerHtml!}<tr><td>$kind</td><td>$deviceChannel</td><td>$data</td></tr>";
 }
 
 // MIDI NOT CURRENTLY AVAILABLE VIA dart:web
@@ -27,60 +27,60 @@ void LogEvent(String kind, String device_channel, dynamic data) {
 // final List<MIDIPort> gMidiPorts = [];
 final Map<String, int> gMidiIdToPortIndex = {};
 
-void EventHandler(int device, dynamic msg) {
+void eventHandler(int device, dynamic msg) {
   final data = msg.data as List<int>;
   final int kind = data[0] >> 4;
   final int channel = data[0] & 0xf;
-  if (kind == MIDI_NOTE_ON) {
-    LogEvent("NoteOn", "$device.$channel", data);
-  } else if (kind == MIDI_NOTE_OFF) {
-    LogEvent("NoteOff", "$device.$channel", data);
-  } else if (kind == MIDI_CONTROL_CHANGE) {
-    LogEvent("ControlChange", "$device.$channel", data);
+  if (kind == midiNoteOn) {
+    logEvent("NoteOn", "$device.$channel", data);
+  } else if (kind == midiNoteOff) {
+    logEvent("NoteOff", "$device.$channel", data);
+  } else if (kind == midiControlChange) {
+    logEvent("ControlChange", "$device.$channel", data);
   } else {
-    LogEvent("Unknown", "$device", data);
+    logEvent("Unknown", "$device", data);
   }
 }
 
-dynamic make_handler(int device) {
+dynamic makeHandler(int device) {
   print("init");
   // MIDI NOT CURRENTLY AVAILABLE VIA dart:web
   /*
-  LogEvent("Registering", "${device}", "${gMidiPorts[device]}");
-  return (dynamic msg) => EventHandler(device, msg);
+  logEvent("Registering", "${device}", "${gMidiPorts[device]}");
+  return (dynamic msg) => eventHandler(device, msg);
   */
 }
 
 // MIDI NOT CURRENTLY AVAILABLE VIA dart:web
 /*
-void InitMidiDevice(JS.MIDIPort port) {
+void InitMidiDevice(js.MIDIPort port) {
   print("init");
 
   if (!gMidiIdToPortIndex.containsKey(port.id)) {
-    LogEvent("InitDevice", "${port.type}", "${port.name}: ${port.id}");
+    logEvent("InitDevice", "${port.type}", "${port.name}: ${port.id}");
     int index = gMidiPorts.length;
     gMidiIdToPortIndex[port.id] = index;
     gMidiPorts.add(port);
 
     //bool has_thru = port.name?.contains("Midi Through Port") ?? false;
     //if (!has_thru) {
-    port.addEventListener('midimessage', make_handler(index));
+    port.addEventListener('midimessage', makeHandler(index));
     // }
   } else {
-    LogEvent("IgnoredDevice", "${port.type}", "${port.name}: ${port.id}");
+    logEvent("IgnoredDevice", "${port.type}", "${port.name}: ${port.id}");
   }
 }
 */
 
-void InitMidi() async {
+void initMidi() async {
   // MIDI NOT CURRENTLY AVAILABLE VIA dart:web
   /*
-  final opts = JS.MIDIOptions(sysex: false, software: true);
-  final JS.MIDIAccess gMidiAccess =
-      await JS.window.navigator.requestMIDIAccess(opts);
+  final opts = js.MIDIOptions(sysex: false, software: true);
+  final js.MIDIAccess gMidiAccess =
+      await js.window.navigator.requestMIDIAccess(opts);
 
   gMidiAccess.addEventListener("statechange", (dynamic event) {
-    JS.MIDIPort port = event.port;
+    js.MIDIPort port = event.port;
     InitMidiDevice(port);
   });
 
@@ -96,6 +96,6 @@ void InitMidi() async {
 
 void main() async {
   print("entering main");
-  InitMidi();
+  initMidi();
   print("exiting main");
 }

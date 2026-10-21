@@ -9,17 +9,17 @@ which is also used by babylonjs
 */
 
 bool _isGoodEar(
-  List<VM.Vector2> contour,
+  List<vm.Vector2> contour,
   List<int> available,
   int i0,
   int i1,
   int i2,
 ) {
-  final VM.Vector2 a = contour[i0];
-  final VM.Vector2 b = contour[i1];
-  final VM.Vector2 c = contour[i2];
+  final vm.Vector2 a = contour[i0];
+  final vm.Vector2 b = contour[i1];
+  final vm.Vector2 c = contour[i2];
 
-  if (!IsCounterClockWise(a, b, c)) {
+  if (!isCounterClockWise(a, b, c)) {
     return false;
   }
   for (int j = 0; j < available.length; j++) {
@@ -27,7 +27,7 @@ bool _isGoodEar(
     if (vi == i0 || vi == i1 || vi == i2) continue;
     // If one of the subsequent points is in the triangle
     // the currently proposed triangle is too big.
-    if (IsInTriangle(a, b, c, contour[vi])) {
+    if (isInTriangle(a, b, c, contour[vi])) {
       return false;
     }
   }
@@ -35,7 +35,7 @@ bool _isGoodEar(
 }
 
 // Triangulate will not work for all contours.
-List<int>? Triangulate(List<VM.Vector2> contour) {
+List<int>? triangulate(List<vm.Vector2> contour) {
   assert(contour.length >= 3);
   List<int> triangles = <int>[];
 
@@ -82,6 +82,6 @@ List<int>? Triangulate(List<VM.Vector2> contour) {
 
 // David Eberly's algorithm for finding a bridge between hole and outer polygon
 // We assume the hole does not touch the contour
-void FindBridge(List<VM.Vector2> contour, VM.Vector2 leftmostHole) {
+void findBridge(List<vm.Vector2> contour, vm.Vector2 leftmostHole) {
   //double qx = double.NEGATIVE_INFINITY;
 }

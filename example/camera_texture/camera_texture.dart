@@ -1,23 +1,23 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-void main2(HTML.VideoElement? video) {
+void main2(html.VideoElement? video) {
   if (video == null) {
-    HTML.window.alert(
+    html.window.alert(
       "Could not access camera - do you have a camera installed?",
     );
     return;
   }
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, 10.0, 0.0, canvas);
   final PerspectiveResizeAware perspective = PerspectiveResizeAware(
@@ -35,19 +35,19 @@ void main2(HTML.VideoElement? video) {
     texturedFragmentShader,
   );
 
-  MeshData cube = ShapeCube(program);
+  MeshData cube = shapeCube(program);
 
   final ImageTexture texture = ImageTexture(
     cgl,
     "video",
     video,
-    TexturePropertiesVideo,
+    texturePropertiesVideo,
   );
 
   final Material mat = Material("cube")
-    ..SetUniform(uColor, ColorBlack)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity())
-    ..SetUniform(uTexture, texture);
+    ..setUniform(uColor, colorBlack)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity())
+    ..setUniform(uTexture, texture);
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -57,22 +57,22 @@ void main2(HTML.VideoElement? video) {
     orbit.animate(elapsed);
     try {
       // Get new image from camera and update texture with it.
-      texture.Update();
+      texture.update();
     } catch (exception) {
       print(exception);
     }
-    program.Draw(cube, [perspective, mat]);
+    program.draw(cube, [perspective, mat]);
 
-    fps.UpdateFrameCount(lastTimeMs);
+    fps.updateFrameCount(lastTimeMs);
 
-    HTML.window.animationFrame.then(animate);
+    html.window.animationFrame.then(animate);
   }
 
   animate(0.0);
 }
 
 void main() {
-  MakeVideoElementFromCamera().then(main2).catchError((Object error) {
-    HTML.window.alert("Camera error $error: - do you have a camera installed?");
+  makeVideoElementFromCamera().then(main2).catchError((Object error) {
+    html.window.alert("Camera error $error: - do you have a camera installed?");
   });
 }

@@ -24,7 +24,7 @@ part of 'lib.dart';
 // https://www.gamedev.net/resources/_/technical/graphics-programming-and-theory/3d-basics-r673
 // http://stackoverflow.com/questions/21318471/rendering-orthographic-shadowmap-to-screen
 // http://stackoverflow.com/questions/21318471/rendering-orthographic-shadowmap-to-screen
-const String ShadowMapShaderLib = """
+const String shadowMapShaderLib = """
 
 float GetShadow(vec3 depth, sampler2DShadow shadowMap, float bias1, float bias2) {
     depth.z = depth.z - bias1;
@@ -55,9 +55,9 @@ float LinearizeDepth(float z, float near, float far) {
 }
 */
 final ShaderObject shadowVertexShaderDepth = ShaderObject("ShadowMapV")
-  ..AddAttributeVars([aPosition])
-  ..AddUniformVars([uLightPerspectiveViewMatrix, uModelMatrix])
-  ..SetBody([
+  ..addAttributeVars([aPosition])
+  ..addUniformVars([uLightPerspectiveViewMatrix, uModelMatrix])
+  ..setBody([
     """
 void main() {
     gl_Position = $uLightPerspectiveViewMatrix * $uModelMatrix *
@@ -68,23 +68,23 @@ void main() {
 
 final ShaderObject shadowFragmentShaderDepth =
     // What we care about here is the internal update of the depth buffer
-    ShaderObject("ShadowMapF")..SetBodyWithMain(["$oFragColor.r = 1.0;"]);
+    ShaderObject("ShadowMapF")..setBodyWithMain(["$oFragColor.r = 1.0;"]);
 
 final ShaderObject visualizeShadowmapVertexShaderLinearDepth16 =
     ShaderObject("copyV")
-      ..AddAttributeVars([aPosition, aTexUV])
-      ..AddVaryingVars([vTexUV])
-      ..SetBody([NullVertexShaderWithTextureForwardString]);
+      ..addAttributeVars([aPosition, aTexUV])
+      ..addVaryingVars([vTexUV])
+      ..setBody([nullVertexShaderWithTextureForwardString]);
 
 final ShaderObject visualizeShadowmapFragmentShaderLinearDepth16 =
     ShaderObject("copyF")
-      ..AddVaryingVars([vTexUV])
-      ..AddUniformVars([
+      ..addVaryingVars([vTexUV])
+      ..addUniformVars([
         uTexture,
         // uCutOff,
         uCameraFar, uCameraNear,
       ])
-      ..SetBody([
+      ..setBody([
         """
 void main() {     
    float d = texture($uTexture,  $vTexUV).x;
@@ -99,16 +99,16 @@ void main() {
       ]);
 
 class ShadowMap {
-  // Other options for format:  GL_DEPTH_COMPONENT32F
+  // Other options for format:  glDepthComponent32f
   ShadowMap(
     this._cgl,
     int w,
     int h,
     double near,
     double far, {
-    int format = GL_DEPTH_COMPONENT24,
+    int format = glDepthComponent24,
   }) {
-    _mapSize = VM.Vector2(w + 0.0, h + 0.0);
+    _mapSize = vm.Vector2(w + 0.0, h + 0.0);
     // We do not really need a proper frame buffer texture as we are only
     // concerned about updated the depth buffer.
     // TODO: is there a way to disable the framebuffer writes altogether?
@@ -117,8 +117,8 @@ class ShadowMap {
       "frame::color",
       w,
       h,
-      GL_RGBA8,
-      TexturePropertiesFramebuffer,
+      glRgba8,
+      texturePropertiesFramebuffer,
     );
     _depthTexture = TypedTexture(
       _cgl,
@@ -126,7 +126,7 @@ class ShadowMap {
       w,
       h,
       format,
-      TexturePropertiesShadowMap,
+      texturePropertiesShadowMap,
     );
     _shadowBuffer = Framebuffer(_cgl, dummy, _depthTexture);
     _phaseCompute = RenderPhase("compute-shadow", _cgl, _shadowBuffer)
@@ -134,11 +134,11 @@ class ShadowMap {
       ..viewPortH = h;
 
     _uniforms
-      ..SetUniform(uTexture, GetMapTexture())
+      ..setUniform(uTexture, getMapTexture())
       // for visualization only:
-      ..SetUniform(uCutOff, 0.0)
-      ..SetUniform(uCameraNear, near)
-      ..SetUniform(uCameraFar, far);
+      ..setUniform(uCutOff, 0.0)
+      ..setUniform(uCameraNear, near)
+      ..setUniform(uCameraFar, far);
 
     _programCompute = Scene(
       "shadowCompute",
@@ -168,7 +168,7 @@ class ShadowMap {
       [_uniforms],
     );
 
-    _programVisualize.add(UnitNode(_programVisualize.program));
+    _programVisualize.add(unitNode(_programVisualize.program));
     _phaseVisualize.add(_programVisualize);
   }
 
@@ -183,9 +183,9 @@ class ShadowMap {
 
   late Scene _programVisualize;
 
-  late VM.Vector2 _mapSize;
+  late vm.Vector2 _mapSize;
 
-  void SetVisualizationViewPort(int x, int y, int w, int h) {
+  void setVisualizationViewPort(int x, int y, int w, int h) {
     _phaseVisualize
       ..viewPortX = x
       ..viewPortY = y
@@ -193,42 +193,42 @@ class ShadowMap {
       ..viewPortH = h;
   }
 
-  void AddShadowCaster(Node node) {
+  void addShadowCaster(Node node) {
     _programCompute.add(node);
   }
 
-  void ClearShadowCasters() {
+  void clearShadowCasters() {
     _programCompute.removeAll();
   }
 
   // TODO: this should take a Illumination instance as an argument eventually
-  void Compute(VM.Matrix4 lightMatrix) {
-    _uniforms.ForceUniform(uLightPerspectiveViewMatrix, lightMatrix);
-    _phaseCompute.Draw();
+  void compute(vm.Matrix4 lightMatrix) {
+    _uniforms.forceUniform(uLightPerspectiveViewMatrix, lightMatrix);
+    _phaseCompute.draw();
   }
 
-  void Visualize() {
+  void visualize() {
     // Total hack! TextureSamplers could make this nicer
-    _cgl.bindTexture(GL_TEXTURE_2D, _depthTexture.GetTexture());
-    _cgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-    // Should we have chosen GL_NEAREST when we set up the texture?
-    _cgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    _cgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    _cgl.bindTexture(GL_TEXTURE_2D, null);
-    _phaseVisualize.Draw([]);
+    _cgl.bindTexture(glTexture2D, _depthTexture.getTexture());
+    _cgl.texParameteri(glTexture2D, glTextureCompareMode, glNone);
+    // Should we have chosen glNearest when we set up the texture?
+    _cgl.texParameteri(glTexture2D, glTextureMagFilter, glNearest);
+    _cgl.texParameteri(glTexture2D, glTextureMinFilter, glNearest);
+    _cgl.bindTexture(glTexture2D, null);
+    _phaseVisualize.draw([]);
 
-    _cgl.bindTexture(GL_TEXTURE_2D, _depthTexture.GetTexture());
+    _cgl.bindTexture(glTexture2D, _depthTexture.getTexture());
     _cgl.texParameteri(
-      GL_TEXTURE_2D,
-      GL_TEXTURE_COMPARE_MODE,
-      GL_COMPARE_REF_TO_TEXTURE,
+      glTexture2D,
+      glTextureCompareMode,
+      glCompareRefToTexture,
     );
-    _cgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    _cgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    _cgl.bindTexture(GL_TEXTURE_2D, null);
+    _cgl.texParameteri(glTexture2D, glTextureMagFilter, glLinear);
+    _cgl.texParameteri(glTexture2D, glTextureMinFilter, glLinear);
+    _cgl.bindTexture(glTexture2D, null);
   }
 
-  VM.Vector2 GetMapSize() => _mapSize;
+  vm.Vector2 getMapSize() => _mapSize;
 
-  Texture GetMapTexture() => _depthTexture;
+  Texture getMapTexture() => _depthTexture;
 }

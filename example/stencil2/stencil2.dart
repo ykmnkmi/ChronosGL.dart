@@ -1,16 +1,16 @@
-import 'dart:html' as HTML;
-import 'dart:math' as Math;
+import 'dart:html' as html;
+import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 final ShaderObject stencilVertexShader = ShaderObject("stencilV")
-  ..AddAttributeVars([aPosition])
-  ..SetBody([NullVertexShaderString]);
+  ..addAttributeVars([aPosition])
+  ..setBody([nullVertexShaderString]);
 
 final ShaderObject stencilFragmentShader = ShaderObject("stencilF")
-  ..AddUniformVars([uTime, uCanvasSize])
-  ..SetBody([
+  ..addUniformVars([uTime, uCanvasSize])
+  ..setBody([
     """
 void main() {
    float radius = $uTime * max($uCanvasSize.x, $uCanvasSize.y);
@@ -26,37 +26,37 @@ void main() {
 }
 """,
   ]);
-final TheStencilFunction StencilAlways = TheStencilFunction(GL_ALWAYS, 1, 0xff);
+final TheStencilFunction stencilAlways = TheStencilFunction(glAlways, 1, 0xff);
 
-final TheStencilFunction StencilEqualZero = TheStencilFunction(
-  GL_EQUAL,
+final TheStencilFunction stencilEqualZero = TheStencilFunction(
+  glEqual,
   0,
   0xff,
 );
 
-final TheStencilFunction StencilNotEqualZero = TheStencilFunction(
-  GL_NOTEQUAL,
+final TheStencilFunction stencilNotEqualZero = TheStencilFunction(
+  glNotequal,
   0,
   0xff,
 );
 
-final TheStencilOp StencilWriteIfPixelSet = TheStencilOp(
-  GL_KEEP,
-  GL_KEEP,
-  GL_REPLACE,
+final TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
+  glKeep,
+  glKeep,
+  glReplace,
 );
 
-final TheStencilOp StencilWriteNever = TheStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+final TheStencilOp stencilWriteNever = TheStencilOp(glKeep, glKeep, glKeep);
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -65,21 +65,21 @@ void main() {
   final int height = canvas.clientHeight;
   canvas.width = width;
   canvas.height = height;
-  perspective.AdjustAspect(width, height);
+  perspective.adjustAspect(width, height);
 
   final RenderPhase phase = RenderPhase("main", cgl)
     ..viewPortW = width
     ..viewPortH = height;
 
   final Material matGenStencil = Material("stencil")
-    ..SetUniform(uTime, 1.0)
-    ..SetUniform(uCanvasSize, VM.Vector2(0.0 + width, 0.0 + height))
-    ..ForceUniform(cStencilFunc, StencilAlways)
-    ..ForceUniform(cStencilOp, StencilWriteIfPixelSet)
-    ..ForceUniform(cStencilWrite, 0xff) // only write stencil
-    ..ForceUniform(cDepthWrite, false)
-    ..ForceUniform(cColorWrite, [false, false, false, false])
-    ..ForceUniform(cDepthTest, false);
+    ..setUniform(uTime, 1.0)
+    ..setUniform(uCanvasSize, vm.Vector2(0.0 + width, 0.0 + height))
+    ..forceUniform(cStencilFunc, stencilAlways)
+    ..forceUniform(cStencilOp, stencilWriteIfPixelSet)
+    ..forceUniform(cStencilWrite, 0xff) // only write stencil
+    ..forceUniform(cDepthWrite, false)
+    ..forceUniform(cColorWrite, [false, false, false, false])
+    ..forceUniform(cDepthTest, false);
   {
     Scene scene = Scene(
       "stencil",
@@ -87,26 +87,26 @@ void main() {
       [],
     );
     phase.add(scene);
-    scene.add(Node("unit", ShapeQuad(scene.program, 1), matGenStencil));
+    scene.add(Node("unit", shapeQuad(scene.program, 1), matGenStencil));
   }
 
   final Material matOnStencil = Material("onstencil")
-    ..SetUniform(uColor, ColorRed)
-    ..ForceUniform(cStencilFunc, StencilNotEqualZero)
-    ..ForceUniform(cStencilOp, StencilWriteNever)
-    ..ForceUniform(cStencilWrite, 0x0) // only write color/depth
-    ..ForceUniform(cDepthWrite, true)
-    ..ForceUniform(cColorWrite, [true, true, true, true])
-    ..ForceUniform(cDepthTest, true);
+    ..setUniform(uColor, colorRed)
+    ..forceUniform(cStencilFunc, stencilNotEqualZero)
+    ..forceUniform(cStencilOp, stencilWriteNever)
+    ..forceUniform(cStencilWrite, 0x0) // only write color/depth
+    ..forceUniform(cDepthWrite, true)
+    ..forceUniform(cColorWrite, [true, true, true, true])
+    ..forceUniform(cDepthTest, true);
 
   final Material matOffStencil = Material("offstencil")
-    ..SetUniform(uColor, ColorBlue)
-    ..ForceUniform(cStencilFunc, StencilEqualZero)
-    ..ForceUniform(cStencilOp, StencilWriteNever)
-    ..ForceUniform(cStencilWrite, 0x0) // only write color/depth
-    ..ForceUniform(cDepthWrite, true)
-    ..ForceUniform(cColorWrite, [true, true, true, true])
-    ..ForceUniform(cDepthTest, true);
+    ..setUniform(uColor, colorBlue)
+    ..forceUniform(cStencilFunc, stencilEqualZero)
+    ..forceUniform(cStencilOp, stencilWriteNever)
+    ..forceUniform(cStencilWrite, 0x0) // only write color/depth
+    ..forceUniform(cDepthWrite, true)
+    ..forceUniform(cColorWrite, [true, true, true, true])
+    ..forceUniform(cDepthTest, true);
 
   {
     Scene scene = Scene(
@@ -123,7 +123,7 @@ void main() {
     scene.add(
       Node(
         "cylinder",
-        ShapeCylinder(scene.program, 2.0, 4.0, 4.0, 32),
+        shapeCylinder(scene.program, 2.0, 4.0, 4.0, 32),
         matOnStencil,
       )..setPos(10.0, 0.0, -10.0),
     );
@@ -131,7 +131,7 @@ void main() {
     scene.add(
       Node(
         "torus",
-        ShapeTorusKnot(scene.program, radius: 2.5, tubeRadius: 0.8),
+        shapeTorusKnot(scene.program, radius: 2.5, tubeRadius: 0.8),
         matOnStencil,
       )..setPos(10.0, 0.0, 10.0),
     );
@@ -139,7 +139,7 @@ void main() {
     scene.add(
       Node(
         "sphere",
-        ShapeIcosahedron(scene.program, subdivisions: 3, scale: 5.0),
+        shapeIcosahedron(scene.program, subdivisions: 3, scale: 5.0),
         matOffStencil,
       )..setPos(0.0, 0.0, 0.0),
     );
@@ -147,7 +147,7 @@ void main() {
     scene.add(
       Node(
         "cube",
-        ShapeCube(scene.program, x: 2.0, y: 2.0, z: 2.0),
+        shapeCube(scene.program, x: 2.0, y: 2.0, z: 2.0),
         matOffStencil,
       )..setPos(-10.0, 0.0, -10.0),
     );
@@ -161,17 +161,17 @@ void main() {
     orbit.animate(elapsed);
 
     //print ("@@ ${timeMs / 2000.0 % 1.0} ");
-    matGenStencil.ForceUniform(uTime, (Math.sin(timeMs / 2000.0) + 1.0) * 0.25);
+    matGenStencil.forceUniform(uTime, (math.sin(timeMs / 2000.0) + 1.0) * 0.25);
 
     List<DrawStats> stats = [];
-    phase.Draw(stats);
+    phase.draw(stats);
     List<String> out = [];
     for (DrawStats d in stats) {
       out.add(d.toString());
     }
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs, out.join("<br>"));
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs, out.join("<br>"));
   }
 
   animate(0.0);

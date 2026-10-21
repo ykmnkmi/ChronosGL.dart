@@ -1,11 +1,11 @@
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:typed_data';
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-import 'dart:math' as Math;
+import 'dart:math' as math;
 
 // Sketch shader based on:
 // http://www.thomaseichhorn.de/npr-sketch-shader-vvvv/
@@ -16,11 +16,11 @@ import 'dart:math' as Math;
 //
 
 final ShaderObject instancedVertexShader = ShaderObject("finalV")
-  ..AddAttributeVars([aPosition, aNormal, aTexUV])
-  ..AddAttributeVars([iaRotation, iaTranslation, iaScale])
-  ..AddVaryingVars([vColor, vNormal, vTexUV, vPosition])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aNormal, aTexUV])
+  ..addAttributeVars([iaRotation, iaTranslation, iaScale])
+  ..addVaryingVars([vColor, vNormal, vTexUV, vPosition])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
+  ..setBody([
     """
 vec3 rotate_vertex_position(vec3 pos, vec4 rot) {
     rot.xyz *= sin(0.5 * rot.w * $uTime) /  length(rot.xyz);
@@ -47,8 +47,8 @@ void main() {
   ]);
 
 final ShaderObject instancedFragmentShader = ShaderObject("finalF")
-  ..AddVaryingVars([vColor, vNormal, vTexUV, vPosition])
-  ..AddUniformVars([
+  ..addVaryingVars([vColor, vNormal, vTexUV, vPosition])
+  ..addUniformVars([
     uTexture,
     uTexture2,
     uLightDescs,
@@ -56,7 +56,7 @@ final ShaderObject instancedFragmentShader = ShaderObject("finalF")
     uShininess,
     uEyePosition,
   ])
-  ..SetBody(
+  ..setBody(
     [
       """
 float Edge(sampler2D t, ivec2 p) {
@@ -101,7 +101,7 @@ void main() {
 }
   """,
     ],
-    prolog: [StdLibShader],
+    prolog: [stdLibShader],
   );
 
 //
@@ -109,11 +109,11 @@ void main() {
 //
 
 final ShaderObject preparationVertexShader = ShaderObject("preparationV")
-  ..AddAttributeVars([aPosition, aNormal, aTexUV])
-  ..AddAttributeVars([iaRotation, iaTranslation, iaScale])
-  ..AddVaryingVars([vNormal])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aNormal, aTexUV])
+  ..addAttributeVars([iaRotation, iaTranslation, iaScale])
+  ..addVaryingVars([vNormal])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
+  ..setBody([
     """
 vec3 rotate_vertex_position(vec3 pos, vec4 rot) {
     rot.xyz *= sin(0.5 * rot.w * $uTime) /  length(rot.xyz);
@@ -138,8 +138,8 @@ void main() {
   ]);
 
 final ShaderObject preparationFragmentShader = ShaderObject("preparationF")
-  ..AddVaryingVars([vNormal])
-  ..SetBody([
+  ..addVaryingVars([vNormal])
+  ..setBody([
     """
 void main() {
   $oFragColor = vec4($vNormal, gl_FragCoord.w);
@@ -147,31 +147,31 @@ void main() {
   """,
   ]);
 
-void AddInstanceData(MeshData md, Math.Random rand, int count) {
+void addInstanceData(MeshData md, math.Random rand, int count) {
   final Float32List scales = Float32List(count * 1);
   final Float32List translations = Float32List(count * 3);
   final Float32List rotations = Float32List(count * 4);
 
   for (int i = 0; i < count; i++) {
-    final VM.Vector3 t = VM.Vector3.random(rand) - VM.Vector3(0.5, 0.5, 0.5);
+    final vm.Vector3 t = vm.Vector3.random(rand) - vm.Vector3(0.5, 0.5, 0.5);
     t.scale(60.0);
     translations.setAll(i * 3, t.storage);
-    final VM.Vector3 u = VM.Vector3.random(rand);
-    final VM.Quaternion q = VM.Quaternion.axisAngle(
+    final vm.Vector3 u = vm.Vector3.random(rand);
+    final vm.Quaternion q = vm.Quaternion.axisAngle(
       u,
-      2.0 * rand.nextDouble() * Math.pi,
+      2.0 * rand.nextDouble() * math.pi,
     );
     rotations.setAll(i * 4, q.storage);
 
     scales.setAll(i, [2.0 + rand.nextDouble() * 4.0]);
   }
 
-  md.AddAttribute(iaRotation, rotations, 4);
-  md.AddAttribute(iaTranslation, translations, 3);
-  md.AddAttribute(iaScale, scales, 1);
+  md.addAttribute(iaRotation, rotations, 4);
+  md.addAttribute(iaTranslation, translations, 3);
+  md.addAttribute(iaScale, scales, 1);
 }
 
-final VM.Vector3 dirLight = VM.Vector3(0.0, -50.0, 0.0);
+final vm.Vector3 dirLight = vm.Vector3(0.0, -50.0, 0.0);
 
 class Phase {
   Phase(this.program, this.md, this.fb);
@@ -181,38 +181,38 @@ class Phase {
   final RenderProgram program;
   final MeshData md;
 
-  void Run(int width, int height, [List<UniformGroup>? extra]) {
-    fb.Activate(GL_CLEAR_ALL, 0, 0, width, height);
+  void run(int width, int height, [List<UniformGroup>? extra]) {
+    fb.activate(glClearAll, 0, 0, width, height);
     List<UniformGroup> uniforms = [mat];
     if (extra != null) {
       uniforms.addAll(extra);
     }
-    program.Draw(md, uniforms);
+    program.draw(md, uniforms);
   }
 }
 
-Framebuffer MakePrepareFb(ChronosGL cgl, int width, int height) {
+Framebuffer makePrepareFb(ChronosGL cgl, int width, int height) {
   TypedTexture tex = TypedTexture(
     cgl,
     "float",
     width,
     height,
-    GL_RGBA32F,
-    TexturePropertiesFramebuffer,
+    glRgba32f,
+    texturePropertiesFramebuffer,
   );
   TypedTexture depthTexture = TypedTexture(
     cgl,
     "frame::depth",
     width,
     height,
-    GL_DEPTH_COMPONENT24,
-    TexturePropertiesShadowMap,
+    glDepthComponent24,
+    texturePropertiesShadowMap,
   );
   return Framebuffer(cgl, tex, depthTexture);
 }
 
-Texture MakeNoiseTesture(ChronosGL cgl, Math.Random rand) {
-  HTML.CanvasElement canvas = HTML.CanvasElement();
+Texture makeNoiseTesture(ChronosGL cgl, math.Random rand) {
+  html.CanvasElement canvas = html.CanvasElement();
   canvas.width = 512;
   canvas.height = 512;
   var context = canvas.context2D;
@@ -227,29 +227,29 @@ Texture MakeNoiseTesture(ChronosGL cgl, Math.Random rand) {
   }
   context.putImageData(image, 0, 0);
 
-  return ImageTexture(cgl, "noise", canvas, TexturePropertiesMipmap);
+  return ImageTexture(cgl, "noise", canvas, texturePropertiesMipmap);
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
 
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: false)
     ..clearColor(0.5, 0.5, 0.5, 1.0);
 
   Illumination illumination = Illumination()
-    ..AddLight(
-      DirectionalLight("dir", dirLight, ColorWhite * 0.5, ColorBlack, 100.0),
+    ..addLight(
+      DirectionalLight("dir", dirLight, colorWhite * 0.5, colorBlack, 100.0),
     );
 
   final dynamic ext = cgl.getExtension("EXT_color_buffer_float");
   if (ext == null) {
-    HTML.window.alert("extension not available: EXT_color_buffer_float");
+    html.window.alert("extension not available: EXT_color_buffer_float");
   }
   OrbitCamera orbit = OrbitCamera(100.0, 0.0, 0.0, canvas);
 
@@ -259,9 +259,9 @@ void main() {
   final height = canvas.clientHeight;
   canvas.width = width;
   canvas.height = height;
-  perspective.AdjustAspect(width, height);
+  perspective.adjustAspect(width, height);
 
-  final Math.Random rand = Math.Random(1);
+  final math.Random rand = math.Random(1);
 
   final RenderProgram progPreparation = RenderProgram(
     "preparation",
@@ -277,46 +277,46 @@ void main() {
     instancedFragmentShader,
   );
 
-  final MeshData cubes = ShapeCube(progInstanced, computeNormals: true);
-  AddInstanceData(cubes, rand, 80);
+  final MeshData cubes = shapeCube(progInstanced, computeNormals: true);
+  addInstanceData(cubes, rand, 80);
   print("instances: $cubes.GetNumInstances()}");
 
   final Phase prepare = Phase(
     progPreparation,
     cubes,
-    MakePrepareFb(cgl, width, height),
-  )..mat.SetUniform(uModelMatrix, VM.Matrix4.identity());
+    makePrepareFb(cgl, width, height),
+  )..mat.setUniform(uModelMatrix, vm.Matrix4.identity());
 
-  final Phase render = Phase(progInstanced, cubes, Framebuffer.Screen(cgl))
-    ..mat.SetUniform(uModelMatrix, VM.Matrix4.identity())
-    ..mat.SetUniform(uShininess, 10.0)
-    ..mat.SetUniform(uTexture2, MakeNoiseTesture(cgl, rand))
-    ..mat.SetUniform(uTexture, prepare.fb.colorTexture!);
+  final Phase render = Phase(progInstanced, cubes, Framebuffer.screen(cgl))
+    ..mat.setUniform(uModelMatrix, vm.Matrix4.identity())
+    ..mat.setUniform(uShininess, 10.0)
+    ..mat.setUniform(uTexture2, makeNoiseTesture(cgl, rand))
+    ..mat.setUniform(uTexture, prepare.fb.colorTexture!);
 
   /*
   // The lines show aliasing problems but the experiments below
   // did not help:
   final Phase render =
-  Phase(progInstanced, cubes, Framebuffer.Default(cgl, width, height))
-    ..mat.SetUniform(uModelMatrix, VM.Matrix4.identity())
-    ..mat.SetUniform(uShininess, 10.0)
-    ..mat.SetUniform(uTexture, prepare.fb.colorTexture);
+  Phase(progInstanced, cubes, Framebuffer.defaultFramebuffer(cgl, width, height))
+    ..mat.setUniform(uModelMatrix, vm.Matrix4.identity())
+    ..mat.setUniform(uShininess, 10.0)
+    ..mat.setUniform(uTexture, prepare.fb.colorTexture);
 
 
   final RenderProgram blurProg =
   RenderProgram("blur", cgl, effectVertexShader, blur1DShader9);
-  final MeshData unitQuad = ShapeQuad(blurProg, 1);
+  final MeshData unitQuad = shapeQuad(blurProg, 1);
 
 
   final Phase horizontalBlur =
-  Phase(blurProg, unitQuad, Framebuffer.Effect(cgl, width, height))
-    ..mat.SetUniform(uTexture, render.fb.colorTexture)
-    ..mat.SetUniform(uDirection, VM.Vector2(1.0, 0.0));
+  Phase(blurProg, unitQuad, Framebuffer.effect(cgl, width, height))
+    ..mat.setUniform(uTexture, render.fb.colorTexture)
+    ..mat.setUniform(uDirection, vm.Vector2(1.0, 0.0));
 
   final Phase verticalBlur = Phase(
-      blurProg, unitQuad, Framebuffer.Screen(cgl))
-    ..mat.SetUniform(uTexture, horizontalBlur.fb.colorTexture)
-    ..mat.SetUniform(uDirection, VM.Vector2(0.0, 1.0));
+      blurProg, unitQuad, Framebuffer.screen(cgl))
+    ..mat.setUniform(uTexture, horizontalBlur.fb.colorTexture)
+    ..mat.setUniform(uDirection, vm.Vector2(0.0, 1.0));
 */
 
   double lastTimeMs = 0.0;
@@ -326,18 +326,18 @@ void main() {
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
-    prepare.mat.ForceUniform(uTime, lastTimeMs / 2000.0);
-    prepare.Run(width, height, [perspective]);
+    prepare.mat.forceUniform(uTime, lastTimeMs / 2000.0);
+    prepare.run(width, height, [perspective]);
 
-    render.mat.ForceUniform(uTime, lastTimeMs / 2000.0);
-    render.Run(width, height, [perspective, illumination]);
+    render.mat.forceUniform(uTime, lastTimeMs / 2000.0);
+    render.run(width, height, [perspective, illumination]);
     /*
-    horizontalBlur.Run(width, height);
-    verticalBlur.Run(width, height);
+    horizontalBlur.run(width, height);
+    verticalBlur.run(width, height);
 */
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

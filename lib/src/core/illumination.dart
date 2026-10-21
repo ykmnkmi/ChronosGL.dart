@@ -1,7 +1,7 @@
 part of 'lib.dart';
 
-final VM.Vector3 _up = VM.Vector3(0.0, 1.0, 0.0);
-final VM.Vector3 _up2 = VM.Vector3(0.0, 0.0, 1.0);
+final vm.Vector3 _up = vm.Vector3(0.0, 1.0, 0.0);
+final vm.Vector3 _up2 = vm.Vector3(0.0, 0.0, 1.0);
 
 /// represents a light source with helpers for
 /// light and shadow computation.
@@ -9,18 +9,18 @@ final VM.Vector3 _up2 = VM.Vector3(0.0, 0.0, 1.0);
 /// can be added to an **Illumination** object which is
 /// a **UnformGroup*.
 abstract class Light extends NamedEntity {
-  Light(super.name, this.type, VM.Vector3 diffuse, VM.Vector3 specular) {
+  Light(super.name, this.type, vm.Vector3 diffuse, vm.Vector3 specular) {
     colorDiffuse.setFrom(diffuse);
     colorSpecular.setFrom(specular);
   }
 
   final int type;
-  final VM.Vector3 colorDiffuse = VM.Vector3.zero();
-  final VM.Vector3 colorSpecular = VM.Vector3.zero();
+  final vm.Vector3 colorDiffuse = vm.Vector3.zero();
+  final vm.Vector3 colorSpecular = vm.Vector3.zero();
 
-  void ExtractInfo(Float32List m, int offset);
+  void extractInfo(Float32List m, int offset);
 
-  VM.Matrix4 ExtractShadowProjViewMatrix();
+  vm.Matrix4 extractShadowProjViewMatrix();
 }
 
 /// light is emanating from a single point in all directions
@@ -28,18 +28,18 @@ class PointLight extends Light {
   PointLight(
     String name,
     this.pos,
-    VM.Vector3 colorDiffuse,
-    VM.Vector3 colorSpecular,
+    vm.Vector3 colorDiffuse,
+    vm.Vector3 colorSpecular,
     this.range,
   ) : super(name, lightTypePoint, colorDiffuse, colorSpecular);
 
-  VM.Vector3 pos;
+  vm.Vector3 pos;
 
   double range;
 
   // Must be in sync with UnpackPointLightInfo
   @override
-  void ExtractInfo(Float32List m, int o) {
+  void extractInfo(Float32List m, int o) {
     m[o + 0] = pos.x;
     m[o + 1] = pos.y;
     m[o + 2] = pos.z;
@@ -56,9 +56,9 @@ class PointLight extends Light {
   }
 
   @override
-  VM.Matrix4 ExtractShadowProjViewMatrix() {
+  vm.Matrix4 extractShadowProjViewMatrix() {
     assert(false, "NYI");
-    return VM.Matrix4.zero();
+    return vm.Matrix4.zero();
   }
 
   @override
@@ -73,20 +73,20 @@ class DirectionalLight extends Light {
   DirectionalLight(
     String name,
     this.dir,
-    VM.Vector3 colorDiffuse,
-    VM.Vector3 colorSpecular,
+    vm.Vector3 colorDiffuse,
+    vm.Vector3 colorSpecular,
     this.dim,
   ) : super(name, lightTypeDirectional, colorDiffuse, colorSpecular);
 
-  final VM.Vector3 dir;
+  final vm.Vector3 dir;
   final double dim;
 
-  final VM.Matrix4 _projViewMat = VM.Matrix4.zero();
-  final VM.Matrix4 _tmpMat = VM.Matrix4.zero();
+  final vm.Matrix4 _projViewMat = vm.Matrix4.zero();
+  final vm.Matrix4 _tmpMat = vm.Matrix4.zero();
 
   // Must be in sync with UnpackDirectionalLightInfo
   @override
-  void ExtractInfo(Float32List m, int o) {
+  void extractInfo(Float32List m, int o) {
     m[o + 4] = dir.x;
     m[o + 5] = dir.y;
     m[o + 6] = dir.z;
@@ -101,11 +101,11 @@ class DirectionalLight extends Light {
   }
 
   @override
-  VM.Matrix4 ExtractShadowProjViewMatrix() {
-    VM.setOrthographicMatrix(_projViewMat, -dim, dim, -dim, dim, -dim, dim);
+  vm.Matrix4 extractShadowProjViewMatrix() {
+    vm.setOrthographicMatrix(_projViewMat, -dim, dim, -dim, dim, -dim, dim);
 
-    VM.Vector3 up = (dir.x == 0.0 && dir.z == 0.0) ? _up2 : _up;
-    VM.setViewMatrix(_tmpMat, VM.Vector3.zero(), dir, up);
+    vm.Vector3 up = (dir.x == 0.0 && dir.z == 0.0) ? _up2 : _up;
+    vm.setViewMatrix(_tmpMat, vm.Vector3.zero(), dir, up);
     _projViewMat.multiply(_tmpMat);
     return _projViewMat;
   }
@@ -122,8 +122,8 @@ class SpotLight extends Light {
     String name,
     this.pos,
     this.dir,
-    VM.Vector3 colorDiffuse,
-    VM.Vector3 colorSpecular,
+    vm.Vector3 colorDiffuse,
+    vm.Vector3 colorSpecular,
     this.range,
     this.angle,
     this._spotFocus,
@@ -131,8 +131,8 @@ class SpotLight extends Light {
     this._far,
   ) : super(name, lightTypeSpot, colorDiffuse, colorSpecular);
 
-  VM.Vector3 pos;
-  VM.Vector3 dir;
+  vm.Vector3 pos;
+  vm.Vector3 dir;
   double range;
   double angle;
 
@@ -143,12 +143,12 @@ class SpotLight extends Light {
   final double _aspect = 1.0;
   final double _near;
   final double _far;
-  final VM.Matrix4 _m1 = VM.Matrix4.zero();
-  final VM.Matrix4 _m2 = VM.Matrix4.zero();
+  final vm.Matrix4 _m1 = vm.Matrix4.zero();
+  final vm.Matrix4 _m2 = vm.Matrix4.zero();
 
   // Must be in sync with UnpackSpotLightInfo
   @override
-  void ExtractInfo(Float32List m, int o) {
+  void extractInfo(Float32List m, int o) {
     m[o + 0] = pos.x;
     m[o + 1] = pos.y;
     m[o + 2] = pos.z;
@@ -166,17 +166,17 @@ class SpotLight extends Light {
     m[o + 14] = colorSpecular.z;
     //
     m[o + 7] = range;
-    m[o + 11] = Math.cos(angle);
+    m[o + 11] = math.cos(angle);
     m[o + 15] = _spotFocus;
   }
 
   @override
-  VM.Matrix4 ExtractShadowProjViewMatrix() {
-    VM.Vector3 up = (dir.x == 0.0 && dir.z == 0.0) ? _up2 : _up;
+  vm.Matrix4 extractShadowProjViewMatrix() {
+    vm.Vector3 up = (dir.x == 0.0 && dir.z == 0.0) ? _up2 : _up;
 
-    VM.setViewMatrix(_m1, pos, dir + pos, up);
+    vm.setViewMatrix(_m1, pos, dir + pos, up);
     // 2.1 = 2.0 + epsilon
-    VM.setPerspectiveMatrix(_m2, 2.1 * angle, _aspect, _near, _far);
+    vm.setPerspectiveMatrix(_m2, 2.1 * angle, _aspect, _near, _far);
     _m2.multiply(_m1);
     return _m2;
   }
@@ -190,16 +190,16 @@ class SpotLight extends Light {
 /*
 // TODO: add proper support for this
 class HemisphericalLight implements Light {
-  VM.Vector3 _dir;
-  VM.Vector3 _colDiffuse;
-  VM.Vector3 _colSpecular;
-  VM.Vector3 _colGround;
+  vm.Vector3 _dir;
+  vm.Vector3 _colDiffuse;
+  vm.Vector3 _colSpecular;
+  vm.Vector3 _colGround;
 
   HemisphericalLight(
-      VM.Vector3 dir, this._colDiffuse, this._colGround, this._colSpecular);
+      vm.Vector3 dir, this._colDiffuse, this._colGround, this._colSpecular);
 
   @override
-  void ExtractInfo(Float32List m) {
+  void extractInfo(Float32List m) {
     assert(false, "NYI");
   }
 
@@ -222,11 +222,11 @@ class Illumination extends UniformGroup {
   final Float32List _lightDescs = Float32List(16 * kMaxLights);
   final Float32List _lightTypes = Float32List(kMaxLights);
 
-  void AddLight(Light l) {
+  void addLight(Light l) {
     _lights.add(l);
   }
 
-  static void _SetLightInfo(
+  static void _setLightInfo(
     Float32List descs,
     Float32List types,
     List<Light> lights,
@@ -237,7 +237,7 @@ class Illumination extends UniformGroup {
     int n = 0;
     for (Light l in lights) {
       if (l.enabled) {
-        l.ExtractInfo(descs, n * 16);
+        l.extractInfo(descs, n * 16);
         types[n] = l.type + 0.0;
         n++;
       }
@@ -245,10 +245,10 @@ class Illumination extends UniformGroup {
   }
 
   @override
-  Map<String, Object> GetUniforms() {
-    _SetLightInfo(_lightDescs, _lightTypes, _lights);
-    ForceUniform(uLightDescs, _lightDescs);
-    ForceUniform(uLightTypes, _lightTypes);
+  Map<String, Object> getUniforms() {
+    _setLightInfo(_lightDescs, _lightTypes, _lights);
+    forceUniform(uLightDescs, _lightDescs);
+    forceUniform(uLightTypes, _lightTypes);
     return _uniforms;
   }
 }

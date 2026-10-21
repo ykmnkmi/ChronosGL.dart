@@ -1,18 +1,18 @@
 part of 'lib.dart';
 
-const String StdVertexBody =
+const String stdVertexBody =
     "gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4($aPosition, 1.0);";
 
-const String StdVertexNormalForward = "$vNormal = $uNormalMatrix * $aNormal;";
+const String stdVertexNormalForward = "$vNormal = $uNormalMatrix * $aNormal;";
 
-const String NullVertexShaderString =
+const String nullVertexShaderString =
     """
 void main() {
   gl_Position = vec4($aPosition, 1.0);
 }
 """;
 
-const String NullVertexShaderWithTextureForwardString =
+const String nullVertexShaderWithTextureForwardString =
     """
 void main() {
   gl_Position = vec4($aPosition, 1.0);
@@ -20,7 +20,7 @@ void main() {
 }
 """;
 
-const String StdVertexShaderWithTextureForwardString =
+const String stdVertexShaderWithTextureForwardString =
     """
 void main() {
   gl_Position = $uPerspectiveViewMatrix *
@@ -31,7 +31,7 @@ void main() {
 """;
 
 // No globals, no dependencies on Shader variables
-const String StdLibShader =
+const String stdLibShader =
     """
 // ============================================================
 // MISC
@@ -270,7 +270,7 @@ ColorComponents CombinedLight(vec3 vVertexPosition,
 // differencing (listing 2)
 // Also relevant: http://www.thetenthplanet.de/archives/1180
 
-const String StdLibShaderDerivative = """
+const String stdLibShaderDerivative = """
 vec2 dHdxy_fwd(vec2 uv, float scale, sampler2D map) {
     float H = texture(map, uv).x;
     float dHx = texture(map, uv + dFdx(uv)).x - H;
@@ -294,7 +294,7 @@ vec3 perturbNormalArb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy) {
 }
 """;
 
-const String PackedRGBALib = """
+const String packedRgbaLib = """
 // r,g,b,a  are in the range of [0, 254]
 // float = r / 255^1 + g / 255^2 + b / 255^3 + a / 255^4
 // float is assumed to be in [0, 1]

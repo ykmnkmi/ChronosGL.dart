@@ -2,12 +2,12 @@ part of 'lib.dart';
 
 //  Gouraud shading - most action happens in vertext shader - cheaper
 final ShaderObject lightVertexShaderGourad = ShaderObject("LightGouradV")
-  ..AddAttributeVars([aPosition, aNormal, aTexUV])
-  ..AddVaryingVars([vColor])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
-  ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
-  ..AddUniformVars([uEyePosition, uTexture])
-  ..SetBody(
+  ..addAttributeVars([aPosition, aNormal, aTexUV])
+  ..addVaryingVars([vColor])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
+  ..addUniformVars([uLightDescs, uLightTypes, uShininess])
+  ..addUniformVars([uEyePosition, uTexture])
+  ..setBody(
     [
       """
 void main() {
@@ -26,12 +26,12 @@ void main() {
 }
         """,
     ],
-    prolog: [StdLibShader],
+    prolog: [stdLibShader],
   );
 
 final ShaderObject lightFragmentShaderGourad = ShaderObject("LightGrouradV")
-  ..AddVaryingVars([vColor])
-  ..SetBodyWithMain(["$oFragColor = vec4($vColor, 1.0 );"]);
+  ..addVaryingVars([vColor])
+  ..setBodyWithMain(["$oFragColor = vec4($vColor, 1.0 );"]);
 
 // Phong shader - most action happens in fragment shader - expensive
 // Light Matrix m organization:
@@ -39,10 +39,10 @@ final ShaderObject lightFragmentShaderGourad = ShaderObject("LightGrouradV")
 //
 final ShaderObject lightVertexShaderBlinnPhong =
     ShaderObject("LightBlinnPhongV")
-      ..AddAttributeVars([aPosition, aNormal, aTexUV])
-      ..AddVaryingVars([vPosition, vNormal, vTexUV])
-      ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
-      ..SetBody([
+      ..addAttributeVars([aPosition, aNormal, aTexUV])
+      ..addVaryingVars([vPosition, vNormal, vTexUV])
+      ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
+      ..setBody([
         """
 void main() {
     vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
@@ -55,10 +55,10 @@ void main() {
       ]);
 final ShaderObject lightFragmentShaderBlinnPhong =
     ShaderObject("LightBlinnPhongF")
-      ..AddVaryingVars([vPosition, vNormal, vTexUV])
-      ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
-      ..AddUniformVars([uEyePosition, uTexture])
-      ..SetBodyWithMain(
+      ..addVaryingVars([vPosition, vNormal, vTexUV])
+      ..addUniformVars([uLightDescs, uLightTypes, uShininess])
+      ..addUniformVars([uEyePosition, uTexture])
+      ..setBodyWithMain(
         [
           """
 ColorComponents acc = CombinedLight($vPosition,
@@ -74,5 +74,5 @@ $oFragColor.rgb = acc.diffuse +
 $oFragColor.a = 1.0;
 """,
         ],
-        prolog: [StdLibShader],
+        prolog: [stdLibShader],
       );

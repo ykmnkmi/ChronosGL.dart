@@ -1,7 +1,7 @@
 part of 'lib.dart';
 
 // http://www.chilliant.com/rgb2hsv.html
-String ColorFunctions = """
+String colorFunctions = """
  // range is [0, 1] 
  vec3 HUEtoRGB(float hue) {
     float r = clamp(abs(hue * 6.0 - 3.0) - 1.0, 0.0, 1.0);

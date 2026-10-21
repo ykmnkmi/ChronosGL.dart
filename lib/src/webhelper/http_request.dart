@@ -1,8 +1,8 @@
 part of 'lib.dart';
 
-Future<String> LoadRaw(String url) {
+Future<String> loadRaw(String url) {
   Completer<String> c = Completer();
-  HTML.HttpRequest hr = HTML.HttpRequest();
+  html.HttpRequest hr = html.HttpRequest();
   hr.open("GET", url);
   hr.onLoadEnd.listen((e) {
     c.complete(hr.responseText);
@@ -11,9 +11,9 @@ Future<String> LoadRaw(String url) {
   return c.future;
 }
 
-Future<Map<String, Object?>> LoadJson(String url) {
+Future<Map<String, Object?>> loadJson(String url) {
   Completer<Map<String, Object?>> c = Completer();
-  HTML.HttpRequest hr = HTML.HttpRequest();
+  html.HttpRequest hr = html.HttpRequest();
   hr.open("GET", url);
   hr.onLoadEnd.listen((e) {
     c.complete(json.decode(hr.responseText!) as Map<String, Object?>);
@@ -22,17 +22,17 @@ Future<Map<String, Object?>> LoadJson(String url) {
   return c.future;
 }
 
-Future<HTML.ImageElement> LoadImage(String url) {
-  Completer<HTML.ImageElement> c = Completer();
-  HTML.ImageElement image = HTML.ImageElement();
+Future<html.ImageElement> loadImage(String url) {
+  Completer<html.ImageElement> c = Completer();
+  html.ImageElement image = html.ImageElement();
   image.onLoad.first.then((_) => c.complete(image));
   image.src = url;
   return c.future;
 }
 
-Future<HTML.VideoElement> LoadVideo(String url) {
-  Completer<HTML.VideoElement> c = Completer();
-  HTML.VideoElement video = HTML.VideoElement();
+Future<html.VideoElement> loadVideo(String url) {
+  Completer<html.VideoElement> c = Completer();
+  html.VideoElement video = html.VideoElement();
   // this is crucial since we are waiting for "onplaying"
   video.autoplay = true;
   video.loop = true;
@@ -43,13 +43,13 @@ Future<HTML.VideoElement> LoadVideo(String url) {
 
 final List<String> _kUrlInfix = ["nx", "px", "ny", "py", "nz", "pz"];
 
-List<Future<HTML.ImageElement>> LoadCubeImages(
+List<Future<html.ImageElement>> loadCubeImages(
   String urlPrefix,
   String urlSuffix,
 ) {
-  List<Future<HTML.ImageElement>> out = List.generate(_kUrlInfix.length, (i) {
-    Completer<HTML.ImageElement> c = Completer();
-    HTML.ImageElement image = HTML.ImageElement();
+  List<Future<html.ImageElement>> out = List.generate(_kUrlInfix.length, (i) {
+    Completer<html.ImageElement> c = Completer();
+    html.ImageElement image = html.ImageElement();
     image.onLoad.first.then((_) => c.complete(image));
     image.src = urlPrefix + _kUrlInfix[i] + urlSuffix;
     return c.future;

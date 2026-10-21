@@ -1,14 +1,14 @@
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:math' as Math;
-import 'dart:html' as HTML;
+import 'dart:math' as math;
+import 'dart:html' as html;
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 final ShaderObject fireworksVertexShader = ShaderObject("FireWorksV")
-  ..AddAttributeVars([aPosition, aNormal])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aNormal])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
+  ..setBody([
     """
 void main() {
     float t = mod($uTime, 5.0);
@@ -26,12 +26,12 @@ void main() {
   ]);
 
 final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
-  ..AddUniformVars([
+  ..addUniformVars([
     uTime,
     //uColor,
     uTexture,
   ])
-  ..SetBody([
+  ..setBody([
     """
 void main() {
     $oFragColor = texture($uTexture, gl_PointCoord);
@@ -48,14 +48,14 @@ void main() {
 
 MeshData getRocket(RenderProgram prog) {
   int numPoints = 200;
-  Math.Random rand = Math.Random();
+  math.Random rand = math.Random();
 
-  List<VM.Vector3> vertices = [];
-  List<VM.Vector3> normals = [];
+  List<vm.Vector3> vertices = [];
+  List<vm.Vector3> normals = [];
   for (var i = 0; i < numPoints; i++) {
-    vertices.add(VM.Vector3(0.0, 0.0, 0.0));
+    vertices.add(vm.Vector3(0.0, 0.0, 0.0));
     normals.add(
-      VM.Vector3(
+      vm.Vector3(
         rand.nextDouble() - 0.5,
         rand.nextDouble() - 0.5,
         rand.nextDouble() - 0.5,
@@ -63,14 +63,14 @@ MeshData getRocket(RenderProgram prog) {
     );
   }
 
-  return prog.MakeMeshData("firefwork-particles", GL_POINTS)
-    ..AddVertices(FlattenVector3List(vertices))
-    ..AddAttribute(aNormal, FlattenVector3List(normals), 3);
+  return prog.makeMeshData("firefwork-particles", glPoints)
+    ..addVertices(flattenVector3List(vertices))
+    ..addAttribute(aNormal, flattenVector3List(normals), 3);
 }
 
 void main() {
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   // Make sure canvas is really full screen
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
@@ -80,7 +80,7 @@ void main() {
   ChronosGL cgl = ChronosGL(canvas);
   OrbitCamera orbit = OrbitCamera(15.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
-  perspective.AdjustAspect(w, h);
+  perspective.adjustAspect(w, h);
 
   final RenderProgram progSprites = RenderProgram(
     "basic",
@@ -97,11 +97,11 @@ void main() {
   );
 
   // used for both stars and fireworks
-  final Material material = Utils.MakeStarMaterial(cgl)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity())
-    ..SetUniform(uColor, ColorRed);
+  final Material material = Utils.makeStarMaterial(cgl)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity())
+    ..setUniform(uColor, colorRed);
 
-  final MeshData stars = Utils.MakeStarMesh(progSprites, 2000, 100.0);
+  final MeshData stars = Utils.makeStarMesh(progSprites, 2000, 100.0);
   final MeshData rocket = getRocket(progFireworks);
 
   double lastTimeMs = 0.0;
@@ -110,12 +110,12 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    material.ForceUniform(uTime, timeMs / 1000.0);
+    material.forceUniform(uTime, timeMs / 1000.0);
 
-    progSprites.Draw(stars, [perspective, material]);
-    progFireworks.Draw(rocket, [perspective, material]);
+    progSprites.draw(stars, [perspective, material]);
+    progFireworks.draw(rocket, [perspective, material]);
 
-    HTML.window.animationFrame.then(animate);
+    html.window.animationFrame.then(animate);
   }
 
   animate(0.0);

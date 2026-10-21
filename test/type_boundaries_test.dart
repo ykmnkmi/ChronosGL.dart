@@ -23,7 +23,7 @@ void _checkAnimatedPose(List<Bone> skeleton, SkeletalAnimation animation) {
   expect(skeleton, isNotEmpty);
   expect(animation.animList.whereType<BoneAnimation>(), isNotEmpty);
   final posed = AnimatedSkeleton(skeleton.length);
-  UpdateAnimatedSkeleton(
+  updateAnimatedSkeleton(
     skeleton,
     vm.Matrix4.identity(),
     animation,
@@ -33,7 +33,7 @@ void _checkAnimatedPose(List<Bone> skeleton, SkeletalAnimation animation) {
   final initial = posed.skinningTransforms
       .expand((matrix) => matrix.storage)
       .toList();
-  UpdateAnimatedSkeleton(
+  updateAnimatedSkeleton(
     skeleton,
     vm.Matrix4.identity(),
     animation,
@@ -58,8 +58,8 @@ void main() {
       final json = await _loadAsset('assimp');
       final mesh =
           (json['meshes'] as List<Object?>).first as Map<String, Object?>;
-      final skeleton = ImportSkeletonFromAssimp2Json(json);
-      final geometry = ImportGeometryFromAssimp2JsonMesh(mesh, skeleton);
+      final skeleton = importSkeletonFromAssimp2Json(json);
+      final geometry = importGeometryFromAssimp2JsonMesh(mesh, skeleton);
       expect(
         geometry.vertices.length,
         (mesh['vertices'] as List<Object?>).length ~/ 3,
@@ -71,7 +71,7 @@ void main() {
         weights.any((weight) => weight.x + weight.y + weight.z + weight.w > 0),
         isTrue,
       );
-      final animation = ImportAnimationFromAssimp2Json(
+      final animation = importAnimationFromAssimp2Json(
         (json['animations'] as List<Object?>).first as Map<String, Object?>,
         skeleton,
       );
@@ -81,7 +81,7 @@ void main() {
 
   test('ThreeJS knight imports faces, skeleton, and animated poses', () async {
     final json = await _loadAsset('threejs');
-    final geometries = ImportGeometryFromThreeJsJson(json);
+    final geometries = importGeometryFromThreeJsJson(json);
     expect(geometries, isNotEmpty);
     expect(geometries.expand((geometry) => geometry.vertices), isNotEmpty);
     expect(
@@ -90,8 +90,8 @@ void main() {
       ),
       isTrue,
     );
-    final skeleton = ImportSkeletonFromThreeJsJson(json);
-    final animation = ImportAnimationFromThreeJsJson(json, skeleton);
+    final skeleton = importSkeletonFromThreeJsJson(json);
+    final animation = importAnimationFromThreeJsJson(json, skeleton);
     _checkAnimatedPose(skeleton, animation);
   });
 
@@ -107,19 +107,19 @@ void main() {
           ?.loseContext();
     });
     final input = Float32List.fromList([0.25, -0.5, 12.0, 42.0]);
-    cgl.ChangeArrayBuffer(buffer, input);
+    cgl.changeArrayBuffer(buffer, input);
     final storage = Float32List.fromList([-999, 0, 0, 0, 0, -999]);
     final view = Float32List.view(
       storage.buffer,
       Float32List.bytesPerElement,
       4,
     );
-    cgl.GetArrayBuffer(buffer, view);
+    cgl.getArrayBuffer(buffer, view);
     expect(storage, [-999, 0.25, -0.5, 12.0, 42.0, -999]);
     view.fillRange(0, view.length, 0.0);
-    cgl.GetTransformBuffer(buffer, view);
+    cgl.getTransformBuffer(buffer, view);
     expect(storage, [-999, 0.25, -0.5, 12.0, 42.0, -999]);
-    expect(cgl.getError(), GL_NO_ERROR);
+    expect(cgl.getError(), glNoError);
   });
 
   test('Typed texture uploads and partial updates preserve RGBA pixels', () {
@@ -154,14 +154,14 @@ void main() {
       'rgba',
       2,
       2,
-      GL_RGBA8,
-      TexturePropertiesFramebuffer,
-      GL_RGBA,
-      GL_UNSIGNED_BYTE,
+      glRgba8,
+      texturePropertiesFramebuffer,
+      glRgba,
+      glUnsignedByte,
       original,
     );
     final framebuffer = Framebuffer(cgl, texture);
-    expect(framebuffer.ExtractByteData(null, 0, 0, 2, 2), original);
+    expect(framebuffer.extractByteData(null, 0, 0, 2, 2), original);
     final updated = Uint8List.fromList([
       0,
       255,
@@ -180,19 +180,19 @@ void main() {
       0,
       255,
     ]);
-    texture.UpdateContent(updated, GL_RGBA, GL_UNSIGNED_BYTE);
-    expect(framebuffer.ExtractByteData(null, 0, 0, 2, 2), updated);
-    texture.UpdateContentPartial(
+    texture.updateContent(updated, glRgba, glUnsignedByte);
+    expect(framebuffer.extractByteData(null, 0, 0, 2, 2), updated);
+    texture.updateContentPartial(
       Uint8List.fromList([0, 0, 255, 255]),
-      GL_RGBA,
-      GL_UNSIGNED_BYTE,
+      glRgba,
+      glUnsignedByte,
       1,
       0,
       1,
       1,
     );
     updated.setRange(4, 8, [0, 0, 255, 255]);
-    expect(framebuffer.ExtractByteData(null, 0, 0, 2, 2), updated);
-    expect(cgl.getError(), GL_NO_ERROR);
+    expect(framebuffer.extractByteData(null, 0, 0, 2, 2), updated);
+    expect(cgl.getError(), glNoError);
   });
 }

@@ -1,29 +1,29 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-Map<String, VM.Vector3> ShapeToColor = {
-  "sphere": ColorCyan,
-  "cube": ColorRed,
-  "cylinder": ColorGreen,
-  "quad": ColorMagenta,
-  "torus": ColorBlue,
+Map<String, vm.Vector3> shapeToColor = {
+  "sphere": colorCyan,
+  "cube": colorRed,
+  "cylinder": colorGreen,
+  "quad": colorMagenta,
+  "torus": colorBlue,
 };
 
 void main() {
-  final HTML.DivElement info =
-      HTML.document.querySelector('#info') as HTML.DivElement;
+  final html.DivElement info =
+      html.document.querySelector('#info') as html.DivElement;
 
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
 
@@ -44,60 +44,60 @@ void main() {
 
   {
     String name = "sphere";
-    Material mat = Material(name)..SetUniform(uColor, ShapeToColor[name]!);
+    Material mat = Material(name)..setUniform(uColor, shapeToColor[name]!);
     Node node = Node(
       name,
-      ShapeIcosahedron(scene.program, subdivisions: 3),
+      shapeIcosahedron(scene.program, subdivisions: 3),
       mat,
     )..setPos(0.0, 0.0, 0.0);
     scene.add(node);
   }
   {
     String name = "cube";
-    Material mat = Material(name)..SetUniform(uColor, ShapeToColor[name]!);
-    Node node = Node(name, ShapeCube(scene.program), mat)
+    Material mat = Material(name)..setUniform(uColor, shapeToColor[name]!);
+    Node node = Node(name, shapeCube(scene.program), mat)
       ..setPos(-5.0, 0.0, -5.0);
     scene.add(node);
   }
 
   {
     String name = "cylinder";
-    Material mat = Material(name)..SetUniform(uColor, ShapeToColor[name]!);
-    Node node = Node(name, ShapeCylinder(scene.program, 3.0, 6.0, 2.0, 32), mat)
+    Material mat = Material(name)..setUniform(uColor, shapeToColor[name]!);
+    Node node = Node(name, shapeCylinder(scene.program, 3.0, 6.0, 2.0, 32), mat)
       ..setPos(5.0, 0.0, -5.0);
     scene.add(node);
   }
   {
     String name = "quad";
-    Material mat = Material(name)..SetUniform(uColor, ShapeToColor[name]!);
-    Node node = Node(name, ShapeQuad(scene.program, 2), mat)
+    Material mat = Material(name)..setUniform(uColor, shapeToColor[name]!);
+    Node node = Node(name, shapeQuad(scene.program, 2), mat)
       ..setPos(-5.0, 0.0, 5.0);
     scene.add(node);
   }
   {
     String name = "torus";
-    Material mat = Material(name)..SetUniform(uColor, ShapeToColor[name]!);
+    Material mat = Material(name)..setUniform(uColor, shapeToColor[name]!);
     Node node = Node(
       name,
-      ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+      shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
       mat,
     )..setPos(5.0, 0.0, 5.0);
     scene.add(node);
   }
 
-  void resolutionChange(HTML.Event? ev) {
+  void resolutionChange(html.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
     canvas.height = h;
     print("size change $w $h");
-    perspective.AdjustAspect(w, h);
+    perspective.adjustAspect(w, h);
     phase.viewPortW = w;
     phase.viewPortH = h;
   }
 
   resolutionChange(null);
-  HTML.window.onResize.listen(resolutionChange);
+  html.window.onResize.listen(resolutionChange);
 
   final Uint8List pixelData = Uint8List(1 * 4);
 
@@ -105,15 +105,15 @@ void main() {
     DateTime start = DateTime.now();
     int x = orbit.mouse.currentX;
     int y = canvas.clientHeight - orbit.mouse.currentY;
-    cgl.readPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixelData);
-    VM.Vector3 pick = VM.Vector3(
+    cgl.readPixels(x, y, 1, 1, glRgba, glUnsignedByte, pixelData);
+    vm.Vector3 pick = vm.Vector3(
       pixelData[0] + 0.0,
       pixelData[1] + 0.0,
       pixelData[2] + 0.0,
     )..scale(1.0 / 255.0);
     String shape = "NONE";
-    for (String name in ShapeToColor.keys) {
-      if (ShapeToColor[name] == pick) {
+    for (String name in shapeToColor.keys) {
+      if (shapeToColor[name] == pick) {
         shape = name;
         break;
       }
@@ -129,15 +129,15 @@ void main() {
 
     orbit.azimuth += 0.001;
 
-    phase.Draw();
+    phase.draw();
 
     info.innerHtml = getShapeUnderCusorInfo();
 
     // this also clears keyboard data
     orbit.animate(elapsed);
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

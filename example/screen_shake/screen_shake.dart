@@ -1,8 +1,8 @@
-import 'dart:html' as HTML;
-import 'dart:math' as Math;
+import 'dart:html' as html;
+import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 // A very simple shaders - many other are available out of the box.
 // aPosition will be provided by the MeshData object `torus`
@@ -10,10 +10,10 @@ import 'package:vector_math/vector_math.dart' as VM;
 // uPerspectiveViewMatrix will be provided by the Material object `materialBasic`
 // uModelMatrix will be provided by the Material object `materialBasic`
 final ShaderObject demoVertexShader = ShaderObject("demoVertexShader")
-  ..AddAttributeVars([aPosition])
-  ..AddVaryingVars([vColor])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..SetBody([
+  ..addAttributeVars([aPosition])
+  ..addVaryingVars([vColor])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..setBody([
     """
 void main() {
     gl_Position = $uPerspectiveViewMatrix *
@@ -27,8 +27,8 @@ void main() {
   ]);
 
 final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
-  ..AddVaryingVars([vColor])
-  ..SetBody([
+  ..addVaryingVars([vColor])
+  ..setBody([
     """
 void main() {
     $oFragColor.rgb = $vColor;
@@ -36,13 +36,13 @@ void main() {
     """,
   ]);
 
-void RandomPointOnUnitSphere(VM.Vector3 out, Math.Random rng) {
+void randomPointOnUnitSphere(vm.Vector3 out, math.Random rng) {
   while (true) {
     double x = rng.nextDouble() * 2.0 - 1.0;
     double y = rng.nextDouble() * 2.0 - 1.0;
     double sq = x * x + y * y;
     if (sq >= 1.0) continue;
-    double rt = Math.sqrt(1.0 - sq);
+    double rt = math.sqrt(1.0 - sq);
     out.setValues(2.0 * x * rt, 2.0 * y * rt, 1.0 - 2.0 * sq);
     return;
   }
@@ -51,28 +51,28 @@ void RandomPointOnUnitSphere(VM.Vector3 out, Math.Random rng) {
 class CameraShaker {
   CameraShaker(this._camera, this._rng);
 
-  void Shake(double amplitude) {
-    Unshake();
-    RandomPointOnUnitSphere(_offset, _rng);
+  void shake(double amplitude) {
+    unshake();
+    randomPointOnUnitSphere(_offset, _rng);
     _offset.scale(amplitude);
     _camera.addPosFromVec(_offset);
   }
 
-  void Unshake() {
+  void unshake() {
     _offset.scale(-1.0);
     _camera.addPosFromVec(_offset);
     _offset.setZero();
   }
 
-  final VM.Vector3 _offset = VM.Vector3.zero();
-  final Math.Random _rng;
+  final vm.Vector3 _offset = vm.Vector3.zero();
+  final math.Random _rng;
   final Spatial _camera;
 }
 
 void main() {
   // The canvas is what we render the 3d scene into.
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
 
   gLogLevel = 1; // enable more logging
   // Create a ChronosGL object for the canvas.
@@ -80,7 +80,7 @@ void main() {
 
   // Create interactive camera, listening to 'body' element for
   // control inputs like mouse drag events.
-  final OrbitCamera orbit = OrbitCamera(5.0, 0.0, 0.0, HTML.document.body!);
+  final OrbitCamera orbit = OrbitCamera(5.0, 0.0, 0.0, html.document.body!);
   // Create a perspective. We use a combined view+perspective matrix,
   // which is obtained by combining te view matrix from the camera with
   // the perspective matrix.
@@ -105,10 +105,10 @@ void main() {
   // Create the Material, basically a container for uniforms, which provides
   // uModelMatrix and controls basic settings for depth buffers and blending.
   final Material material = Material("torus-mat")
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
   // Make a torus and add it to the first program providing the
   // aPosition attribute.
-  final MeshData torus = ShapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4);
+  final MeshData torus = shapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4);
 
   // Create the second shader program and the point sprites. The details are
   // hidden in the library functions.
@@ -118,11 +118,11 @@ void main() {
     pointSpritesVertexShader,
     pointSpritesFragmentShader,
   );
-  final Material materialStars = Utils.MakeStarMaterial(cgl)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
-  final MeshData stars = Utils.MakeStarMesh(progSprites, 2000, 100.0);
+  final Material materialStars = Utils.makeStarMaterial(cgl)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
+  final MeshData stars = Utils.makeStarMesh(progSprites, 2000, 100.0);
 
-  final Math.Random rng = Math.Random(0);
+  final math.Random rng = math.Random(0);
   final CameraShaker shaker = CameraShaker(orbit, rng);
   // Main loop body
   double lastShakeMs = 0.0;
@@ -142,18 +142,18 @@ void main() {
 
     if (shakeAgeMs >= 0.0) {
       if (shakeAgeMs >= shakeDurationMs) {
-        shaker.Unshake();
+        shaker.unshake();
         lastShakeMs = lastTimeMs;
       }
 
-      shaker.Shake((500 - shakeAgeMs) * 0.0001);
+      shaker.shake((500 - shakeAgeMs) * 0.0001);
     }
 
     // use default framebuffer which also auto clears itself
-    prog.Draw(torus, [perspective, material]);
-    progSprites.Draw(stars, [perspective, materialStars]);
+    prog.draw(torus, [perspective, material]);
+    progSprites.draw(stars, [perspective, materialStars]);
 
-    HTML.window.animationFrame.then(animate);
+    html.window.animationFrame.then(animate);
   }
 
   animate(0.0);

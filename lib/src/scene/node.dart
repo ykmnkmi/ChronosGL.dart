@@ -8,7 +8,7 @@ part of 'lib.dart';
 /// Non leaf Nodes are just containers for other Nodes
 /// Each Node is a Spatial so it be re-oriented with respect to its parent
 class Node extends Spatial {
-  Node.Container(super.name, [Node? child]) {
+  Node.container(super.name, [Node? child]) {
     if (child != null) children.add(child);
   }
 
@@ -21,8 +21,8 @@ class Node extends Spatial {
 
   // children inherent the parent matrix for its rotation and position
   final List<Node> children = [];
-  final VM.Matrix3 _normMatrix = VM.Matrix3.zero();
-  final VM.Matrix4 _modelMatrix = VM.Matrix4.identity();
+  final vm.Matrix3 _normMatrix = vm.Matrix3.zero();
+  final vm.Matrix4 _modelMatrix = vm.Matrix4.identity();
 
   Material get material => _material!;
 
@@ -36,22 +36,22 @@ class Node extends Spatial {
     children.add(node);
   }
 
-  void UpdateTransforms(UniformGroup transforms) {
+  void updateTransforms(UniformGroup transforms) {
     // TODO: computing the normal matrix like this is wrong
     _normMatrix.copyNormalMatrix(_modelMatrix);
-    transforms.ForceUniform(uTransformationMatrix, transform);
-    transforms.ForceUniform(uModelMatrix, _modelMatrix);
-    transforms.ForceUniform(uNormalMatrix, _normMatrix);
+    transforms.forceUniform(uTransformationMatrix, transform);
+    transforms.forceUniform(uModelMatrix, _modelMatrix);
+    transforms.forceUniform(uNormalMatrix, _normMatrix);
   }
 
-  VM.Matrix4 UpdateModelMatrix(VM.Matrix4 parent) {
+  vm.Matrix4 updateModelMatrix(vm.Matrix4 parent) {
     // copy the mvMatrix, so we don't change the original
     _modelMatrix.setFrom(parent);
     _modelMatrix.multiply(transform);
     return _modelMatrix;
   }
 
-  bool SomethingToDraw() {
+  bool somethingToDraw() {
     return _material != null && _meshData != null;
   }
 

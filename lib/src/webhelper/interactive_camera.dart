@@ -6,7 +6,7 @@ class OrbitCamera extends Spatial {
   ///
   /// @param this._radius blah
   /// @param this._polar blah
-  OrbitCamera(this._radius, this.azimuth, this.polar, HTML.Element eventElement)
+  OrbitCamera(this._radius, this.azimuth, this.polar, html.Element eventElement)
     : keyboard = Keyboard(null),
       mouse = Mouse(eventElement),
       super("camera:orbit");
@@ -15,12 +15,12 @@ class OrbitCamera extends Spatial {
   double azimuth;
   double polar;
   double roll = 0.0;
-  final VM.Vector3 _lookAtPos = VM.Vector3.zero();
+  final vm.Vector3 _lookAtPos = vm.Vector3.zero();
   num mouseWheelFactor = -0.02;
   final Keyboard keyboard;
   final Mouse mouse;
 
-  void setLookAt(VM.Vector3 v) {
+  void setLookAt(vm.Vector3 v) {
     _lookAtPos.setFrom(v);
   }
 
@@ -29,33 +29,33 @@ class OrbitCamera extends Spatial {
   }
 
   void animate(double elapsed) {
-    if (mouse.currentlyPressedButton(Mouse.LEFT) ||
-        mouse.currentlyPressedButton(Mouse.MIDDLE)) {
+    if (mouse.currentlyPressedButton(Mouse.left) ||
+        mouse.currentlyPressedButton(Mouse.middle)) {
       //azimuth += e.movement.x*0.01;
       //polar += e.movement.y*0.01;
       azimuth += mouse.moveDeltaX * 0.01;
       polar += mouse.moveDeltaY * 0.01;
     }
 
-    if (keyboard.currentlyPressedKey(Keyboard.LEFT)) {
+    if (keyboard.currentlyPressedKey(Keyboard.left)) {
       azimuth += (0.03);
-    } else if (keyboard.currentlyPressedKey(Keyboard.RIGHT)) {
+    } else if (keyboard.currentlyPressedKey(Keyboard.right)) {
       azimuth -= (0.03);
     }
 
-    if (keyboard.currentlyPressedKey(Keyboard.UP)) {
+    if (keyboard.currentlyPressedKey(Keyboard.up)) {
       polar += (0.03);
-    } else if (keyboard.currentlyPressedKey(Keyboard.DOWN)) {
+    } else if (keyboard.currentlyPressedKey(Keyboard.down)) {
       polar -= (0.03);
     }
 
-    if (keyboard.currentlyPressedKey(Keyboard.PAGEUP)) {
+    if (keyboard.currentlyPressedKey(Keyboard.pageUp)) {
       _radius *= 0.99;
-    } else if (keyboard.currentlyPressedKey(Keyboard.PAGEDOWN)) {
+    } else if (keyboard.currentlyPressedKey(Keyboard.pageDown)) {
       _radius *= 1.01;
     }
 
-    if (keyboard.currentlyPressedKey(Keyboard.SPACE)) {
+    if (keyboard.currentlyPressedKey(Keyboard.space)) {
       azimuth = 0.0;
       polar = 0.0;
     }
@@ -63,19 +63,19 @@ class OrbitCamera extends Spatial {
     double d = mouse.wheelDeltaY.toDouble() * mouseWheelFactor;
     if (_radius - d > 0) _radius -= d;
 
-    polar = polar.clamp(-Math.pi / 2 + 0.1, Math.pi / 2 - 0.1);
+    polar = polar.clamp(-math.pi / 2 + 0.1, math.pi / 2 - 0.1);
     setPosFromSpherical(_radius, azimuth, polar);
     addPosFromVec(_lookAtPos);
     lookAt(_lookAtPos);
     rollLeft(roll);
-    keyboard.AfterFrameCleanup();
-    mouse.AfterFrameCleanup();
+    keyboard.afterFrameCleanup();
+    mouse.afterFrameCleanup();
   }
 }
 
 /*
 class FlyingCamera extends Camera {
-  VM.Vector3 momentum_ = new VM.Vector3.zero();
+  vm.Vector3 momentum_ = new vm.Vector3.zero();
 
   FlyingCamera() : super("camera:flying");
 
@@ -106,65 +106,65 @@ class FlyingCamera extends Camera {
 
   @override
   void moveForward(double amount) {
-    VM.Vector3 t = getBack();
+    vm.Vector3 t = getBack();
     t.negate();
-    VM.Vector3.mix(momentum_, t, amount, momentum_);
+    vm.Vector3.mix(momentum_, t, amount, momentum_);
   }
 
   @override
   void moveBackward(double amount) {
-    VM.Vector3 t = getBack();
-    VM.Vector3.mix(momentum_, t, amount, momentum_);
+    vm.Vector3 t = getBack();
+    vm.Vector3.mix(momentum_, t, amount, momentum_);
   }
 
   @override
   void moveUp(num amount) {
-    VM.Vector3 t = getUp();
-    VM.Vector3.mix(momentum_, t, amount, momentum_);
+    vm.Vector3 t = getUp();
+    vm.Vector3.mix(momentum_, t, amount, momentum_);
   }
 
   @override
   void moveDown(num amount) {
-    VM.Vector3 t = getUp();
+    vm.Vector3 t = getUp();
     t.negate();
-    VM.Vector3.mix(momentum_, t, amount, momentum_);
+    vm.Vector3.mix(momentum_, t, amount, momentum_);
   }
 
   @override
   void moveLeft(num amount) {
-    VM.Vector3 t = getRight();
+    vm.Vector3 t = getRight();
     t.negate();
-    VM.Vector3.mix(momentum_, t, amount, momentum_);
+    vm.Vector3.mix(momentum_, t, amount, momentum_);
   }
 
   @override
   void moveRight(num amount) {
-    VM.Vector3 t = getRight();
-    VM.Vector3.mix(momentum_, t, amount, momentum_);
+    vm.Vector3 t = getRight();
+    vm.Vector3.mix(momentum_, t, amount, momentum_);
   }
 }
 
 class FPSCamera extends Camera {
-  VM.Vector3 momentum = new VM.Vector3.zero();
-  VM.Vector3 movement = new VM.Vector3.zero();
-  VM.Vector3 tmp = new VM.Vector3.zero();
+  vm.Vector3 momentum = new vm.Vector3.zero();
+  vm.Vector3 movement = new vm.Vector3.zero();
+  vm.Vector3 tmp = new vm.Vector3.zero();
 
-  VM.Vector3 traceStart = new VM.Vector3.zero();
-  VM.Vector3 traceEnd = new VM.Vector3.zero();
+  vm.Vector3 traceStart = new vm.Vector3.zero();
+  vm.Vector3 traceEnd = new vm.Vector3.zero();
 
-  VM.Vector3 up = new VM.Vector3(0.0, 0.0, 1.0);
+  vm.Vector3 up = new vm.Vector3(0.0, 0.0, 1.0);
 
   int movementX = 0;
   int movementY = 0;
 
-  FPSCamera([HTML.Element eventElement]) : super("camera:fps") {
-    if (eventElement == null) eventElement = HTML.document.body;
-    eventElement.onMouseDown.listen((HTML.MouseEvent e) {
+  FPSCamera([html.Element eventElement]) : super("camera:fps") {
+    if (eventElement == null) eventElement = html.document.body;
+    eventElement.onMouseDown.listen((html.MouseEvent e) {
       e.preventDefault();
       eventElement.requestPointerLock();
     });
 
-    eventElement.onMouseMove.listen((HTML.MouseEvent e) {
+    eventElement.onMouseMove.listen((html.MouseEvent e) {
       e.preventDefault();
       movementX += e.movement.x;
       movementY += e.movement.y;

@@ -2,7 +2,7 @@ library;
 
 // This library does not depend on "dart:html" or core
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import "../core/lib.dart";
 import "../animation/lib.dart";

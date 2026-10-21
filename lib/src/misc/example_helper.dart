@@ -26,11 +26,11 @@ class Utils {
     return ImageTexture(cgl, name, createParticleCanvas());
   }
 
-  static HTML.CanvasElement createParticleCanvas() {
+  static html.CanvasElement createParticleCanvas() {
     int d = 64;
-    HTML.CanvasElement canvas = HTML.CanvasElement(width: d, height: d);
-    HTML.CanvasRenderingContext2D ctx =
-        canvas.getContext('2d') as HTML.CanvasRenderingContext2D;
+    html.CanvasElement canvas = html.CanvasElement(width: d, height: d);
+    html.CanvasRenderingContext2D ctx =
+        canvas.getContext('2d') as html.CanvasRenderingContext2D;
     int x = d ~/ 2, y = d ~/ 2;
 
     var gradient = ctx.createRadialGradient(x, y, 1, x, y, 22);
@@ -46,16 +46,16 @@ class Utils {
 
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = gradient;
-    ctx.arc(x, y, 4, 0, 2 * Math.pi);
+    ctx.arc(x, y, 4, 0, 2 * math.pi);
     ctx.fill();
     return canvas;
   }
 
   static int id = 1;
 
-  static Math.Random rand = Math.Random();
+  static math.Random rand = math.Random();
 
-  static MeshData MakeStarMesh(
+  static MeshData makeStarMesh(
     RenderProgram prog,
     int numPoints,
     double dimension,
@@ -65,27 +65,27 @@ class Utils {
     for (var i = 0; i < numPoints * 3; i++) {
       pos[i] = (rand.nextDouble() - 0.5) * dimension;
     }
-    return prog.MakeMeshData(name, GL_POINTS)..AddVertices(pos);
+    return prog.makeMeshData(name, glPoints)..addVertices(pos);
   }
 
-  static Material MakeStarMaterial(ChronosGL cgl, [double size = 1000.0]) {
-    return Material.Transparent("stars", BlendEquationMix)
-      ..SetUniform(uTexture, createParticleTexture(cgl))
-      ..SetUniform(uPointSize, size);
+  static Material makeStarMaterial(ChronosGL cgl, [double size = 1000.0]) {
+    return Material.transparent("stars", blendEquationMix)
+      ..setUniform(uTexture, createParticleTexture(cgl))
+      ..setUniform(uPointSize, size);
   }
 
-  static Node MakeParticles(
+  static Node makeParticles(
     RenderProgram prog,
     int numPoints, [
     double dimension = 100.0,
   ]) {
-    Material mat = MakeStarMaterial(prog.getContext());
-    MeshData md = MakeStarMesh(prog, numPoints, dimension);
+    Material mat = makeStarMaterial(prog.getContext());
+    MeshData md = makeStarMesh(prog, numPoints, dimension);
     return Node(md.name, md, mat);
   }
 }
 
-MeshData ShapeCube(
+MeshData shapeCube(
   RenderProgram prog, {
   double x = 1.0,
   double y = 1.0,
@@ -96,7 +96,7 @@ MeshData ShapeCube(
   double vMax = 1.0,
   bool computeNormals = true,
 }) {
-  GeometryBuilder gb = CubeGeometry(
+  GeometryBuilder gb = cubeGeometry(
     x: x,
     y: y,
     z: z,
@@ -105,10 +105,10 @@ MeshData ShapeCube(
     vMin: vMin,
     vMax: vMax,
   );
-  return GeometryBuilderToMeshData("cube", prog, gb);
+  return geometryBuilderToMeshData("cube", prog, gb);
 }
 
-MeshData ShapeWedge(
+MeshData shapeWedge(
   RenderProgram prog, {
   double x = 1.0,
   double y = 1.0,
@@ -118,7 +118,7 @@ MeshData ShapeWedge(
   double vMin = 0.0,
   double vMax = 1.0,
 }) {
-  GeometryBuilder gb = WedgeGeometry(
+  GeometryBuilder gb = wedgeGeometry(
     x: x,
     y: y,
     z: z,
@@ -127,10 +127,10 @@ MeshData ShapeWedge(
     vMin: vMin,
     vMax: vMax,
   );
-  return GeometryBuilderToMeshData("wedge", prog, gb);
+  return geometryBuilderToMeshData("wedge", prog, gb);
 }
 
-MeshData ShapeCylinder(
+MeshData shapeCylinder(
   RenderProgram prog,
   double radTop,
   double radBot,
@@ -138,31 +138,31 @@ MeshData ShapeCylinder(
   int radialSubdivisions, [
   bool computeNormals = true,
 ]) {
-  GeometryBuilder gb = CylinderGeometry(
+  GeometryBuilder gb = cylinderGeometry(
     radTop,
     radBot,
     height,
     radialSubdivisions,
     computeNormals,
   );
-  return GeometryBuilderToMeshData("cylinder-$radialSubdivisions", prog, gb);
+  return geometryBuilderToMeshData("cylinder-$radialSubdivisions", prog, gb);
 }
 
-MeshData ShapeIcosahedron(
+MeshData shapeIcosahedron(
   RenderProgram prog, {
   int subdivisions = 4,
   double scale = 1.0,
   bool computeNormals = true,
 }) {
-  GeometryBuilder gb = IcosahedronGeometry(
+  GeometryBuilder gb = icosahedronGeometry(
     subdivisions: subdivisions,
     scale: scale,
     computeNormals: computeNormals,
   );
-  return GeometryBuilderToMeshData("icosahedron-$subdivisions", prog, gb);
+  return geometryBuilderToMeshData("icosahedron-$subdivisions", prog, gb);
 }
 
-MeshData ShapeTorusKnot(
+MeshData shapeTorusKnot(
   RenderProgram prog, {
   double radius = 20.0,
   double tubeRadius = 4.0,
@@ -173,7 +173,7 @@ MeshData ShapeTorusKnot(
   double heightScale = 1.0,
   bool computeNormals = true,
 }) {
-  GeometryBuilder gb = TorusKnotGeometry(
+  GeometryBuilder gb = torusKnotGeometry(
     radius: radius,
     tubeRadius: tubeRadius,
     segmentsR: segmentsR,
@@ -183,56 +183,56 @@ MeshData ShapeTorusKnot(
     heightScale: heightScale,
     computeNormals: computeNormals,
   );
-  return GeometryBuilderToMeshData("torusknot", prog, gb);
+  return geometryBuilderToMeshData("torusknot", prog, gb);
 }
 
-MeshData ShapeQuad(RenderProgram prog, int size) {
-  GeometryBuilder gb = QuadGeometry(size);
-  return GeometryBuilderToMeshData("quad", prog, gb);
+MeshData shapeQuad(RenderProgram prog, int size) {
+  GeometryBuilder gb = quadGeometry(size);
+  return geometryBuilderToMeshData("quad", prog, gb);
 }
 
-MeshData ShapeGrid(
+MeshData shapeGrid(
   RenderProgram prog,
   int xstrips,
   int ystrips,
   double xlen,
   double ylen,
 ) {
-  GeometryBuilder gb = GridGeometry(xstrips, ystrips, xlen, ylen);
-  return GeometryBuilderToMeshData("strips", prog, gb);
+  GeometryBuilder gb = gridGeometry(xstrips, ystrips, xlen, ylen);
+  return geometryBuilderToMeshData("strips", prog, gb);
 }
 
-final Material EmptyMaterial = Material("empty-mat");
+final Material emptyMaterial = Material("empty-mat");
 
-Node UnitNode(RenderProgram prog) {
-  final MeshData UnitQuad = ShapeQuad(prog, 1);
-  return Node("unit-mesh", UnitQuad, EmptyMaterial);
+Node unitNode(RenderProgram prog) {
+  final MeshData unitQuad = shapeQuad(prog, 1);
+  return Node("unit-mesh", unitQuad, emptyMaterial);
 }
 
-final VM.Vector3 ColorWhite = VM.Vector3(1.0, 1.0, 1.0);
-final VM.Vector3 ColorGray8 = VM.Vector3(0.8, 0.8, 0.8);
-final VM.Vector3 ColorGray6 = VM.Vector3(0.6, 0.6, 0.6);
-final VM.Vector3 ColorGray4 = VM.Vector3(0.4, 0.4, 0.4);
-final VM.Vector3 ColorGray2 = VM.Vector3(0.2, 0.2, 0.2);
-final VM.Vector3 ColorBlack = VM.Vector3(0.0, 0.0, 0.0);
+final vm.Vector3 colorWhite = vm.Vector3(1.0, 1.0, 1.0);
+final vm.Vector3 colorGray8 = vm.Vector3(0.8, 0.8, 0.8);
+final vm.Vector3 colorGray6 = vm.Vector3(0.6, 0.6, 0.6);
+final vm.Vector3 colorGray4 = vm.Vector3(0.4, 0.4, 0.4);
+final vm.Vector3 colorGray2 = vm.Vector3(0.2, 0.2, 0.2);
+final vm.Vector3 colorBlack = vm.Vector3(0.0, 0.0, 0.0);
 
-final VM.Vector3 ColorBlue = VM.Vector3(0.0, 0.0, 1.0);
-final VM.Vector3 ColorLiteBlue = VM.Vector3(0.0, 0.0, 0.5);
+final vm.Vector3 colorBlue = vm.Vector3(0.0, 0.0, 1.0);
+final vm.Vector3 colorLiteBlue = vm.Vector3(0.0, 0.0, 0.5);
 
-final VM.Vector3 ColorRed = VM.Vector3(1.0, 0.0, 0.0);
-final VM.Vector3 ColorLiteRed = VM.Vector3(0.5, 0.0, 0.0);
+final vm.Vector3 colorRed = vm.Vector3(1.0, 0.0, 0.0);
+final vm.Vector3 colorLiteRed = vm.Vector3(0.5, 0.0, 0.0);
 
-final VM.Vector3 ColorGreen = VM.Vector3(0.0, 1.0, 0.0);
-final VM.Vector3 ColorLiteGreen = VM.Vector3(0.0, 0.5, 0.0);
+final vm.Vector3 colorGreen = vm.Vector3(0.0, 1.0, 0.0);
+final vm.Vector3 colorLiteGreen = vm.Vector3(0.0, 0.5, 0.0);
 
-final VM.Vector3 ColorYellow = VM.Vector3(1.0, 1.0, 0.0);
-final VM.Vector3 ColorLiteYellow = VM.Vector3(0.5, 0.5, 0.0);
+final vm.Vector3 colorYellow = vm.Vector3(1.0, 1.0, 0.0);
+final vm.Vector3 colorLiteYellow = vm.Vector3(0.5, 0.5, 0.0);
 
-final VM.Vector3 ColorMagenta = VM.Vector3(1.0, 0.0, 1.0);
-final VM.Vector3 ColorLiteMagenta = VM.Vector3(0.5, 0.0, 0.5);
+final vm.Vector3 colorMagenta = vm.Vector3(1.0, 0.0, 1.0);
+final vm.Vector3 colorLiteMagenta = vm.Vector3(0.5, 0.0, 0.5);
 
-final VM.Vector3 ColorCyan = VM.Vector3(0.0, 1.0, 1.0);
-final VM.Vector3 ColorLiteCyan = VM.Vector3(0.0, 0.5, 0.5);
+final vm.Vector3 colorCyan = vm.Vector3(0.0, 1.0, 1.0);
+final vm.Vector3 colorLiteCyan = vm.Vector3(0.0, 0.5, 0.5);
 
 /// A RenderPhase which automatically updates perspective and viewport when
 /// the window size is changed.
@@ -245,19 +245,19 @@ class RenderPhaseResizeAware extends RenderPhase {
     this._perspective,
   ) {
     resolutionChange(null);
-    HTML.window.onResize.listen(resolutionChange);
+    html.window.onResize.listen(resolutionChange);
   }
 
-  final HTML.CanvasElement _canvas;
+  final html.CanvasElement _canvas;
   final Perspective _perspective;
 
-  void resolutionChange(HTML.Event? ev) {
+  void resolutionChange(html.Event? ev) {
     int w = _canvas.clientWidth;
     int h = _canvas.clientHeight;
     _canvas.width = w;
     _canvas.height = h;
     print("size change $w $h");
-    _perspective.AdjustAspect(w, h);
+    _perspective.adjustAspect(w, h);
     viewPortW = w;
     viewPortH = h;
   }
@@ -272,19 +272,19 @@ class PerspectiveResizeAware extends Perspective {
     double far,
   ) : super(camera, near, far) {
     resolutionChange(null);
-    HTML.window.onResize.listen(resolutionChange);
+    html.window.onResize.listen(resolutionChange);
   }
 
-  final HTML.CanvasElement _canvas;
+  final html.CanvasElement _canvas;
   final ChronosGL _cgl;
 
-  void resolutionChange(HTML.Event? ev) {
+  void resolutionChange(html.Event? ev) {
     int w = _canvas.clientWidth;
     int h = _canvas.clientHeight;
     _canvas.width = w;
     _canvas.height = h;
     print("size change $w $h");
-    AdjustAspect(w, h);
+    adjustAspect(w, h);
 
     _cgl.viewport(0, 0, w, h);
   }

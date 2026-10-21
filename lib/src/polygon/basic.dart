@@ -8,9 +8,9 @@ http://polyk.ivank.net
 https://github.com/mapbox/earcut
 */
 
-// calculate area of the list<VM.Vector2> polygon
+// calculate area of the list<vm.Vector2> polygon
 // The sign of the area indicates clock-wise/counter clockwise orientation
-double GetSignedArea(List<VM.Vector2> contour) {
+double getSignedArea(List<vm.Vector2> contour) {
   double a = 0.0;
   for (int i = 0; i < contour.length; ++i) {
     int j = i - 1;
@@ -20,26 +20,26 @@ double GetSignedArea(List<VM.Vector2> contour) {
   return a * 0.5;
 }
 
-VM.Vector4 GetBounds(List<VM.Vector2> contour) {
+vm.Vector4 getBounds(List<vm.Vector2> contour) {
   double maxX = double.negativeInfinity;
   double minX = double.infinity;
   double maxY = double.negativeInfinity;
   double minY = double.infinity;
 
-  for (VM.Vector2 v in contour) {
-    maxX = Math.max(maxX, v.x);
-    minX = Math.min(minX, v.x);
-    maxY = Math.max(maxY, v.y);
-    minY = Math.min(minY, v.y);
+  for (vm.Vector2 v in contour) {
+    maxX = math.max(maxX, v.x);
+    minX = math.min(minX, v.x);
+    maxY = math.max(maxY, v.y);
+    minY = math.min(minY, v.y);
   }
 
-  return VM.Vector4(minX, minY, maxX, maxY);
+  return vm.Vector4(minX, minY, maxX, maxY);
 }
 
-bool IsInTriangle(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c, VM.Vector2 p) {
-  VM.Vector2 ap = a - p;
-  VM.Vector2 bp = b - p;
-  VM.Vector2 cp = c - p;
+bool isInTriangle(vm.Vector2 a, vm.Vector2 b, vm.Vector2 c, vm.Vector2 p) {
+  vm.Vector2 ap = a - p;
+  vm.Vector2 bp = b - p;
+  vm.Vector2 cp = c - p;
   return cp.x * ap.y - ap.x * cp.y >= 0 &&
       ap.x * bp.y - bp.x * ap.y >= 0 &&
       bp.x * cp.y - cp.x * bp.y >= 0;
@@ -47,11 +47,11 @@ bool IsInTriangle(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c, VM.Vector2 p) {
 
 // http://stackoverflow.com/questions/2931573/determining-if-two-rays-intersect
 // http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
-VM.Vector2? LineIntersection(
-  VM.Vector2 pointa,
-  VM.Vector2 dira,
-  VM.Vector2 pointb,
-  VM.Vector2 dirb,
+vm.Vector2? lineIntersection(
+  vm.Vector2 pointa,
+  vm.Vector2 dira,
+  vm.Vector2 pointb,
+  vm.Vector2 dirb,
 ) {
   double det = dira.cross(dirb);
   // Parallel check
@@ -60,30 +60,30 @@ VM.Vector2? LineIntersection(
   return pointa + dira * t;
 }
 
-bool Colinear(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c) {
-  VM.Vector2 ab = a - b;
-  VM.Vector2 bc = b - c;
+bool colinear(vm.Vector2 a, vm.Vector2 b, vm.Vector2 c) {
+  vm.Vector2 ab = a - b;
+  vm.Vector2 bc = b - c;
   return ab.cross(bc) == 0.0;
 }
 
 // Note: this has one known bug when the first element is colinear
 // with its neighbors
-List<VM.Vector2> FilterDupsAndColinear(List<VM.Vector2> contour) {
-  List<VM.Vector2> out = <VM.Vector2>[];
+List<vm.Vector2> filterDupsAndColinear(List<vm.Vector2> contour) {
+  List<vm.Vector2> out = <vm.Vector2>[];
   final cl = contour.length;
   out.add(contour[0]);
   for (int i = 1; i < cl - 1; ++i) {
-    final VM.Vector2 v0 = out.last;
-    final VM.Vector2 v1 = contour[i];
+    final vm.Vector2 v0 = out.last;
+    final vm.Vector2 v1 = contour[i];
     if (v0 == v1) continue;
-    final VM.Vector2 v2 = contour[i + 1];
-    if (Colinear(v0, v1, v2)) continue;
+    final vm.Vector2 v2 = contour[i + 1];
+    if (colinear(v0, v1, v2)) continue;
     out.add(v1);
   }
 
-  VM.Vector2 v0 = out.last;
-  VM.Vector2 v1 = contour.last;
-  final VM.Vector2 v2 = out.first;
+  vm.Vector2 v0 = out.last;
+  vm.Vector2 v1 = contour.last;
+  final vm.Vector2 v2 = out.first;
   if (v1 == v2) {
     v1 = out.removeLast();
     v0 = out.last;
@@ -93,17 +93,17 @@ List<VM.Vector2> FilterDupsAndColinear(List<VM.Vector2> contour) {
     v0 = out.last;
   }
   // at this point v0 != v1 != v2
-  if (!Colinear(v0, v1, v2)) {
+  if (!colinear(v0, v1, v2)) {
     out.add(v1);
   }
   return out;
 }
 
-bool IsInPolygon(List<VM.Vector2> contour, VM.Vector2 p) {
-  VM.Vector2 a;
-  VM.Vector2 b = contour.last - p;
+bool isInPolygon(List<vm.Vector2> contour, vm.Vector2 p) {
+  vm.Vector2 a;
+  vm.Vector2 b = contour.last - p;
   int depth = 0;
-  for (final VM.Vector2 v in contour) {
+  for (final vm.Vector2 v in contour) {
     a = b;
     b = v - p;
     if (a.y < 0 && b.y < 0) continue; // both "up" or both "down"
@@ -119,11 +119,11 @@ bool IsInPolygon(List<VM.Vector2> contour, VM.Vector2 p) {
 }
 
 // http://mathoverflow.net/questions/44096/detecting-whether-directed-cycle-is-clockwise-or-counterclockwise
-bool IsCounterClockWise(VM.Vector2 a, VM.Vector2 b, VM.Vector2 c) {
+bool isCounterClockWise(vm.Vector2 a, vm.Vector2 b, vm.Vector2 c) {
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) >= 0;
 }
 
-bool IsConvex(List<VM.Vector2> contour) {
+bool isConvex(List<vm.Vector2> contour) {
   assert(contour.length >= 3);
 
   for (int i = 0; i < contour.length; i++) {
@@ -132,7 +132,7 @@ bool IsConvex(List<VM.Vector2> contour) {
     int im2 = i - 2;
     if (im2 < 0) im2 += contour.length;
 
-    if (!IsCounterClockWise(contour[im2], contour[im1], contour[i])) {
+    if (!isCounterClockWise(contour[im2], contour[im1], contour[i])) {
       return false;
     }
   }
@@ -140,33 +140,33 @@ bool IsConvex(List<VM.Vector2> contour) {
   return true;
 }
 
-VM.Vector2 _getMovement(VM.Vector2 prev, VM.Vector2 curr, VM.Vector2 next) {
-  VM.Vector2 cp = curr - prev;
-  VM.Vector2 nc = next - curr;
+vm.Vector2 _getMovement(vm.Vector2 prev, vm.Vector2 curr, vm.Vector2 next) {
+  vm.Vector2 cp = curr - prev;
+  vm.Vector2 nc = next - curr;
 
   // we want to move the adjacent edges further to the outside
   // and then use  their new intersection point as the place for
   // curr to go to.
-  VM.Vector2 cp_ortho = VM.Vector2(cp.y, -cp.x)..normalize();
-  VM.Vector2 nc_ortho = VM.Vector2(nc.y, -nc.x)..normalize();
+  vm.Vector2 cpOrtho = vm.Vector2(cp.y, -cp.x)..normalize();
+  vm.Vector2 ncOrtho = vm.Vector2(nc.y, -nc.x)..normalize();
 
   assert(
-    nc.dot(cp_ortho) != 0.0,
+    nc.dot(cpOrtho) != 0.0,
     "possibly colinear points in contour? use FilterDupsAndColinear",
   );
 
-  VM.Vector2 prev_shifted = prev + cp_ortho;
-  VM.Vector2 next_shifted = next + nc_ortho;
+  vm.Vector2 prevShifted = prev + cpOrtho;
+  vm.Vector2 nextShifted = next + ncOrtho;
 
-  VM.Vector2? x = LineIntersection(prev_shifted, cp, next_shifted, nc);
+  vm.Vector2? x = lineIntersection(prevShifted, cp, nextShifted, nc);
   return x! - curr;
 }
 
 // GetContourGradient is to shrink or expand a contour.
 // The output contains a direction Vector2 for each input point.
 // The input must be free of colinear data.
-List<VM.Vector2> GetContourGradient(List<VM.Vector2> contour) {
-  List<VM.Vector2> out = <VM.Vector2>[];
+List<vm.Vector2> getContourGradient(List<vm.Vector2> contour) {
+  List<vm.Vector2> out = <vm.Vector2>[];
   final cl = contour.length;
   for (int i = 0; i < contour.length; i++) {
     int im1 = i - 1;
@@ -174,29 +174,29 @@ List<VM.Vector2> GetContourGradient(List<VM.Vector2> contour) {
     int ip1 = i + 1;
     if (ip1 >= cl) ip1 -= cl;
 
-    VM.Vector2 v = _getMovement(contour[im1], contour[i], contour[ip1]);
+    vm.Vector2 v = _getMovement(contour[im1], contour[i], contour[ip1]);
 
     out.add(v);
   }
   return out;
 }
 
-List<VM.Vector2> ContourCircle(
+List<vm.Vector2> contourCircle(
   int nSegmemts,
   double radius, [
   bool ccw = true,
 ]) {
-  List<VM.Vector2> out = List.generate(nSegmemts, (i) {
-    double angle = Math.pi * 2 * i / nSegmemts * (ccw ? 1.0 : -1.0);
-    return VM.Vector2(radius * Math.cos(angle), radius * Math.sin(angle));
+  List<vm.Vector2> out = List.generate(nSegmemts, (i) {
+    double angle = math.pi * 2 * i / nSegmemts * (ccw ? 1.0 : -1.0);
+    return vm.Vector2(radius * math.cos(angle), radius * math.sin(angle));
   });
   return out;
 }
 
-List<VM.Vector3> GeneralProjection(List<VM.Vector2> contour, VM.Matrix3 mat) {
-  VM.Vector3 t = VM.Vector3.zero();
+List<vm.Vector3> generalProjection(List<vm.Vector2> contour, vm.Matrix3 mat) {
+  vm.Vector3 t = vm.Vector3.zero();
   t.z = 1.0;
-  List<VM.Vector3> out = List.generate(contour.length, (i) {
+  List<vm.Vector3> out = List.generate(contour.length, (i) {
     t.x = contour[i].x;
     t.y = contour[i].y;
     return mat.transformed(t);
@@ -204,8 +204,8 @@ List<VM.Vector3> GeneralProjection(List<VM.Vector2> contour, VM.Matrix3 mat) {
   return out;
 }
 
-List<VM.Vector3> SimpleExtrusionAxisZ(List<VM.Vector2> contour, double z) {
-  VM.Matrix3 m = VM.Matrix3.identity();
+List<vm.Vector3> simpleExtrusionAxisZ(List<vm.Vector2> contour, double z) {
+  vm.Matrix3 m = vm.Matrix3.identity();
   m[8] = z;
-  return GeneralProjection(contour, m);
+  return generalProjection(contour, m);
 }

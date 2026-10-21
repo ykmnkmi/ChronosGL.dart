@@ -13,21 +13,21 @@ const String lightTypeDirectionalFloat = "$lightTypeDirectional.0";
 const String lightTypeSpotFloat = "$lightTypeSpot.0";
 const String lightTypePointFloat = "$lightTypePoint.0";
 
-const String VarTypeFloat = "float";
-const String VarTypeVec2 = "vec2";
-const String VarTypeVec3 = "vec3";
-const String VarTypeVec4 = "vec4";
+const String varTypeFloat = "float";
+const String varTypeVec2 = "vec2";
+const String varTypeVec3 = "vec3";
+const String varTypeVec4 = "vec4";
 
-const String VarTypeMat3 = "mat3";
-const String VarTypeMat4 = "mat4";
-const String VarTypeUvec4 = "uvec4";
-const String VarTypeUvec3 = "uvec3";
-const String VarTypeUvec2 = "uvec2";
-const String VarTypeSampler2D = "sampler2D";
-const String VarTypeSampler2DShadow = "sampler2DShadow";
-const String VarTypeSamplerCube = "samplerCube";
-const String VarTypeInt = "int";
-const String VarTypeIndex = "index";
+const String varTypeMat3 = "mat3";
+const String varTypeMat4 = "mat4";
+const String varTypeUvec4 = "uvec4";
+const String varTypeUvec3 = "uvec3";
+const String varTypeUvec2 = "uvec2";
+const String varTypeSampler2D = "sampler2D";
+const String varTypeSampler2DShadow = "sampler2DShadow";
+const String varTypeSamplerCube = "samplerCube";
+const String varTypeInt = "int";
+const String varTypeIndex = "index";
 
 class ShaderVarDesc {
   const ShaderVarDesc(this.type, this.purpose, {this.arraySize = 0});
@@ -36,17 +36,17 @@ class ShaderVarDesc {
   final String purpose;
   final int arraySize;
 
-  int GetSize() {
+  int getSize() {
     switch (type) {
-      case VarTypeFloat:
+      case varTypeFloat:
         return 1;
-      case VarTypeVec2:
+      case varTypeVec2:
         return 2;
-      case VarTypeVec3:
-      case VarTypeUvec3:
+      case varTypeVec3:
+      case varTypeUvec3:
         return 3;
-      case VarTypeVec4:
-      case VarTypeUvec4:
+      case varTypeVec4:
+      case varTypeUvec4:
         return 4;
       default:
         assert(false);
@@ -54,12 +54,12 @@ class ShaderVarDesc {
     }
   }
 
-  bool IsScalarTypeFloat() {
+  bool isScalarTypeFloat() {
     switch (type) {
-      case VarTypeFloat:
-      case VarTypeVec2:
-      case VarTypeVec3:
-      case VarTypeVec4:
+      case varTypeFloat:
+      case varTypeVec2:
+      case varTypeVec3:
+      case varTypeVec4:
         return true;
       default:
         return false;
@@ -206,9 +206,9 @@ const String uLightCount = "uLightCount";
 const String uLightTypes = "uLightTypes";
 
 /// This map can be augmented with custom entries via
-/// IntroduceNewShaderVar()
+/// introduceNewShaderVar()
 /// All shaders-vars associated with shaders must be in this map.
-final Map<String, ShaderVarDesc> _VarsDb = {
+final Map<String, ShaderVarDesc> _varsDb = {
   // controls
   cBlendEquation: const ShaderVarDesc("", ""),
   cDepthWrite: const ShaderVarDesc("", ""),
@@ -216,117 +216,117 @@ final Map<String, ShaderVarDesc> _VarsDb = {
   cStencilFunc: const ShaderVarDesc("", ""),
 
   // transform vars
-  tPosition: const ShaderVarDesc(VarTypeVec3, ""),
-  tSpeed: const ShaderVarDesc(VarTypeVec3, ""),
-  tForce: const ShaderVarDesc(VarTypeVec3, ""),
+  tPosition: const ShaderVarDesc(varTypeVec3, ""),
+  tSpeed: const ShaderVarDesc(varTypeVec3, ""),
+  tForce: const ShaderVarDesc(varTypeVec3, ""),
 
   // attribute vars
   // This should also contain an alpha channel
-  aColor: const ShaderVarDesc(VarTypeVec3, "per vertex color"),
-  aColorAlpha: const ShaderVarDesc(VarTypeVec4, "per vertex color"),
-  aPosition: const ShaderVarDesc(VarTypeVec3, "vertex coordinates"),
-  aTexUV: const ShaderVarDesc(VarTypeVec2, "texture uvs"),
-  aNormal: const ShaderVarDesc(VarTypeVec3, "vertex normals"),
-  aBinormal: const ShaderVarDesc(VarTypeVec3, "vertex binormals"),
-  aCenter: const ShaderVarDesc(VarTypeVec4, "for wireframe"),
-  aPointSize: const ShaderVarDesc(VarTypeFloat, ""),
-  aBoneIndex: const ShaderVarDesc(VarTypeVec4, ""),
-  aBoneWeight: const ShaderVarDesc(VarTypeVec4, ""),
-  aTangent: const ShaderVarDesc(VarTypeVec3, "vertex tangents"),
-  aBitangent: const ShaderVarDesc(VarTypeVec3, "vertex btangents"),
-  iaRotation: const ShaderVarDesc(VarTypeVec4, ""),
-  iaTranslation: const ShaderVarDesc(VarTypeVec3, ""),
-  iaScale: const ShaderVarDesc(VarTypeFloat, ""),
-  iaColor: const ShaderVarDesc(VarTypeVec3, ""),
+  aColor: const ShaderVarDesc(varTypeVec3, "per vertex color"),
+  aColorAlpha: const ShaderVarDesc(varTypeVec4, "per vertex color"),
+  aPosition: const ShaderVarDesc(varTypeVec3, "vertex coordinates"),
+  aTexUV: const ShaderVarDesc(varTypeVec2, "texture uvs"),
+  aNormal: const ShaderVarDesc(varTypeVec3, "vertex normals"),
+  aBinormal: const ShaderVarDesc(varTypeVec3, "vertex binormals"),
+  aCenter: const ShaderVarDesc(varTypeVec4, "for wireframe"),
+  aPointSize: const ShaderVarDesc(varTypeFloat, ""),
+  aBoneIndex: const ShaderVarDesc(varTypeVec4, ""),
+  aBoneWeight: const ShaderVarDesc(varTypeVec4, ""),
+  aTangent: const ShaderVarDesc(varTypeVec3, "vertex tangents"),
+  aBitangent: const ShaderVarDesc(varTypeVec3, "vertex btangents"),
+  iaRotation: const ShaderVarDesc(varTypeVec4, ""),
+  iaTranslation: const ShaderVarDesc(varTypeVec3, ""),
+  iaScale: const ShaderVarDesc(varTypeFloat, ""),
+  iaColor: const ShaderVarDesc(varTypeVec3, ""),
 
   // Varying
-  vColor: const ShaderVarDesc(VarTypeVec3, "per vertex color"),
-  vTexUV: const ShaderVarDesc(VarTypeVec2, ""),
-  vLightWeighting: const ShaderVarDesc(VarTypeVec3, ""),
-  vNormal: const ShaderVarDesc(VarTypeVec3, ""),
-  vPosition: const ShaderVarDesc(VarTypeVec3, "vertex coordinates"),
-  vPositionFromLight: const ShaderVarDesc(VarTypeVec4, "delta from light"),
-  vCenter: const ShaderVarDesc(VarTypeVec4, "for wireframe"),
-  vDepth: const ShaderVarDesc(VarTypeFloat, "depth for shadowmaps"),
+  vColor: const ShaderVarDesc(varTypeVec3, "per vertex color"),
+  vTexUV: const ShaderVarDesc(varTypeVec2, ""),
+  vLightWeighting: const ShaderVarDesc(varTypeVec3, ""),
+  vNormal: const ShaderVarDesc(varTypeVec3, ""),
+  vPosition: const ShaderVarDesc(varTypeVec3, "vertex coordinates"),
+  vPositionFromLight: const ShaderVarDesc(varTypeVec4, "delta from light"),
+  vCenter: const ShaderVarDesc(varTypeVec4, "for wireframe"),
+  vDepth: const ShaderVarDesc(varTypeFloat, "depth for shadowmaps"),
 
   // uniform vars
-  uTransformationMatrix: const ShaderVarDesc(VarTypeMat4, ""),
-  //uModelViewMatrix: const ShaderVarDesc(VarTypeMat4, ""),
-  uModelMatrix: const ShaderVarDesc(VarTypeMat4, ""),
-  //uViewMatrix: const ShaderVarDesc(VarTypeMat4, ""),
-  uNormalMatrix: const ShaderVarDesc(VarTypeMat3, ""),
-  uConvolutionMatrix: const ShaderVarDesc(VarTypeMat3, ""),
+  uTransformationMatrix: const ShaderVarDesc(varTypeMat4, ""),
+  //uModelViewMatrix: const ShaderVarDesc(varTypeMat4, ""),
+  uModelMatrix: const ShaderVarDesc(varTypeMat4, ""),
+  //uViewMatrix: const ShaderVarDesc(varTypeMat4, ""),
+  uNormalMatrix: const ShaderVarDesc(varTypeMat3, ""),
+  uConvolutionMatrix: const ShaderVarDesc(varTypeMat3, ""),
 
-  //uPerspectiveMatrix: const ShaderVarDesc(VarTypeMat4, ""),
-  uPerspectiveViewMatrix: const ShaderVarDesc(VarTypeMat4, ""),
-  uLightPerspectiveViewMatrix: const ShaderVarDesc(VarTypeMat4, ""),
+  //uPerspectiveMatrix: const ShaderVarDesc(varTypeMat4, ""),
+  uPerspectiveViewMatrix: const ShaderVarDesc(varTypeMat4, ""),
+  uLightPerspectiveViewMatrix: const ShaderVarDesc(varTypeMat4, ""),
 
-  uShadowMap: const ShaderVarDesc(VarTypeSampler2DShadow, ""),
+  uShadowMap: const ShaderVarDesc(varTypeSampler2DShadow, ""),
 
-  uTexture: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uTexture2: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uTexture3: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uTexture4: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uSpecularMap: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uNormalMap: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uBumpMap: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uDepthMap: const ShaderVarDesc(VarTypeSampler2D, ""),
-  uCubeTexture: const ShaderVarDesc(VarTypeSamplerCube, ""),
-  uAnimationTable: const ShaderVarDesc(VarTypeSampler2D, ""),
+  uTexture: const ShaderVarDesc(varTypeSampler2D, ""),
+  uTexture2: const ShaderVarDesc(varTypeSampler2D, ""),
+  uTexture3: const ShaderVarDesc(varTypeSampler2D, ""),
+  uTexture4: const ShaderVarDesc(varTypeSampler2D, ""),
+  uSpecularMap: const ShaderVarDesc(varTypeSampler2D, ""),
+  uNormalMap: const ShaderVarDesc(varTypeSampler2D, ""),
+  uBumpMap: const ShaderVarDesc(varTypeSampler2D, ""),
+  uDepthMap: const ShaderVarDesc(varTypeSampler2D, ""),
+  uCubeTexture: const ShaderVarDesc(varTypeSamplerCube, ""),
+  uAnimationTable: const ShaderVarDesc(varTypeSampler2D, ""),
 
-  uTime: const ShaderVarDesc(VarTypeFloat, "time since program start in sec"),
-  uCameraNear: const ShaderVarDesc(VarTypeFloat, ""),
-  uCameraFar: const ShaderVarDesc(VarTypeFloat, ""),
-  uFogNear: const ShaderVarDesc(VarTypeFloat, ""),
-  uFogFar: const ShaderVarDesc(VarTypeFloat, ""),
-  uPointSize: const ShaderVarDesc(VarTypeFloat, ""),
-  uScale: const ShaderVarDesc(VarTypeFloat, ""),
-  uAngle: const ShaderVarDesc(VarTypeFloat, ""),
-  uCanvasSize: const ShaderVarDesc(VarTypeVec2, ""),
-  uCenter2: const ShaderVarDesc(VarTypeVec2, ""),
-  uCutOff: const ShaderVarDesc(VarTypeFloat, ""),
-  uShininess: const ShaderVarDesc(VarTypeFloat, ""),
-  uShadowBias: const ShaderVarDesc(VarTypeFloat, ""),
-  uOpacity: const ShaderVarDesc(VarTypeFloat, ""),
-  uThickness: const ShaderVarDesc(VarTypeFloat, ""),
-  uColor: const ShaderVarDesc(VarTypeVec3, ""),
-  uColorAmbient: const ShaderVarDesc(VarTypeVec3, ""),
-  uColorEmissive: const ShaderVarDesc(VarTypeVec3, ""),
-  uColorSpecular: const ShaderVarDesc(VarTypeVec3, ""),
-  uColorDiffuse: const ShaderVarDesc(VarTypeVec3, ""),
-  uColorAlpha: const ShaderVarDesc(VarTypeVec4, ""),
-  uColorAlpha2: const ShaderVarDesc(VarTypeVec4, ""),
-  uEyePosition: const ShaderVarDesc(VarTypeVec3, ""),
-  uMaterial: const ShaderVarDesc(VarTypeMat4, ""),
-  uRange: const ShaderVarDesc(VarTypeVec2, ""),
-  uDirection: const ShaderVarDesc(VarTypeVec2, ""),
+  uTime: const ShaderVarDesc(varTypeFloat, "time since program start in sec"),
+  uCameraNear: const ShaderVarDesc(varTypeFloat, ""),
+  uCameraFar: const ShaderVarDesc(varTypeFloat, ""),
+  uFogNear: const ShaderVarDesc(varTypeFloat, ""),
+  uFogFar: const ShaderVarDesc(varTypeFloat, ""),
+  uPointSize: const ShaderVarDesc(varTypeFloat, ""),
+  uScale: const ShaderVarDesc(varTypeFloat, ""),
+  uAngle: const ShaderVarDesc(varTypeFloat, ""),
+  uCanvasSize: const ShaderVarDesc(varTypeVec2, ""),
+  uCenter2: const ShaderVarDesc(varTypeVec2, ""),
+  uCutOff: const ShaderVarDesc(varTypeFloat, ""),
+  uShininess: const ShaderVarDesc(varTypeFloat, ""),
+  uShadowBias: const ShaderVarDesc(varTypeFloat, ""),
+  uOpacity: const ShaderVarDesc(varTypeFloat, ""),
+  uThickness: const ShaderVarDesc(varTypeFloat, ""),
+  uColor: const ShaderVarDesc(varTypeVec3, ""),
+  uColorAmbient: const ShaderVarDesc(varTypeVec3, ""),
+  uColorEmissive: const ShaderVarDesc(varTypeVec3, ""),
+  uColorSpecular: const ShaderVarDesc(varTypeVec3, ""),
+  uColorDiffuse: const ShaderVarDesc(varTypeVec3, ""),
+  uColorAlpha: const ShaderVarDesc(varTypeVec4, ""),
+  uColorAlpha2: const ShaderVarDesc(varTypeVec4, ""),
+  uEyePosition: const ShaderVarDesc(varTypeVec3, ""),
+  uMaterial: const ShaderVarDesc(varTypeMat4, ""),
+  uRange: const ShaderVarDesc(varTypeVec2, ""),
+  uDirection: const ShaderVarDesc(varTypeVec2, ""),
 
-  uBoneMatrices: const ShaderVarDesc(VarTypeMat4, "", arraySize: kMaxBones),
+  uBoneMatrices: const ShaderVarDesc(varTypeMat4, "", arraySize: kMaxBones),
 
-  uLightDescs: const ShaderVarDesc(VarTypeMat4, "", arraySize: kMaxLights),
-  uLightCount: const ShaderVarDesc(VarTypeFloat, ""),
-  uLightTypes: const ShaderVarDesc(VarTypeFloat, "", arraySize: kMaxLights),
+  uLightDescs: const ShaderVarDesc(varTypeMat4, "", arraySize: kMaxLights),
+  uLightCount: const ShaderVarDesc(varTypeFloat, ""),
+  uLightTypes: const ShaderVarDesc(varTypeFloat, "", arraySize: kMaxLights),
 
-  uBumpScale: const ShaderVarDesc(VarTypeFloat, "for bump maps"),
-  uNormalScale: const ShaderVarDesc(VarTypeFloat, "for normal maps"),
+  uBumpScale: const ShaderVarDesc(varTypeFloat, "for bump maps"),
+  uNormalScale: const ShaderVarDesc(varTypeFloat, "for normal maps"),
 };
 
-void IntroduceNewShaderVar(String canonical, ShaderVarDesc desc) {
+void introduceNewShaderVar(String canonical, ShaderVarDesc desc) {
   assert(
-    !_VarsDb.containsKey(canonical),
+    !_varsDb.containsKey(canonical),
     "duplicate shader variable $canonical",
   );
-  _VarsDb[canonical] = desc;
+  _varsDb[canonical] = desc;
 }
 
-ShaderVarDesc RetrieveShaderVarDesc(String canonical) {
-  return _VarsDb[canonical]!;
+ShaderVarDesc retrieveShaderVarDesc(String canonical) {
+  return _varsDb[canonical]!;
 }
 
 // Describes a shader (either fragment or vertex) and its
 // interface to the world on a syntactical (uncompiled) level.
 // Protocol:
-// SetBody(WithMain) must be called last;
+// setBody(WithMain) must be called last;
 class ShaderObject {
   ShaderObject(this.name);
 
@@ -341,19 +341,19 @@ class ShaderObject {
   int _nextLayoutPos = 0;
   final Map<String, int> _canonicalToLayoutPos = {};
 
-  int GetAttributeLayoutPos(String canonical) =>
+  int getAttributeLayoutPos(String canonical) =>
       _canonicalToLayoutPos[canonical]!;
 
-  int GetTransformBindingIndex(String canonical) =>
+  int getTransformBindingIndex(String canonical) =>
       transformVars.indexOf(canonical);
 
-  Map<String, int> GetAttributeLayoutMap() => _canonicalToLayoutPos;
+  Map<String, int> getAttributeLayoutMap() => _canonicalToLayoutPos;
 
-  void AddAttributeVars(List<String> names) {
+  void addAttributeVars(List<String> names) {
     assert(shader == null);
 
     for (String n in names) {
-      assert(_VarsDb.containsKey(n));
+      assert(_varsDb.containsKey(n));
       assert(!attributeVars.contains(n));
       attributeVars.add(n);
       _canonicalToLayoutPos[n] = _nextLayoutPos;
@@ -362,52 +362,52 @@ class ShaderObject {
     attributeVars.sort();
   }
 
-  void AddUniformVars(List<String> names) {
+  void addUniformVars(List<String> names) {
     assert(shader == null);
 
     for (String n in names) {
-      assert(_VarsDb.containsKey(n), "missing uniform $n");
+      assert(_varsDb.containsKey(n), "missing uniform $n");
       assert(!uniformVars.contains(n));
       uniformVars.add(n);
     }
     uniformVars.sort();
   }
 
-  void AddVaryingVars(List<String> names) {
+  void addVaryingVars(List<String> names) {
     assert(shader == null);
 
     for (String n in names) {
-      assert(_VarsDb.containsKey(n));
+      assert(_varsDb.containsKey(n));
       assert(!varyingVars.contains(n));
       varyingVars.add(n);
     }
     varyingVars.sort();
   }
 
-  void AddTransformVars(List<String> names) {
+  void addTransformVars(List<String> names) {
     assert(shader == null);
 
     for (String n in names) {
-      assert(_VarsDb.containsKey(n));
+      assert(_varsDb.containsKey(n));
       assert(!transformVars.contains(n));
       transformVars.add(n);
     }
     transformVars.sort();
   }
 
-  void SetBodyWithMain(List<String> body, {List<String>? prolog}) {
+  void setBodyWithMain(List<String> body, {List<String>? prolog}) {
     assert(shader == null);
-    shader = _CreateShader(true, body, prolog);
+    shader = _createShader(true, body, prolog);
   }
 
-  void SetBody(List<String> body, {List<String>? prolog}) {
+  void setBody(List<String> body, {List<String>? prolog}) {
     assert(shader == null);
-    shader = _CreateShader(false, body, prolog);
+    shader = _createShader(false, body, prolog);
   }
 
   /// _CreateShader updates the shader field from header and body.
   /// If you have set shader manually do not call this.
-  String _CreateShader(
+  String _createShader(
     bool addWrapperForMain,
     List<String> body,
     List<String>? prolog,
@@ -422,8 +422,8 @@ class ShaderObject {
       "",
     ];
     for (String a in attributeVars) {
-      ShaderVarDesc d = _VarsDb[a]!;
-      int pos = GetAttributeLayoutPos(a);
+      ShaderVarDesc d = _varsDb[a]!;
+      int pos = getAttributeLayoutPos(a);
       out.add("layout (location=$pos) in ${d.type} $a;");
     }
     out.add("");
@@ -434,16 +434,16 @@ class ShaderObject {
     }
 
     for (String v in varyingVars) {
-      ShaderVarDesc d = _VarsDb[v]!;
+      ShaderVarDesc d = _varsDb[v]!;
       out.add("$modifier ${d.type} $v;");
     }
     for (String v in transformVars) {
-      ShaderVarDesc d = _VarsDb[v]!;
+      ShaderVarDesc d = _varsDb[v]!;
       out.add("$modifier ${d.type} $v;");
     }
     out.add("");
     for (String v in uniformVars) {
-      ShaderVarDesc d = _VarsDb[v]!;
+      ShaderVarDesc d = _varsDb[v]!;
       String suffix = d.arraySize == 0 ? "" : "[${d.arraySize}]";
       out.add("uniform ${d.type} $v$suffix;");
     }

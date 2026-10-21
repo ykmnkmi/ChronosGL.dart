@@ -4,13 +4,13 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:args/args.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/src/core/lib.dart';
 import 'package:chronosgl/src/importer/lib.dart';
 import 'package:chronosgl/src/animation/lib.dart';
 
-void ShowInfo(Map<String, Object?> json) {
+void showInfo(Map<String, Object?> json) {
   for (String k in json.keys) {
     Object? val = json[k];
     if (val is Map<Object?, Object?>) {
@@ -35,16 +35,16 @@ void main(List<String> arguments) {
     String meshData = File(p).readAsStringSync();
     final jsonData = json.decode(meshData) as Map<String, Object?>;
 
-    List<Bone> skeleton = ImportSkeletonFromAssimp2Json(jsonData);
+    List<Bone> skeleton = importSkeletonFromAssimp2Json(jsonData);
 
     print("Bones: ${skeleton.length}");
-    GeometryBuilder gb = ImportGeometryFromAssimp2JsonMesh(
+    GeometryBuilder gb = importGeometryFromAssimp2JsonMesh(
       (jsonData["meshes"] as List<Object?>)[0] as Map<String, Object?>,
       skeleton,
     );
     print(gb);
 
-    SkeletalAnimation anim = ImportAnimationFromAssimp2Json(
+    SkeletalAnimation anim = importAnimationFromAssimp2Json(
       (jsonData["animations"] as List<Object?>)[0] as Map<String, Object?>,
       skeleton,
     );
@@ -62,10 +62,10 @@ void main(List<String> arguments) {
       print(ba);
     }
 
-    VM.Matrix4 globalOffsetTransform = VM.Matrix4.identity();
+    vm.Matrix4 globalOffsetTransform = vm.Matrix4.identity();
 
     AnimatedSkeleton animatedSkeleton = AnimatedSkeleton(skeleton.length);
-    UpdateAnimatedSkeleton(
+    updateAnimatedSkeleton(
       skeleton,
       globalOffsetTransform,
       anim,

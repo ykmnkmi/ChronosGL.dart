@@ -1,9 +1,9 @@
 import "dart:async";
-import 'dart:html' as HTML;
-import 'dart:math' as Math;
+import 'dart:html' as html;
+import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import 'shader.dart';
 
@@ -29,8 +29,8 @@ Inspiration from clicktorelease.com.
 
 final List<Future<Object>> gLoadables = [];
 
-void PositionInTorus(double time, VM.Vector3 out) {
-  TorusKnotGetPos(time / 2.0, 3, 2, 20.0, 1.0, out);
+void positionInTorus(double time, vm.Vector3 out) {
+  torusKnotGetPos(time / 2.0, 3, 2, 20.0, 1.0, out);
 }
 
 double getTweenFactor(double begin, double end, double current) {
@@ -38,16 +38,16 @@ double getTweenFactor(double begin, double end, double current) {
   return (current - begin) / diff;
 }
 
-double Tween(double now) {
+double tween(double now) {
   double offset = musicBeatsBegin / flySpeedDivider - cameraIntroEnd;
   if (now > musicSlowBegin && now < musicSlowEnd) {
     // music is slow: slow camera down
     double diff = musicSlowEnd - musicSlowBegin;
-    double drag = Math.sin(((now - musicSlowBegin) / diff) * Math.pi / 2) * 3;
+    double drag = math.sin(((now - musicSlowBegin) / diff) * math.pi / 2) * 3;
     return drag + offset;
   } else if (now > musicMuteBegin && now < musicMuteEnd) {
     double diff = musicMuteEnd - musicMuteBegin;
-    double drag = Math.sin(((now - musicMuteBegin) / diff) * Math.pi / 2) * 3;
+    double drag = math.sin(((now - musicMuteBegin) / diff) * math.pi / 2) * 3;
     return drag + offset;
   } else {
     return offset;
@@ -56,7 +56,7 @@ double Tween(double now) {
 
 class TheNodes {
   TheNodes() {
-    PositionInTorus(cameraIntroEnd, cameraIntroEndPoint);
+    positionInTorus(cameraIntroEnd, cameraIntroEndPoint);
   }
 
   late Material material;
@@ -65,16 +65,16 @@ class TheNodes {
   late Node icoSmall;
   late Node ctLogo;
   late Spatial camera;
-  final VM.Vector3 cameraIntroStartPoint = VM.Vector3(60.0, -70.0, 150.0);
-  final VM.Vector3 cameraIntroEndPoint = VM.Vector3.zero();
+  final vm.Vector3 cameraIntroStartPoint = vm.Vector3(60.0, -70.0, 150.0);
+  final vm.Vector3 cameraIntroEndPoint = vm.Vector3.zero();
   bool switched = false;
   int switchCount = 0;
-  final VM.Vector3 _p1 = VM.Vector3.zero();
-  final VM.Vector3 _p2 = VM.Vector3.zero();
+  final vm.Vector3 _p1 = vm.Vector3.zero();
+  final vm.Vector3 _p2 = vm.Vector3.zero();
 
   // now == -1.0 signals music ended
   void advanceTimeline(double now) {
-    final double tween = Tween(now);
+    final double tweenAmount = tween(now);
 
     if (now <= 2.0) {
       // do nothing
@@ -84,23 +84,23 @@ class TheNodes {
       icoBig.enabled = true;
       // icoSmall.enabled = true;
       final double frac = now / 30.0; // 30.0 is close to musicBeatsBegin
-      VM.Vector3.mix(cameraIntroStartPoint, cameraIntroEndPoint, frac, _p1);
+      vm.Vector3.mix(cameraIntroStartPoint, cameraIntroEndPoint, frac, _p1);
       camera.setPosFromVec(_p1);
       camera.lookAt(cameraIntroEndPoint);
     } else {
       knot.enabled = true;
       icoBig.enabled = false;
       if (now > 180.0) {
-        material.SetUniform(uFadeFactor, getTweenFactor(180.0, 192.0, now));
+        material.setUniform(uFadeFactor, getTweenFactor(180.0, 192.0, now));
       }
-      final double pos = now / flySpeedDivider - tween;
-      PositionInTorus(pos, _p1);
-      PositionInTorus(pos + cameraTargetDistance, _p2);
+      final double pos = now / flySpeedDivider - tweenAmount;
+      positionInTorus(pos, _p1);
+      positionInTorus(pos + cameraTargetDistance, _p2);
       camera.setPosFromVec(_p1);
       camera.lookAt(_p2);
     }
 
-    final double amp = Math.sin(now / 6.0 - 1.5);
+    final double amp = math.sin(now / 6.0 - 1.5);
     if (amp > 0.9) {
       if (!switched) {
         if (icoSmall.enabled) {
@@ -125,10 +125,10 @@ class TheNodes {
 
     // ctLogo.enabled = true;
     final Node active = ctLogo.enabled ? ctLogo : icoSmall;
-    final double pos = now / flySpeedDivider + amp + 1.1 - tween;
+    final double pos = now / flySpeedDivider + amp + 1.1 - tweenAmount;
 
-    PositionInTorus(pos, _p1);
-    PositionInTorus(pos + cameraTargetDistance, _p2);
+    positionInTorus(pos, _p1);
+    positionInTorus(pos + cameraTargetDistance, _p2);
     active.rotZ(now / 1000.0);
     active.setPosFromVec(_p1);
 
@@ -140,13 +140,13 @@ class TheNodes {
 }
 
 void main() {
-  IntroduceNewShaderVar(uFadeFactor, const ShaderVarDesc("float", ""));
-  final HTML.DivElement infoElement =
-      HTML.document.getElementById("info") as HTML.DivElement;
-  final HTML.CanvasElement canvas =
-      HTML.document.getElementById("webgl-canvas") as HTML.CanvasElement;
-  final HTML.AudioElement musicElement =
-      HTML.document.getElementById("music") as HTML.AudioElement;
+  introduceNewShaderVar(uFadeFactor, const ShaderVarDesc("float", ""));
+  final html.DivElement infoElement =
+      html.document.getElementById("info") as html.DivElement;
+  final html.CanvasElement canvas =
+      html.document.getElementById("webgl-canvas") as html.CanvasElement;
+  final html.AudioElement musicElement =
+      html.document.getElementById("music") as html.AudioElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final theNodes = TheNodes();
 
@@ -158,7 +158,7 @@ void main() {
   final height = canvas.clientHeight;
   canvas.width = width;
   canvas.height = height;
-  perspective.AdjustAspect(width, height);
+  perspective.adjustAspect(width, height);
   final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
     "main",
     cgl,
@@ -166,31 +166,31 @@ void main() {
     perspective,
   );
 
-  theNodes.material = Material("matLogo")..SetUniform(uFadeFactor, 0.0);
+  theNodes.material = Material("matLogo")..setUniform(uFadeFactor, 0.0);
 
   // =========================================
-  final Scene scene_pnvc = Scene("", MakeVertexColorShader(cgl), [perspective]);
-  phase.add(scene_pnvc);
+  final Scene scenePnvc = Scene("", makeVertexColorShader(cgl), [perspective]);
+  phase.add(scenePnvc);
 
   theNodes.knot = Node(
     "knot",
-    ShapeTorusKnot(scene_pnvc.program, segmentsR: 512, segmentsT: 64),
+    shapeTorusKnot(scenePnvc.program, segmentsR: 512, segmentsT: 64),
     theNodes.material,
   )..enabled = false;
-  scene_pnvc.add(theNodes.knot);
+  scenePnvc.add(theNodes.knot);
 
   // =========================================
-  final RenderProgram pnc_novertexmovement = RenderProgram(
+  final RenderProgram pncNovertexmovement = RenderProgram(
     "flying_logo",
     cgl,
     perlinNoiseVertexShader,
     makePerlinNoiseColorFragmentShader(false),
   );
 
-  final Scene scene_pnc_novertexmovement = Scene("", pnc_novertexmovement, [
+  final Scene scenePncNovertexmovement = Scene("", pncNovertexmovement, [
     perspective,
   ]);
-  phase.add(scene_pnc_novertexmovement);
+  phase.add(scenePncNovertexmovement);
 
   // =========================================
   final RenderProgram pncb = RenderProgram(
@@ -200,15 +200,15 @@ void main() {
     makePerlinNoiseColorFragmentShader(true),
   );
 
-  final Scene scene_pncb = Scene("", pncb, [perspective]);
-  phase.add(scene_pncb);
+  final Scene scenePncb = Scene("", pncb, [perspective]);
+  phase.add(scenePncb);
 
   theNodes.icoBig = Node(
     "large_sphere",
-    ShapeIcosahedron(scene_pncb.program, subdivisions: 3, scale: 500),
+    shapeIcosahedron(scenePncb.program, subdivisions: 3, scale: 500),
     theNodes.material,
   )..enabled = false;
-  scene_pncb.add(theNodes.icoBig);
+  scenePncb.add(theNodes.icoBig);
 
   // =========================================
   final RenderProgram pnc = RenderProgram(
@@ -218,25 +218,25 @@ void main() {
     makePerlinNoiseColorFragmentShader(false),
   );
 
-  final Scene scene_pnc = Scene("", pnc, [perspective]);
-  phase.add(scene_pnc);
+  final Scene scenePnc = Scene("", pnc, [perspective]);
+  phase.add(scenePnc);
   theNodes.icoSmall = Node(
     "small_sphere",
-    ShapeIcosahedron(scene_pnc.program, subdivisions: 4),
+    shapeIcosahedron(scenePnc.program, subdivisions: 4),
     theNodes.material,
   )..enabled = false;
-  scene_pnc.add(theNodes.icoSmall);
+  scenePnc.add(theNodes.icoSmall);
 
-  var future = LoadRaw(modelFile)
+  var future = loadRaw(modelFile)
     ..then((String content) {
-      GeometryBuilder gb = ImportGeometryFromWavefront(content);
-      MeshData md = GeometryBuilderToMeshData("", pnc_novertexmovement, gb);
+      GeometryBuilder gb = importGeometryFromWavefront(content);
+      MeshData md = geometryBuilderToMeshData("", pncNovertexmovement, gb);
       theNodes.ctLogo = Node(md.name, md, theNodes.material)
-        ..rotX(Math.pi / 2.0)
-        ..rotZ(Math.pi)
+        ..rotX(math.pi / 2.0)
+        ..rotZ(math.pi)
         ..transform.scaleByDouble(0.25, 0.25, 0.25, 1.0)
         ..enabled = false;
-      scene_pnc_novertexmovement.add(theNodes.ctLogo);
+      scenePncNovertexmovement.add(theNodes.ctLogo);
       //  ctLogo.invert=true;  // ???????????
     });
   gLoadables.add(future);
@@ -253,10 +253,10 @@ void main() {
       //infoElement.text = "${now}";
     }
 
-    theNodes.material.ForceUniform(uTime, timeMs / 1000.0);
-    phase.Draw();
+    theNodes.material.forceUniform(uTime, timeMs / 1000.0);
+    phase.draw();
 
-    HTML.window.animationFrame.then(animate);
+    html.window.animationFrame.then(animate);
   }
 
   Future.wait(gLoadables).then((list) {

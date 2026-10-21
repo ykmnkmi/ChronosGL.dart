@@ -3,22 +3,22 @@ part of 'lib.dart';
 List<ShaderObject> createPlane2GreyShader() {
   return [
     ShaderObject("Plane2GreyV")
-      ..AddAttributeVars([aPosition, aNormal])
-      ..AddVaryingVars([vColor])
-      ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-      ..SetBodyWithMain([
+      ..addAttributeVars([aPosition, aNormal])
+      ..addVaryingVars([vColor])
+      ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+      ..setBodyWithMain([
         "float d = sin(dot( $aPosition, $aNormal)) / 2.0 + 0.5;",
         "$vColor = vec3(d,d,d);",
-        StdVertexBody,
+        stdVertexBody,
       ]),
     ShaderObject("Plane2GreyF")
-      ..AddVaryingVars([vColor])
-      ..SetBodyWithMain(["$oFragColor = vec4($vColor, 1.0);"]),
+      ..addVaryingVars([vColor])
+      ..setBodyWithMain(["$oFragColor = vec4($vColor, 1.0);"]),
   ];
 }
 
 // by patapom at stackoverflow.com
-const String _VertexShaderPlane2ColorV =
+const String _vertexShaderPlane2ColorV =
     """
 vec3 HSV2RGB( vec3 hsv )
 {
@@ -48,12 +48,12 @@ void main(void) {
 List<ShaderObject> createPlane2ColorShader() {
   return [
     ShaderObject("Plane2ColorV")
-      ..AddAttributeVars([aPosition, aNormal])
-      ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-      ..AddVaryingVars([vColor])
-      ..SetBody([_VertexShaderPlane2ColorV]),
+      ..addAttributeVars([aPosition, aNormal])
+      ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+      ..addVaryingVars([vColor])
+      ..setBody([_vertexShaderPlane2ColorV]),
     ShaderObject("Plane2ColorF")
-      ..AddVaryingVars([vColor])
-      ..SetBodyWithMain(["$oFragColor = vec4( vColor, 1.0 );"]),
+      ..addVaryingVars([vColor])
+      ..setBodyWithMain(["$oFragColor = vec4( vColor, 1.0 );"]),
   ];
 }

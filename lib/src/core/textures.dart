@@ -9,42 +9,42 @@ class TextureProperties {
   bool shadow = false;
   bool flipY = true;
   int anisotropicFilterLevel = kNoAnisotropicFilterLevel;
-  int minFilter = GL_LINEAR;
-  int magFilter = GL_LINEAR;
+  int minFilter = glLinear;
+  int magFilter = glLinear;
 
-  void SetFilterNearest() {
-    minFilter = GL_NEAREST;
-    magFilter = GL_NEAREST;
+  void setFilterNearest() {
+    minFilter = glNearest;
+    magFilter = glNearest;
   }
 
   // Very good but also a bit slow
-  void SetMipmapLinear() {
+  void setMipmapLinear() {
     mipmap = true;
-    minFilter = GL_LINEAR_MIPMAP_LINEAR;
-    magFilter = GL_LINEAR; // is this the best?
+    minFilter = glLinearMipmapLinear;
+    magFilter = glLinear; // is this the best?
   }
 
   // This assumes a texture is already bound
-  void InstallEarly(ChronosGL cgl, int type) {
-    cgl.pixelStorei(GL_UNPACK_FLIP_Y_WEBGL, flipY ? 1 : 0);
+  void installEarly(ChronosGL cgl, int type) {
+    cgl.pixelStorei(glUnpackFlipYWebgl, flipY ? 1 : 0);
   }
 
   // This assumes a texture is already bound
-  void InstallLate(ChronosGL cgl, int type) {
+  void installLate(ChronosGL cgl, int type) {
     if (anisotropicFilterLevel != kNoAnisotropicFilterLevel) {
       cgl.texParameterf(
         type,
-        GL_TEXTURE_MAX_ANISOTROPY_EXT,
+        glTextureMaxAnisotropyExt,
         anisotropicFilterLevel + 0.0,
       );
     }
-    cgl.texParameteri(type, GL_TEXTURE_MAG_FILTER, magFilter);
-    cgl.texParameteri(type, GL_TEXTURE_MIN_FILTER, minFilter);
+    cgl.texParameteri(type, glTextureMagFilter, magFilter);
+    cgl.texParameteri(type, glTextureMinFilter, minFilter);
 
     if (clamp) {
       // this fixes glitches on skybox seams
-      cgl.texParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      cgl.texParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      cgl.texParameteri(type, glTextureWrapS, glClampToEdge);
+      cgl.texParameteri(type, glTextureWrapT, glClampToEdge);
     }
     if (mipmap) {
       cgl.generateMipmap(type);
@@ -61,50 +61,46 @@ class TextureProperties {
       want anyway.
       */
 
-      cgl.texParameteri(
-        type,
-        GL_TEXTURE_COMPARE_MODE,
-        GL_COMPARE_REF_TO_TEXTURE,
-      );
+      cgl.texParameteri(type, glTextureCompareMode, glCompareRefToTexture);
     }
   }
 }
 
-final TextureProperties TexturePropertiesFramebuffer = TextureProperties()
+final TextureProperties texturePropertiesFramebuffer = TextureProperties()
   ..flipY = false
   ..clamp = true
   ..mipmap = false
-  ..SetFilterNearest();
+  ..setFilterNearest();
 
-final TextureProperties TexturePropertiesFramebufferWrapped =
+final TextureProperties texturePropertiesFramebufferWrapped =
     TextureProperties()
       ..flipY = false
       ..clamp = false
       ..mipmap = false
-      ..SetFilterNearest();
+      ..setFilterNearest();
 
-final TextureProperties TexturePropertiesVideo = TextureProperties()
+final TextureProperties texturePropertiesVideo = TextureProperties()
   ..clamp = true;
 
 // http://stackoverflow.com/questions/22419682/glsl-sampler2dshadow-and-shadow2d-clarification\
-final TextureProperties TexturePropertiesShadowMap = TextureProperties()
+final TextureProperties texturePropertiesShadowMap = TextureProperties()
   ..flipY = false
   ..clamp = true
   ..mipmap = false
   ..shadow = true;
-//..SetFilterNearest();
+//..setFilterNearest();
 
-final TextureProperties TexturePropertiesMipmap = TextureProperties()
-  ..SetMipmapLinear();
+final TextureProperties texturePropertiesMipmap = TextureProperties()
+  ..setMipmapLinear();
 
-bool IsCubeChildTextureType(int t) {
+bool isCubeChildTextureType(int t) {
   switch (t) {
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+    case glTextureCubeMapNegativeX:
+    case glTextureCubeMapPositiveX:
+    case glTextureCubeMapNegativeY:
+    case glTextureCubeMapPositiveY:
+    case glTextureCubeMapNegativeZ:
+    case glTextureCubeMapPositiveZ:
       return true;
     default:
       return false;
@@ -122,22 +118,22 @@ class Texture {
   final ChronosGL _cgl;
   final TextureProperties properties;
 
-  void CopyFromFramebuffer2D(int x, int y, int w, int h) {
+  void copyFromFramebuffer2D(int x, int y, int w, int h) {
     _cgl.bindTexture(_textureType, _texture);
-    _cgl.copyTexImage2D(_textureType, 0, GL_RGBA, x, y, w, h);
-    Install();
+    _cgl.copyTexImage2D(_textureType, 0, glRgba, x, y, w, h);
+    install();
   }
 
-  void Install() {
+  void install() {
     _cgl.bindTexture(_textureType, _texture);
-    properties.InstallLate(_cgl, _textureType);
+    properties.installLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == GL_NO_ERROR);
+    assert(err == glNoError);
   }
 
-  int GetTextureType() => _textureType;
+  int getTextureType() => _textureType;
 
-  GlTexture GetTexture() {
+  GlTexture getTexture() {
     return _texture;
   }
 
@@ -156,12 +152,12 @@ class TypedTexture extends Texture {
     this._height,
     this._internalFormat,
     TextureProperties prop,
-  ) : super(cgl, GL_TEXTURE_2D, url, prop) {
+  ) : super(cgl, glTexture2D, url, prop) {
     _cgl.bindTexture(_textureType, _texture);
-    _cgl.texStorage2D(GL_TEXTURE_2D, 1, _internalFormat, _width, _height);
-    properties.InstallLate(_cgl, _textureType);
+    _cgl.texStorage2D(glTexture2D, 1, _internalFormat, _width, _height);
+    properties.installLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == GL_NO_ERROR, "texture error $err");
+    assert(err == glNoError, "texture error $err");
     _cgl.bindTexture(_textureType, null);
   }
 
@@ -186,10 +182,10 @@ class TypedTextureMutable extends Texture {
     int format,
     int datatype,
     TypedData? data,
-  ) : super(cgl, GL_TEXTURE_2D, url, prop) {
+  ) : super(cgl, glTexture2D, url, prop) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texImage2D(
-      GL_TEXTURE_2D,
+      glTexture2D,
       0,
       _internalFormat,
       _width,
@@ -199,9 +195,9 @@ class TypedTextureMutable extends Texture {
       datatype,
       data,
     );
-    properties.InstallLate(_cgl, _textureType);
+    properties.installLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == GL_NO_ERROR, "texture error $err");
+    assert(err == glNoError, "texture error $err");
     _cgl.bindTexture(_textureType, null);
   }
 
@@ -209,10 +205,10 @@ class TypedTextureMutable extends Texture {
   final int _height;
   final int _internalFormat;
 
-  void UpdateContent(TypedData data, int format, int datatype) {
+  void updateContent(TypedData data, int format, int datatype) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texImage2D(
-      GL_TEXTURE_2D,
+      glTexture2D,
       0,
       _internalFormat,
       _width,
@@ -225,7 +221,7 @@ class TypedTextureMutable extends Texture {
     _cgl.bindTexture(_textureType, null);
   }
 
-  void UpdateContentPartial(
+  void updateContentPartial(
     TypedData data,
     int formatType,
     int scalarType,
@@ -236,7 +232,7 @@ class TypedTextureMutable extends Texture {
   ) {
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texSubImage2D(
-      GL_TEXTURE_2D,
+      glTexture2D,
       0,
       x,
       y,
@@ -257,7 +253,7 @@ class TypedTextureMutable extends Texture {
 
 // This sort of depends on dart:html but we use a dynamic type to disguise
 // it.
-// TODO: We want to call  Install() in the constructor but this does not
+// TODO: We want to call  install() in the constructor but this does not
 // seem to work for video elements.
 class ImageTexture extends Texture {
   ImageTexture(
@@ -265,67 +261,60 @@ class ImageTexture extends Texture {
     String url,
     this._element, [
     TextureProperties? tp,
-    int textureType = GL_TEXTURE_2D,
+    int textureType = glTexture2D,
   ]) : super(cgl, textureType, url, tp ?? TextureProperties()) {
     _cgl.bindTexture(_textureType, _texture);
 
-    properties.InstallEarly(_cgl, _textureType);
-    SetImageData(_element);
-    properties.InstallLate(_cgl, _textureType);
+    properties.installEarly(_cgl, _textureType);
+    setImageData(_element);
+    properties.installLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == GL_NO_ERROR);
+    assert(err == glNoError);
     _cgl.bindTexture(_textureType, null);
   }
 
   final Object _element; // CanvasElement, ImageElement, VideoElement
 
-  void SetImageData(Object data) {
+  void setImageData(Object data) {
     _cgl.bindTexture(_textureType, _texture);
-    _cgl.texImage2Dweb(
-      _textureType,
-      0,
-      GL_RGBA,
-      GL_RGBA,
-      GL_UNSIGNED_BYTE,
-      data,
-    );
+    _cgl.texImage2Dweb(_textureType, 0, glRgba, glRgba, glUnsignedByte, data);
   }
 
-  void Update() {
-    SetImageData(_element);
+  void update() {
+    setImageData(_element);
     _cgl.bindTexture(_textureType, null);
   }
 }
 
 const List<int> _kCubeModifier = [
-  GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-  GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-  GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-  GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-  GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-  GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+  glTextureCubeMapNegativeX,
+  glTextureCubeMapPositiveX,
+  glTextureCubeMapNegativeY,
+  glTextureCubeMapPositiveY,
+  glTextureCubeMapNegativeZ,
+  glTextureCubeMapPositiveZ,
 ];
 
 class CubeTexture extends Texture {
   CubeTexture(ChronosGL cgl, String url, List<Object> images)
-    : super(cgl, GL_TEXTURE_CUBE_MAP, url, TextureProperties()..clamp = true) {
+    : super(cgl, glTextureCubeMap, url, TextureProperties()..clamp = true) {
     assert(images.length == _kCubeModifier.length);
-    properties.InstallEarly(_cgl, _textureType);
+    properties.installEarly(_cgl, _textureType);
 
     _cgl.bindTexture(_textureType, _texture);
     for (int i = 0; i < _kCubeModifier.length; ++i) {
       _cgl.texImage2Dweb(
         _kCubeModifier[i],
         0,
-        GL_RGBA,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
+        glRgba,
+        glRgba,
+        glUnsignedByte,
         images[i],
       );
     }
-    properties.InstallLate(_cgl, _textureType);
+    properties.installLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == GL_NO_ERROR);
+    assert(err == glNoError);
     _cgl.bindTexture(_textureType, null);
 
     // huh?

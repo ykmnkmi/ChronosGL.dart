@@ -5,13 +5,13 @@ class Orthographic extends UniformGroup {
   // d = "down", up is computed dynamically based on height & width
   Orthographic(this._camera, this._l, this._r, this._d, this._f, this._b)
     : super("othrogrpahic") {
-    Update();
+    update();
   }
 
   final Spatial _camera;
-  final VM.Matrix4 _proj = VM.Matrix4.zero();
-  final VM.Matrix4 _viewMatrix = VM.Matrix4.zero();
-  final VM.Matrix4 _projViewMatrix = VM.Matrix4.identity();
+  final vm.Matrix4 _proj = vm.Matrix4.zero();
+  final vm.Matrix4 _viewMatrix = vm.Matrix4.zero();
+  final vm.Matrix4 _projViewMatrix = vm.Matrix4.identity();
   double _aspect = 1.0;
   final double _l;
   final double _r;
@@ -20,25 +20,25 @@ class Orthographic extends UniformGroup {
   final double _b;
 
   @override
-  Map<String, Object> GetUniforms() {
+  Map<String, Object> getUniforms() {
     _camera.getViewMatrix(_viewMatrix);
     _projViewMatrix.setFrom(_proj);
     _projViewMatrix.multiply(_viewMatrix);
-    ForceUniform(uPerspectiveViewMatrix, _projViewMatrix);
+    forceUniform(uPerspectiveViewMatrix, _projViewMatrix);
     return _uniforms;
   }
 
-  void Update() {
+  void update() {
     double w = _r - _l;
     double h = w / _aspect;
-    VM.setOrthographicMatrix(_proj, _l, _r, _d, _d + h, _f, _b);
+    vm.setOrthographicMatrix(_proj, _l, _r, _d, _d + h, _f, _b);
   }
 
-  void AdjustAspect(int w, int h) {
+  void adjustAspect(int w, int h) {
     double a = w / h;
     if (_aspect == a) return;
     _aspect = a;
-    Update();
+    update();
   }
 }
 
@@ -52,7 +52,7 @@ class Perspective extends UniformGroup {
     this._far, [
     String name = "perspective",
   ]) : super(name) {
-    Update();
+    update();
   }
 
   Spatial _camera;
@@ -60,39 +60,39 @@ class Perspective extends UniformGroup {
   double _aspect = 1.0;
   final double _near;
   final double _far;
-  final VM.Matrix4 _perspectiveViewMatrix = VM.Matrix4.identity();
-  final VM.Matrix4 _viewMatrix = VM.Matrix4.identity();
-  final VM.Matrix4 _mat = VM.Matrix4.zero();
+  final vm.Matrix4 _perspectiveViewMatrix = vm.Matrix4.identity();
+  final vm.Matrix4 _viewMatrix = vm.Matrix4.identity();
+  final vm.Matrix4 _mat = vm.Matrix4.zero();
 
-  void AdjustAspect(int w, int h) {
+  void adjustAspect(int w, int h) {
     double a = w / h;
 
     if (_aspect == a) return;
     _aspect = a;
-    Update();
+    update();
   }
 
-  void Update() {
-    VM.setPerspectiveMatrix(_mat, _fov * Math.pi / 180.0, _aspect, _near, _far);
+  void update() {
+    vm.setPerspectiveMatrix(_mat, _fov * math.pi / 180.0, _aspect, _near, _far);
   }
 
-  void UpdateFov(double fov) {
+  void updateFov(double fov) {
     if (_fov == fov) return;
     _fov = fov;
-    Update();
+    update();
   }
 
-  void UpdateCamera(Spatial cam) {
+  void updateCamera(Spatial cam) {
     _camera = cam;
   }
 
   @override
-  Map<String, Object> GetUniforms() {
-    ForceUniform(uEyePosition, _camera.getEyePosition());
+  Map<String, Object> getUniforms() {
+    forceUniform(uEyePosition, _camera.getEyePosition());
     _camera.getViewMatrix(_viewMatrix);
     _perspectiveViewMatrix.setFrom(_mat);
     _perspectiveViewMatrix.multiply(_viewMatrix);
-    ForceUniform(uPerspectiveViewMatrix, _perspectiveViewMatrix);
+    forceUniform(uPerspectiveViewMatrix, _perspectiveViewMatrix);
     return _uniforms;
   }
 }

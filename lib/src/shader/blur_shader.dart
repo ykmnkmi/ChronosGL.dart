@@ -4,7 +4,7 @@ part of 'lib.dart';
 
 double _gaussianPdf(double x, double sigma) {
   // 0.39894... =  1 / sqrt(2 * pi)
-  return 0.39894 * Math.exp(-0.5 * x * x / (sigma * sigma)) / sigma;
+  return 0.39894 * math.exp(-0.5 * x * x / (sigma * sigma)) / sigma;
 }
 
 String makeGaussianPdfKernelString(int radius, double sigma) {
@@ -42,23 +42,23 @@ void main() {
 }
 """;
 
-ShaderObject CreateBloomTextureFragmentShader(int radius, double sigma) {
+ShaderObject createBloomTextureFragmentShader(int radius, double sigma) {
   String constants = makeGaussianPdfKernelString(radius, sigma);
   return ShaderObject("BloomPassF")
-    ..AddVaryingVars([vTexUV])
-    ..AddUniformVars([uDirection, uTexture])
-    ..SetBody([constants, _kernelFragment]);
+    ..addVaryingVars([vTexUV])
+    ..addUniformVars([uDirection, uTexture])
+    ..setBody([constants, _kernelFragment]);
 }
 
 final ShaderObject uvPassthruVertexShader = ShaderObject("uv-passthru")
-  ..AddAttributeVars([aPosition, aTexUV])
-  ..AddVaryingVars([vTexUV])
-  ..SetBody([NullVertexShaderWithTextureForwardString]);
+  ..addAttributeVars([aPosition, aTexUV])
+  ..addVaryingVars([vTexUV])
+  ..setBody([nullVertexShaderWithTextureForwardString]);
 
 final ShaderObject applyBloomEffectFragmentShader = ShaderObject("BloomPassF")
-  ..AddVaryingVars([vTexUV])
-  ..AddUniformVars([uTexture, uTexture2, uScale, uColor])
-  ..SetBody([
+  ..addVaryingVars([vTexUV])
+  ..addUniformVars([uTexture, uTexture2, uScale, uColor])
+  ..setBody([
     """
 void main() {
 	$oFragColor = texture($uTexture, $vTexUV) +
@@ -71,9 +71,9 @@ void main() {
 
 final ShaderObject scaledLuminosityHighPassFragmentShader =
     ShaderObject("ScaledLuminosityHighPassF")
-      ..AddVaryingVars([vTexUV])
-      ..AddUniformVars([uRange, uColorAlpha, uTexture])
-      ..SetBody([
+      ..addVaryingVars([vTexUV])
+      ..addUniformVars([uRange, uColorAlpha, uTexture])
+      ..setBody([
         """
 // http://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
 float RGB2Luma(vec3 rgb) { return dot(rgb, vec3(0.212, 0.715, 0.072)); }

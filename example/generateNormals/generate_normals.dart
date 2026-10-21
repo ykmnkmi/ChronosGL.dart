@@ -1,24 +1,24 @@
 import 'dart:async';
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
 
 final ShaderObject normal2ColorVertexShader = ShaderObject("Normal2Color")
-  ..AddAttributeVars([aPosition, aNormal])
-  ..AddVaryingVars([vColor])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aNormal])
+  ..addVaryingVars([vColor])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..setBody([
     """
 void main() {
-    $StdVertexBody
+    $stdVertexBody
     $vColor = normalize($aNormal / 2.0 + vec3(0.5) );
 }
       """,
   ]);
 
 final ShaderObject normal2ColorFragmentShader = ShaderObject("Normal2ColorF")
-  ..AddVaryingVars([vColor])
-  ..SetBody([
+  ..addVaryingVars([vColor])
+  ..setBody([
     """
 void main() {
     $oFragColor = vec4( $vColor, 1.0 );
@@ -31,8 +31,8 @@ const String modelFile = "../ct_logo.obj";
 final List<Future<Object>> gLoadables = [];
 
 void main() {
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(25.0, -45.0, 0.3, canvas);
   final Perspective perspective = Perspective(orbit, 0.1, 2520.0);
@@ -56,17 +56,17 @@ void main() {
   phase.add(scene);
   final Material mat = Material("mat");
 
-  var future = LoadRaw(modelFile)
+  var future = loadRaw(modelFile)
     ..then((String content) {
       List<GeometryBuilder> geos = [
-        ImportGeometryFromWavefront(content),
-        CylinderGeometry(1.0, 1.0, 2.0, 16, false),
-        CubeGeometry(computeNormals: false),
+        importGeometryFromWavefront(content),
+        cylinderGeometry(1.0, 1.0, 2.0, 16, false),
+        cubeGeometry(computeNormals: false),
       ];
 
       for (var i = 0; i < geos.length; i++) {
-        geos[i].GenerateNormalsAssumingTriangleMode();
-        MeshData md = GeometryBuilderToMeshData("", scene.program, geos[i]);
+        geos[i].generateNormalsAssumingTriangleMode();
+        MeshData md = geometryBuilderToMeshData("", scene.program, geos[i]);
         Node mesh = Node(md.name, md, mat)..setPos(-5.0 + i * 7, 4.0, 0.0);
         if (i == 0 /* ctLogo*/ ) {
           mesh
@@ -84,8 +84,8 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    phase.Draw();
-    HTML.window.animationFrame.then(animate);
+    phase.draw();
+    html.window.animationFrame.then(animate);
   }
 
   Future.wait(gLoadables).then((list) {

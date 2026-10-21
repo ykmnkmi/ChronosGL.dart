@@ -5,10 +5,10 @@ library;
 // for easier testing.
 import 'dart:collection';
 import 'dart:typed_data';
-import 'dart:math' as Math;
-import 'dart:web_gl' as WEBGL; // only chronosgl.dart uses WEBGL
+import 'dart:math' as math;
+import 'dart:web_gl' as webgl; // only chronosgl.dart uses webgl
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 /// # Layer: Core (dart:web_gl)
 /// The **core layer** contains all of the fundamental abstractions like:
@@ -44,30 +44,30 @@ part "projection.dart";
 part "geometry_builder.dart";
 part "illumination.dart";
 
-typedef GlBuffer = WEBGL.Buffer;
-typedef GlFramebuffer = WEBGL.Framebuffer;
-typedef GlVertexArrayObject = WEBGL.VertexArrayObject;
-typedef GlTexture = WEBGL.Texture;
-typedef GlTransformFeedback = WEBGL.TransformFeedback;
-typedef GlUniformLocation = WEBGL.UniformLocation;
-typedef GlProgram = WEBGL.Program;
-typedef GlSampler = WEBGL.Sampler;
-typedef GlShader = WEBGL.Shader;
+typedef GlBuffer = webgl.Buffer;
+typedef GlFramebuffer = webgl.Framebuffer;
+typedef GlVertexArrayObject = webgl.VertexArrayObject;
+typedef GlTexture = webgl.Texture;
+typedef GlTransformFeedback = webgl.TransformFeedback;
+typedef GlUniformLocation = webgl.UniformLocation;
+typedef GlProgram = webgl.Program;
+typedef GlSampler = webgl.Sampler;
+typedef GlShader = webgl.Shader;
 
 int gLogLevel = 0;
 
-void LogInfo(String s) {
+void logInfo(String s) {
   if (gLogLevel > 0) print("I: $s");
 }
 
-void LogDebug(String s) {
+void logDebug(String s) {
   //print("D:" + s);
 }
 
-void LogError(String s) {
+void logError(String s) {
   print("E:$s");
 }
 
-void LogWarn(String s) {
+void logWarn(String s) {
   print("W:$s");
 }

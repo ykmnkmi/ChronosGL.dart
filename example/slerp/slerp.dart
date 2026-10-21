@@ -1,13 +1,13 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:async';
 
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:math' as Math;
+import 'dart:math' as math;
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
+Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
     "stars",
     RenderProgram(
@@ -18,11 +18,11 @@ Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
     ),
     [perspective],
   );
-  scene.add(Utils.MakeParticles(scene.program, num));
+  scene.add(Utils.makeParticles(scene.program, num));
   return scene;
 }
 
-VM.Quaternion slerp(VM.Quaternion a, VM.Quaternion b, double t) {
+vm.Quaternion slerp(vm.Quaternion a, vm.Quaternion b, double t) {
   double ax = a[0], ay = a[1], az = a[2], aw = a[3];
   double bx = b[0], by = b[1], bz = b[2], bw = b[3];
   double omega, cosom, sinom, scale0, scale1;
@@ -40,17 +40,17 @@ VM.Quaternion slerp(VM.Quaternion a, VM.Quaternion b, double t) {
   // calculate coefficients
   if ((1.0 - cosom) > 0.000001) {
     // standard case (slerp)
-    omega = Math.acos(cosom);
-    sinom = Math.sin(omega);
-    scale0 = Math.sin((1.0 - t) * omega) / sinom;
-    scale1 = Math.sin(t * omega) / sinom;
+    omega = math.acos(cosom);
+    sinom = math.sin(omega);
+    scale0 = math.sin((1.0 - t) * omega) / sinom;
+    scale1 = math.sin(t * omega) / sinom;
   } else {
     // "from" and "to" quaternions are very close
     //  ... so we can do a linear interpolation
     scale0 = 1.0 - t;
     scale1 = t;
   }
-  return VM.Quaternion(
+  return vm.Quaternion(
     scale0 * ax + scale1 * bx,
     scale0 * ay + scale1 * by,
     scale0 * az + scale1 * bz,
@@ -63,8 +63,8 @@ const String modelFile = "../ct_logo.obj";
 final List<Future<Object>> gLoadables = [];
 
 void main() {
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, -45.0, 0.3, canvas);
   final Perspective perspective = Perspective(orbit, 1.0, 1000.0);
@@ -82,21 +82,21 @@ void main() {
   );
   phase.add(scene);
 
-  phase.add(MakeStarScene(cgl, perspective, 2000));
+  phase.add(makeStarScene(cgl, perspective, 2000));
 
   final Material mat = Material("mat");
-  final Math.Random rng = Math.Random();
-  final VM.Quaternion start = VM.Quaternion.identity();
-  final VM.Quaternion end = VM.Quaternion.identity();
-  final VM.Vector3 axis = VM.Vector3(0.0, 0.0, 1.0);
-  final Node node = Node.Container("wrapper");
+  final math.Random rng = math.Random();
+  final vm.Quaternion start = vm.Quaternion.identity();
+  final vm.Quaternion end = vm.Quaternion.identity();
+  final vm.Vector3 axis = vm.Vector3(0.0, 0.0, 1.0);
+  final Node node = Node.container("wrapper");
   scene.add(node);
-  node.lookAt(VM.Vector3(100.0, 0.0, -100.0));
+  node.lookAt(vm.Vector3(100.0, 0.0, -100.0));
 
-  var future = LoadRaw(modelFile)
+  var future = loadRaw(modelFile)
     ..then((String content) {
-      final GeometryBuilder gb = ImportGeometryFromWavefront(content);
-      final MeshData ctLogo = GeometryBuilderToMeshData("", scene.program, gb);
+      final GeometryBuilder gb = importGeometryFromWavefront(content);
+      final MeshData ctLogo = geometryBuilderToMeshData("", scene.program, gb);
       final Node mesh = Node(ctLogo.name, ctLogo, mat)
         ..rotX(3.14 / 2)
         ..rotZ(3.14);
@@ -113,8 +113,8 @@ void main() {
   double time = 0.0;
   void animateNode(double elapsedMs) {
     if (time < 1.0) {
-      VM.Quaternion work = slerp(start, end, time += 0.2 * elapsedMs / 1000);
-      VM.Matrix3 rm = work.asRotationMatrix();
+      vm.Quaternion work = slerp(start, end, time += 0.2 * elapsedMs / 1000);
+      vm.Matrix3 rm = work.asRotationMatrix();
       node.transform.setRotation(rm);
       return;
     } else {
@@ -124,7 +124,7 @@ void main() {
       if (rng.nextBool()) {
         axis.setValues(rng.nextDouble(), rng.nextDouble(), rng.nextDouble());
         axis.normalize();
-        angle = 2 * Math.pi * rng.nextDouble();
+        angle = 2 * math.pi * rng.nextDouble();
       } else {
         // TODO(rhulha): the original value was all zero which caused the animation to stop.
         axis.setValues(1.0, 0.0, 0.0);
@@ -144,8 +144,8 @@ void main() {
     orbit.animate(elapsed);
     animateNode(elapsed);
 
-    phase.Draw();
-    HTML.window.animationFrame.then(animate);
+    phase.draw();
+    html.window.animationFrame.then(animate);
   }
 
   Future.wait(gLoadables).then((list) {

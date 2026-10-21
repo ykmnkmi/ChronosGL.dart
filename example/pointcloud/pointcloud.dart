@@ -1,17 +1,17 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const String aCurrentPosition = "aCurrentPosition";
 
 final ShaderObject fireworksVertexShader = ShaderObject("FireWorksV")
-  ..AddAttributeVars([aPosition, aCurrentPosition, aNormal])
-  ..AddVaryingVars([vColor])
-  ..AddTransformVars([tPosition])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime, uPointSize])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aCurrentPosition, aNormal])
+  ..addVaryingVars([vColor])
+  ..addTransformVars([tPosition])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime, uPointSize])
+  ..setBody([
     """
 float rand(vec2 xy){
      return fract(sin(dot(xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -71,8 +71,8 @@ void main() {
   ]);
 
 final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
-  ..AddVaryingVars([vColor])
-  ..SetBody([
+  ..addVaryingVars([vColor])
+  ..setBody([
     """
 void main() {  
     $oFragColor.rgb = $vColor;
@@ -81,19 +81,19 @@ void main() {
   ]);
 
 void main() {
-  IntroduceNewShaderVar(aCurrentPosition, const ShaderVarDesc(VarTypeVec3, ""));
+  introduceNewShaderVar(aCurrentPosition, const ShaderVarDesc(varTypeVec3, ""));
 
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
 
-  final OrbitCamera orbit = OrbitCamera(7.0, 0.0, 0.0, HTML.document.body!);
+  final OrbitCamera orbit = OrbitCamera(7.0, 0.0, 0.0, html.document.body!);
 
   final PerspectiveResizeAware perspective = PerspectiveResizeAware(
     cgl,
@@ -109,14 +109,14 @@ void main() {
     fireworksVertexShader,
     fireworksFragmentShader,
   );
-  final int bindingIndex = prog.GetTransformBindingIndex(tPosition);
+  final int bindingIndex = prog.getTransformBindingIndex(tPosition);
 
   final Material material = Material("torus-mat")
-    ..SetUniform(uPointSize, 20.0)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
+    ..setUniform(uPointSize, 20.0)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
   final detail = 2;
-  final MeshData torus = ShapeTorusKnot(
+  final MeshData torus = shapeTorusKnot(
     prog,
     radius: 1.0,
     tubeRadius: 0.2,
@@ -124,18 +124,18 @@ void main() {
     segmentsR: 256 * detail,
     segmentsT: 16 * detail,
   );
-  final MeshData points = ExtractPointCloud(prog, torus, 200000);
-  points.AddAttribute(aCurrentPosition, points.GetAttribute(aPosition), 3);
+  final MeshData points = extractPointCloud(prog, torus, 200000);
+  points.addAttribute(aCurrentPosition, points.getAttribute(aPosition), 3);
 
-  MeshData out0 = prog.MakeMeshData("out", GL_POINTS)
-    ..AddVertices(points.GetAttribute(aPosition) as Float32List);
-  MeshData out1 = prog.MakeMeshData("out", GL_POINTS)
-    ..AddVertices(points.GetAttribute(aPosition) as Float32List);
+  MeshData out0 = prog.makeMeshData("out", glPoints)
+    ..addVertices(points.getAttribute(aPosition) as Float32List);
+  MeshData out1 = prog.makeMeshData("out", glPoints)
+    ..addVertices(points.getAttribute(aPosition) as Float32List);
 
   cgl.bindBufferBase(
-    GL_TRANSFORM_FEEDBACK_BUFFER,
+    glTransformFeedbackBuffer,
     bindingIndex,
-    out0.GetBuffer(aPosition),
+    out0.getBuffer(aPosition),
   );
 
   double lastTimeMs = 0.0;
@@ -147,20 +147,20 @@ void main() {
     // allow the camera to also reflect mouse movement.
     orbit.animate(elapsed);
 
-    material.ForceUniform(uTime, timeMs / 1000.0);
+    material.forceUniform(uTime, timeMs / 1000.0);
     cgl.bindBufferBase(
-      GL_TRANSFORM_FEEDBACK_BUFFER,
+      glTransformFeedbackBuffer,
       bindingIndex,
-      out0.GetBuffer(aPosition),
+      out0.getBuffer(aPosition),
     );
-    points.ChangeAttributeBuffer(aCurrentPosition, out1.GetBuffer(aPosition));
-    prog.Draw(points, [perspective, material]);
+    points.changeAttributeBuffer(aCurrentPosition, out1.getBuffer(aPosition));
+    prog.draw(points, [perspective, material]);
     var t = out0;
     out0 = out1;
     out1 = t;
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(timeMs + 0.0);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(timeMs + 0.0);
   }
 
   animate(0.0);

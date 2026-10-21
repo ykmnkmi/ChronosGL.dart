@@ -1,17 +1,17 @@
 part of 'lib.dart';
 
 final ShaderObject ssaoVertexShader = ShaderObject("SSAOV")
-  ..AddAttributeVars([aPosition, aTexUV])
-  ..AddVaryingVars([vTexUV])
-  ..SetBody([NullVertexShaderWithTextureForwardString]);
+  ..addAttributeVars([aPosition, aTexUV])
+  ..addVaryingVars([vTexUV])
+  ..setBody([nullVertexShaderWithTextureForwardString]);
 
 final ShaderObject ssaoFragmentShader = ShaderObject("SSAOF")
-  ..AddVaryingVars([vTexUV])
+  ..addVaryingVars([vTexUV])
   //..AddUniformVar(uFogEnabled)
   //..AddUniformVar(uFogNear)
   //..AddUniformVar(uFogFar)
-  ..AddUniformVars([uCanvasSize, uCameraNear, uCameraFar, uTexture, uDepthMap])
-  ..SetBody([
+  ..addUniformVars([uCanvasSize, uCameraNear, uCameraFar, uTexture, uDepthMap])
+  ..setBody([
     """
 
     //uniform bool fogEnabled;

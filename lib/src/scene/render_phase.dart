@@ -39,18 +39,18 @@ class Scene extends NamedEntity {
 void drawRecursively(
   RenderProgram prog,
   Node node,
-  VM.Matrix4 parent,
+  vm.Matrix4 parent,
   List<DrawStats>? stats,
   List<UniformGroup> uniforms,
 ) {
   if (!node.enabled) return;
   // m is read-only!
-  final VM.Matrix4 m = node.UpdateModelMatrix(parent);
-  if (node.SomethingToDraw()) {
-    LogDebug("drawing: $node");
-    node.UpdateTransforms(uniforms.last);
+  final vm.Matrix4 m = node.updateModelMatrix(parent);
+  if (node.somethingToDraw()) {
+    logDebug("drawing: $node");
+    node.updateTransforms(uniforms.last);
     uniforms.add(node.material);
-    prog.Draw(node.meshData, uniforms, stats);
+    prog.draw(node.meshData, uniforms, stats);
     uniforms.removeLast();
   }
   for (Node child in node.children) {
@@ -61,11 +61,11 @@ void drawRecursively(
 /// represents a sequence of Scenes.
 class RenderPhase extends NamedEntity {
   RenderPhase(super.name, ChronosGL cgl, [Framebuffer? framebuffer])
-    : _framebuffer = framebuffer ?? Framebuffer.Screen(cgl);
+    : _framebuffer = framebuffer ?? Framebuffer.screen(cgl);
 
   late final Framebuffer _framebuffer;
   final List<Scene> _scenes = <Scene>[];
-  int _clear_mode = GL_CLEAR_ALL;
+  int _clearMode = glClearAll;
 
   int viewPortX = 0;
   int viewPortY = 0;
@@ -76,25 +76,25 @@ class RenderPhase extends NamedEntity {
 
   set clearColorBuffer(bool clear) {
     if (clear) {
-      _clear_mode |= GL_COLOR_BUFFER_BIT;
+      _clearMode |= glColorBufferBit;
     } else {
-      _clear_mode &= ~GL_COLOR_BUFFER_BIT;
+      _clearMode &= ~glColorBufferBit;
     }
   }
 
   set clearDepthBuffer(bool clear) {
     if (clear) {
-      _clear_mode |= GL_DEPTH_BUFFER_BIT;
+      _clearMode |= glDepthBufferBit;
     } else {
-      _clear_mode &= ~GL_DEPTH_BUFFER_BIT;
+      _clearMode &= ~glDepthBufferBit;
     }
   }
 
   set clearStencilBuffer(bool clear) {
     if (clear) {
-      _clear_mode |= GL_STENCIL_BUFFER_BIT;
+      _clearMode |= glStencilBufferBit;
     } else {
-      _clear_mode &= ~GL_STENCIL_BUFFER_BIT;
+      _clearMode &= ~glStencilBufferBit;
     }
   }
 
@@ -103,9 +103,9 @@ class RenderPhase extends NamedEntity {
   }
 
   // Draw all scenes in order of registration
-  void Draw([List<DrawStats>? stats]) {
-    _framebuffer.Activate(
-      _clear_mode,
+  void draw([List<DrawStats>? stats]) {
+    _framebuffer.activate(
+      _clearMode,
       viewPortX,
       viewPortY,
       viewPortW,
@@ -119,7 +119,7 @@ class RenderPhase extends NamedEntity {
       List<UniformGroup> uniforms = scene.uniforms;
       final UniformGroup transforms = UniformGroup("transforms");
       uniforms.add(transforms);
-      final VM.Matrix4 modelMatrix = VM.Matrix4.identity();
+      final vm.Matrix4 modelMatrix = vm.Matrix4.identity();
       for (Node node in scene.nodes) {
         drawRecursively(scene.program, node, modelMatrix, stats, uniforms);
       }

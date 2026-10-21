@@ -1,23 +1,23 @@
-import 'dart:html' as HTML;
-import 'dart:math' as Math;
+import 'dart:html' as html;
+import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const double kShadowBias1 = 0.001;
 const double kShadowBias2 = 0.001;
 
 final ShaderObject lightVertexShaderBlinnPhongWithShadow =
     ShaderObject("LightBlinnPhongShadowV")
-      ..AddAttributeVars([aPosition, aNormal])
-      ..AddVaryingVars([vPosition, vNormal, vPositionFromLight])
-      ..AddUniformVars([
+      ..addAttributeVars([aPosition, aNormal])
+      ..addVaryingVars([vPosition, vNormal, vPositionFromLight])
+      ..addUniformVars([
         uPerspectiveViewMatrix,
         uLightPerspectiveViewMatrix,
         uModelMatrix,
         uNormalMatrix,
       ])
-      ..SetBody([
+      ..setBody([
         """
 void main() {
     vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
@@ -31,14 +31,14 @@ void main() {
 
 final ShaderObject lightFragmentShaderBlinnPhongWithShadow =
     ShaderObject("LightBlinnPhongShadowF")
-      ..AddVaryingVars([vPosition, vNormal, vPositionFromLight])
-      ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
-      ..AddUniformVars([
+      ..addVaryingVars([vPosition, vNormal, vPositionFromLight])
+      ..addUniformVars([uLightDescs, uLightTypes, uShininess])
+      ..addUniformVars([
         uShadowMap, uEyePosition,
         //uShadowBias,
         uColor,
       ])
-      ..SetBody(
+      ..setBody(
         [
           """
 void main() {
@@ -62,14 +62,14 @@ void main() {
 }
       """,
         ],
-        prolog: ["", StdLibShader, ShadowMapShaderLib],
+        prolog: ["", stdLibShader, shadowMapShaderLib],
       );
 
-final VM.Vector3 posLight = VM.Vector3(11.0, 20.0, 0.0);
-final VM.Vector3 dirLight = VM.Vector3(0.0, -30.0, 0.0);
+final vm.Vector3 posLight = vm.Vector3(11.0, 20.0, 0.0);
+final vm.Vector3 dirLight = vm.Vector3(0.0, -30.0, 0.0);
 
 final double range = 40.0;
-final double angle = Math.pi / 6.0;
+final double angle = math.pi / 6.0;
 final double glossiness = 10.0;
 
 // These must be in-sync with the .html file
@@ -78,25 +78,25 @@ final String idSpot = "idSpot";
 final String idDirectional = "idDirectional";
 
 final Map<String, Light> lightSources = {
-  idDirectional: DirectionalLight("dir", dirLight, ColorBlue, ColorBlack, 40.0),
+  idDirectional: DirectionalLight("dir", dirLight, colorBlue, colorBlack, 40.0),
   idSpot: SpotLight(
     "spot",
     posLight,
     dirLight,
-    ColorBlue,
-    ColorBlack,
+    colorBlue,
+    colorBlack,
     range,
     angle,
     0.5,
     0.5,
     range * 1.1,
   ),
-  idPoint: PointLight("point", posLight, ColorLiteBlue, ColorBlue, range),
+  idPoint: PointLight("point", posLight, colorLiteBlue, colorBlue, range),
 };
 
 late Light gActiveLight;
 
-void EventRadioChanged(String name) {
+void eventRadioChanged(String name) {
   print("$name toggle ");
   gActiveLight = lightSources[name]!;
   lightSources[name]!.enabled = true;
@@ -105,7 +105,7 @@ void EventRadioChanged(String name) {
   }
 }
 
-void EventPositionChanged(String name, double value) {
+void eventPositionChanged(String name, double value) {
   print("EventPositionChanged $name $value");
   switch (name) {
     case "posx":
@@ -123,7 +123,7 @@ void EventPositionChanged(String name, double value) {
   }
 }
 
-void EventDirectionChanged(String name, double value) {
+void eventDirectionChanged(String name, double value) {
   print("EventDirectionChanged $name $value");
   switch (name) {
     case "dirx":
@@ -141,43 +141,43 @@ void EventDirectionChanged(String name, double value) {
   }
 }
 
-double GetInputValue(HTML.InputElement e) {
+double getInputValue(html.InputElement e) {
   return double.parse(e.value!);
 }
 
-void SwallowEvent(HTML.Event e) {
+void swallowEvent(html.Event e) {
   e.stopPropagation();
 }
 
 final Material matGray = Material("matGray")
-  ..SetUniform(uColor, ColorGray4)
-  ..SetUniform(uShininess, glossiness);
+  ..setUniform(uColor, colorGray4)
+  ..setUniform(uShininess, glossiness);
 
 final Material matObjects = Material("objects")
-  ..SetUniform(uColor, ColorGray2)
-  ..SetUniform(uShininess, glossiness);
+  ..setUniform(uColor, colorGray2)
+  ..setUniform(uShininess, glossiness);
 
 final Material matNormals = Material("normals")
-  ..SetUniform(uColor, ColorRed)
-  ..SetUniform(uShininess, glossiness);
+  ..setUniform(uColor, colorRed)
+  ..setUniform(uShininess, glossiness);
 
 final Material lightSourceMat = Material("light")
-  ..SetUniform(uColor, ColorYellow);
+  ..setUniform(uColor, colorYellow);
 
-void AddShapesToScene(Scene scene) {
+void addShapesToScene(Scene scene) {
   scene.add(
-    Node("sphere", ShapeIcosahedron(scene.program, subdivisions: 3), matObjects)
+    Node("sphere", shapeIcosahedron(scene.program, subdivisions: 3), matObjects)
       ..setPos(0.0, 0.0, 0.0),
   );
 
   scene.add(
-    Node("cube", ShapeCube(scene.program), matObjects)..setPos(-5.0, 0.0, -5.0),
+    Node("cube", shapeCube(scene.program), matObjects)..setPos(-5.0, 0.0, -5.0),
   );
 
   scene.add(
     Node(
       "cylinder",
-      ShapeCylinder(scene.program, 3.0, 6.0, 2.0, 32),
+      shapeCylinder(scene.program, 3.0, 6.0, 2.0, 32),
       matObjects,
     )..setPos(5.0, 0.0, -5.0),
   );
@@ -185,13 +185,13 @@ void AddShapesToScene(Scene scene) {
   scene.add(
     Node(
       "torusknot",
-      ShapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+      shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
       matObjects,
     )..setPos(5.0, 0.0, 5.0),
   );
 
   scene.add(
-    Node("plane", ShapeCube(scene.program, x: 30.0, y: 0.1, z: 30.0), matGray)
+    Node("plane", shapeCube(scene.program, x: 30.0, y: 0.1, z: 30.0), matGray)
       ..setPos(0.0, -10.0, 0.0),
   );
 }
@@ -201,12 +201,12 @@ double kFar = 50.0;
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: false);
 
   final OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -218,15 +218,15 @@ void main() {
 
   final Illumination illumination = Illumination();
   for (Light l in lightSources.values) {
-    illumination.AddLight(l);
+    illumination.addLight(l);
   }
 
   final ShadowMap shadowMap = ShadowMap(cgl, 512, 512, 0.5, 20.0);
 
   final UniformGroup uniforms = UniformGroup("plain")
-    ..SetUniform(uShadowMap, shadowMap.GetMapTexture())
-    ..SetUniform(uCanvasSize, shadowMap.GetMapSize())
-    ..SetUniform(uShadowBias, 0.03);
+    ..setUniform(uShadowMap, shadowMap.getMapTexture())
+    ..setUniform(uCanvasSize, shadowMap.getMapSize())
+    ..setUniform(uShadowBias, 0.03);
 
   // display scene with shadow on left part of screen.
   final RenderPhase phaseMain = RenderPhase("main", cgl);
@@ -255,36 +255,36 @@ void main() {
   phaseMain.add(sceneFixed);
 
   assert(
-    sceneFixed.program.HasDownwardCompatibleAttributesTo(sceneBasic.program),
+    sceneFixed.program.hasDownwardCompatibleAttributesTo(sceneBasic.program),
   );
-  AddShapesToScene(sceneBasic);
+  addShapesToScene(sceneBasic);
   for (Node n in sceneBasic.nodes) {
-    shadowMap.AddShadowCaster(n);
+    shadowMap.addShadowCaster(n);
   }
 
   // Same order as lightSources
-  final MeshData mdLight = EmptyLightVisualizer(sceneFixed.program, "light");
+  final MeshData mdLight = emptyLightVisualizer(sceneFixed.program, "light");
   sceneFixed.add(Node("light", mdLight, lightSourceMat));
 
   // Event Handling
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.InputElement input = node as HTML.InputElement;
-    input.onChange.listen((HTML.Event e) {
-      HTML.InputElement input = e.target as HTML.InputElement;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.InputElement input = node as html.InputElement;
+    input.onChange.listen((html.Event e) {
+      html.InputElement input = e.target as html.InputElement;
       if (input.type == "radio") {
-        EventRadioChanged(input.id);
+        eventRadioChanged(input.id);
       }
     });
 
-    input.onInput.listen((HTML.Event e) {
-      HTML.InputElement input = e.target as HTML.InputElement;
+    input.onInput.listen((html.Event e) {
+      html.InputElement input = e.target as html.InputElement;
       if (input.type == "range") {
         String name = input.id;
-        double value = GetInputValue(input);
+        double value = getInputValue(input);
         if (name.startsWith("pos")) {
-          EventPositionChanged(name, value);
+          eventPositionChanged(name, value);
         } else if (name.startsWith("dir")) {
-          EventDirectionChanged(name, value);
+          eventDirectionChanged(name, value);
         } else if (name == "cutoff") {
           print("set cutoff $value");
           //copyToScreen.ForceInput(uCutOff, value);
@@ -292,37 +292,37 @@ void main() {
       }
     });
 
-    input.onMouseMove.listen(SwallowEvent);
+    input.onMouseMove.listen(swallowEvent);
   }
 
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.InputElement input = node as HTML.InputElement;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.InputElement input = node as html.InputElement;
     print("initialize inputs ${input.id}");
-    input.dispatchEvent(HTML.Event("change"));
-    input.dispatchEvent(HTML.Event("input"));
+    input.dispatchEvent(html.Event("change"));
+    input.dispatchEvent(html.Event("input"));
   }
 
-  void resolutionChange(HTML.Event? ev) {
+  void resolutionChange(html.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
     canvas.height = h;
     print("size change $w $h");
     w = w ~/ 2;
-    perspective.AdjustAspect(w, h);
+    perspective.adjustAspect(w, h);
     phaseMain.viewPortW = w;
     phaseMain.viewPortH = h;
     // display shadowmap on right part of screen.
-    shadowMap.SetVisualizationViewPort(phaseMain.viewPortW, 0, w, h);
+    shadowMap.setVisualizationViewPort(phaseMain.viewPortW, 0, w, h);
   }
 
   resolutionChange(null);
-  HTML.window.onResize.listen(resolutionChange);
+  html.window.onResize.listen(resolutionChange);
 
   double lastTimeMs = 0.0;
 
-  //HTML.document.getElementById("posx").onChange.listen((HTML.Event ev) =>
-  //light.pos.x = GetInputValue(ev));
+  //html.document.getElementById("posx").onChange.listen((html.Event ev) =>
+  //light.pos.x = getInputValue(ev));
 
   void animate(num timeMs) {
     double elapsed = timeMs - lastTimeMs;
@@ -330,18 +330,18 @@ void main() {
     //orbit.azimuth += 0.001;
     orbit.animate(elapsed);
 
-    VM.Matrix4 lm = gActiveLight.ExtractShadowProjViewMatrix();
-    UpdateLightVisualizer(mdLight, gActiveLight);
-    fps.ChangeExtra("$gActiveLight");
+    vm.Matrix4 lm = gActiveLight.extractShadowProjViewMatrix();
+    updateLightVisualizer(mdLight, gActiveLight);
+    fps.changeExtra("$gActiveLight");
 
-    shadowMap.Compute(lm);
-    uniforms.ForceUniform(uLightPerspectiveViewMatrix, lm);
+    shadowMap.compute(lm);
+    uniforms.forceUniform(uLightPerspectiveViewMatrix, lm);
     // render scene utilizing shadow map
-    phaseMain.Draw();
-    shadowMap.Visualize();
+    phaseMain.draw();
+    shadowMap.visualize();
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

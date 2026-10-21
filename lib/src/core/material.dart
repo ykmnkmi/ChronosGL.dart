@@ -8,14 +8,14 @@ class TheStencilFunction {
   int mask;
 }
 
-final TheStencilFunction StencilFunctionNone = TheStencilFunction(
-  GL_INVALID_VALUE,
+final TheStencilFunction stencilFunctionNone = TheStencilFunction(
+  glInvalidValue,
   0,
   ~0,
 );
 
-final TheStencilFunction StencilFunctionAlways = TheStencilFunction(
-  GL_ALWAYS,
+final TheStencilFunction stencilFunctionAlways = TheStencilFunction(
+  glAlways,
   0,
   ~0,
 );
@@ -36,49 +36,49 @@ class TheBlendEquation {
   int dstFactor;
 }
 
-final TheBlendEquation BlendEquationNone = TheBlendEquation(
-  GL_INVALID_VALUE,
-  GL_INVALID_VALUE,
-  GL_INVALID_VALUE,
+final TheBlendEquation blendEquationNone = TheBlendEquation(
+  glInvalidValue,
+  glInvalidValue,
+  glInvalidValue,
 );
 
 // dst was GL_ONE
-final TheBlendEquation BlendEquationStandard = TheBlendEquation(
-  GL_FUNC_ADD,
-  GL_SRC_ALPHA,
-  GL_ONE_MINUS_SRC_ALPHA,
+final TheBlendEquation blendEquationStandard = TheBlendEquation(
+  glFuncAdd,
+  glSrcAlpha,
+  glOneMinusSrcAlpha,
 );
 
-final TheBlendEquation BlendEquationMix = TheBlendEquation(
-  GL_FUNC_ADD,
-  GL_SRC_ALPHA,
-  GL_ONE_MINUS_SRC_COLOR,
+final TheBlendEquation blendEquationMix = TheBlendEquation(
+  glFuncAdd,
+  glSrcAlpha,
+  glOneMinusSrcColor,
 );
 
-final TheBlendEquation BlendEquationAdd = TheBlendEquation(
-  GL_FUNC_ADD,
-  GL_ONE,
-  GL_ONE,
+final TheBlendEquation blendEquationAdd = TheBlendEquation(
+  glFuncAdd,
+  glOne,
+  glOne,
 );
 
 /// is a light weight container for uniforms related to the appearance
 /// of a mesh.
-/// At most one Material can be passed to the RenderProgram::Draw() call
+/// At most one Material can be passed to the RenderProgram::draw() call
 /// because it controls the depth, stencil, and blending behavior
 class Material extends UniformGroup {
   Material(super.name) {
-    SetUniform(cDepthFunc, GL_LESS);
-    SetUniform(cDepthTest, true);
-    SetUniform(cDepthWrite, true);
-    SetUniform(cBlendEquation, BlendEquationNone);
+    setUniform(cDepthFunc, glLess);
+    setUniform(cDepthTest, true);
+    setUniform(cDepthWrite, true);
+    setUniform(cBlendEquation, blendEquationNone);
   }
 
-  Material.Transparent(super.name, TheBlendEquation beq) {
-    SetUniform(cDepthFunc, GL_LESS);
-    SetUniform(cDepthTest, true);
-    SetUniform(cDepthWrite, false);
-    SetUniform(cBlendEquation, beq);
+  Material.transparent(super.name, TheBlendEquation beq) {
+    setUniform(cDepthFunc, glLess);
+    setUniform(cDepthTest, true);
+    setUniform(cDepthWrite, false);
+    setUniform(cBlendEquation, beq);
   }
 
-  Material.Empty(super.name);
+  Material.empty(super.name);
 }

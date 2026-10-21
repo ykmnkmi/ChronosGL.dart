@@ -5,14 +5,14 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:args/args.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/src/core/lib.dart';
 import 'package:chronosgl/src/importer/lib.dart';
 import 'package:chronosgl/src/animation/lib.dart';
 
 // Note this is similar to lib/src/importer/threejs.dart
-void DumpFaces(Map<String, Object?> json, bool verbose) {
+void dumpFaces(Map<String, Object?> json, bool verbose) {
   final faces = (json["faces"] as List<Object?>).cast<int>();
   int i = 0;
   int count = 0;
@@ -106,7 +106,7 @@ void DumpFaces(Map<String, Object?> json, bool verbose) {
   print("max Normal: $mNormal");
 }
 
-void ShowInfo(Map<String, Object?> json) {
+void showInfo(Map<String, Object?> json) {
   final materials = json["materials"] as List<Object?>;
   final vertices = json["vertices"] as List<Object?>;
   final normals = json["normals"] as List<Object?>;
@@ -156,12 +156,12 @@ void main(List<String> arguments) {
     print("reading mesh from: $p");
     var meshData = File(p).readAsStringSync();
     final jsonData = json.decode(meshData) as Map<String, Object?>;
-    ShowInfo(jsonData);
-    DumpFaces(jsonData, argResults['faces'] as bool);
+    showInfo(jsonData);
+    dumpFaces(jsonData, argResults['faces'] as bool);
 
-    List<GeometryBuilder> gb = ImportGeometryFromThreeJsJson(jsonData);
+    List<GeometryBuilder> gb = importGeometryFromThreeJsJson(jsonData);
     print(gb);
-    List<Bone> skeleton = ImportSkeletonFromThreeJsJson(jsonData);
+    List<Bone> skeleton = importSkeletonFromThreeJsJson(jsonData);
 
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
     print(">>>>>>>>>> Bones");
@@ -169,7 +169,7 @@ void main(List<String> arguments) {
     for (Bone b in skeleton) {
       print(b);
     }
-    SkeletalAnimation anim = ImportAnimationFromThreeJsJson(jsonData, skeleton);
+    SkeletalAnimation anim = importAnimationFromThreeJsJson(jsonData, skeleton);
 
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
     print(">>>>>>>>>> BoneAnims");
@@ -178,10 +178,10 @@ void main(List<String> arguments) {
       print(ba);
     }
 
-    VM.Matrix4 globalOffsetTransform = VM.Matrix4.identity();
+    vm.Matrix4 globalOffsetTransform = vm.Matrix4.identity();
 
     AnimatedSkeleton animatedSkeleton = AnimatedSkeleton(skeleton.length);
-    UpdateAnimatedSkeleton(
+    updateAnimatedSkeleton(
       skeleton,
       globalOffsetTransform,
       anim,

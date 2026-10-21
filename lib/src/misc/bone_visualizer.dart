@@ -1,7 +1,7 @@
 part of 'lib.dart';
 
-List<VM.Vector3> BonePosFromSkeleton(List<Bone> bones) {
-  List<VM.Vector3> out = [];
+List<vm.Vector3> bonePosFromSkeleton(List<Bone> bones) {
+  List<vm.Vector3> out = [];
 
   for (int i = 1; i < bones.length; ++i) {
     final Bone a = bones[i];
@@ -14,12 +14,12 @@ List<VM.Vector3> BonePosFromSkeleton(List<Bone> bones) {
   return out;
 }
 
-List<VM.Vector3> BonePosFromAnimatedSkeleton(
+List<vm.Vector3> bonePosFromAnimatedSkeleton(
   List<Bone> bones,
   AnimatedSkeleton posed, {
   double scale = 1.0,
 }) {
-  List<VM.Vector3> out = [];
+  List<vm.Vector3> out = [];
 
   for (int i = 0; i < bones.length; ++i) {
     final int parent = bones[i].parentNum;
@@ -34,22 +34,22 @@ List<VM.Vector3> BonePosFromAnimatedSkeleton(
 class BoneVisualizer {
   BoneVisualizer(RenderProgram prog, Material mat, this._skeleton, this._anim) {
     _animatedSkeleton = AnimatedSkeleton(_skeleton.length);
-    UpdateAnimatedSkeleton(
+    updateAnimatedSkeleton(
       _skeleton,
       _globalOffsetTransform,
       _anim,
       _animatedSkeleton,
       0.0,
     );
-    _mdWire = LineEndPointsToMeshData(
+    _mdWire = lineEndPointsToMeshData(
       "wire",
       prog,
-      BonePosFromAnimatedSkeleton(_skeleton, _animatedSkeleton),
+      bonePosFromAnimatedSkeleton(_skeleton, _animatedSkeleton),
     );
     mesh = Node(_mdWire.name, _mdWire, mat);
   }
 
-  final VM.Matrix4 _globalOffsetTransform = VM.Matrix4.identity();
+  final vm.Matrix4 _globalOffsetTransform = vm.Matrix4.identity();
   late MeshData _mdWire;
   final List<Bone> _skeleton;
   final SkeletalAnimation _anim;
@@ -57,18 +57,18 @@ class BoneVisualizer {
 
   late Node mesh;
 
-  void Update(double time) {
-    UpdateAnimatedSkeleton(
+  void update(double time) {
+    updateAnimatedSkeleton(
       _skeleton,
       _globalOffsetTransform,
       _anim,
       _animatedSkeleton,
       time % _anim.duration,
     );
-    List<VM.Vector3> bonePos = BonePosFromAnimatedSkeleton(
+    List<vm.Vector3> bonePos = bonePosFromAnimatedSkeleton(
       _skeleton,
       _animatedSkeleton,
     );
-    _mdWire.ChangeVertexData(FlattenVector3List(bonePos));
+    _mdWire.changeVertexData(flattenVector3List(bonePos));
   }
 }

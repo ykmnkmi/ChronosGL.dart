@@ -2,26 +2,26 @@
 @TestOn("dartium")
 library;
 
-import 'dart:html' as HTML;
-import 'dart:web_gl' as WEBGL;
+import 'dart:html' as html;
+import 'dart:web_gl' as webgl;
 
 import 'package:chronosgl/chronosgl.dart';
 import "package:test/test.dart";
 
 void main() {
   test("show_extensions", () {
-    HTML.CanvasElement canvas = HTML.CanvasElement(width: 200, height: 200);
+    html.CanvasElement canvas = html.CanvasElement(width: 200, height: 200);
     ChronosGL chronosGL = ChronosGL(canvas);
     List<String> exts = chronosGL.getSupportedExtensions();
     for (var e in exts) {
       print(e);
     }
-    WEBGL.DebugRendererInfo di = chronosGL.getExtension(
+    webgl.DebugRendererInfo di = chronosGL.getExtension(
       'WEBGL_debug_renderer_info',
-    ) as WEBGL.DebugRendererInfo;
+    ) as webgl.DebugRendererInfo;
     print(di);
-    print(chronosGL.getParameter(GL_UNMASKED_VENDOR_WEBGL));
-    print(chronosGL.getParameter(GL_UNMASKED_RENDERER_WEBGL));
+    print(chronosGL.getParameter(glUnmaskedVendorWebgl));
+    print(chronosGL.getParameter(glUnmaskedRendererWebgl));
   });
 
   print("PASS");

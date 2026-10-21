@@ -23,8 +23,8 @@ class GoldenScene {
   GoldenScene(String name, {bool mutate = false}) {
     final canvas = html.CanvasElement(width: size, height: size);
     cgl = ChronosGL(canvas, antialiasing: false);
-    cgl.disable(GL_DITHER);
-    framebuffer = Framebuffer.Default(cgl, size, size);
+    cgl.disable(glDither);
+    framebuffer = Framebuffer.defaultFramebuffer(cgl, size, size);
     phase = RenderPhase('golden', cgl, framebuffer)
       ..viewPortW = size
       ..viewPortH = size;
@@ -56,12 +56,12 @@ class GoldenScene {
   Map<String, Object> get environment {
     final extension = cgl.getExtension('WEBGL_debug_renderer_info');
     final renderer = extension == null
-        ? cgl.getParameter(GL_RENDERER).toString()
-        : cgl.getParameter(GL_UNMASKED_RENDERER_WEBGL).toString();
+        ? cgl.getParameter(glRenderer).toString()
+        : cgl.getParameter(glUnmaskedRendererWebgl).toString();
     return {
       'userAgent': html.window.navigator.userAgent,
       'renderer': renderer,
-      'webglVersion': cgl.getParameter(GL_VERSION).toString(),
+      'webglVersion': cgl.getParameter(glVersion).toString(),
       'imageSize': [size, size],
       'channelTolerance': 2,
     };
@@ -71,10 +71,10 @@ class GoldenScene {
     // Transparent materials leave depth writes disabled. gl.clear respects
     // that mask, so restore the fixture's starting state before clearing.
     cgl.depthMask(true);
-    phase.Draw();
-    final pixels = framebuffer.ExtractByteData(null, 0, 0, size, size);
+    phase.draw();
+    final pixels = framebuffer.extractByteData(null, 0, 0, size, size);
     final error = cgl.getError();
-    if (error != GL_NO_ERROR) throw StateError('WebGL error: $error');
+    if (error != glNoError) throw StateError('WebGL error: $error');
     return GoldenImage.fromFramebuffer(size, size, pixels);
   }
 
@@ -92,24 +92,24 @@ class GoldenScene {
 
   UniformGroup _identity() =>
       UniformGroup('clip-space')
-        ..SetUniform(uPerspectiveViewMatrix, vm.Matrix4.identity());
+        ..setUniform(uPerspectiveViewMatrix, vm.Matrix4.identity());
 
   Material _color(String name, vm.Vector3 color) =>
-      Material(name)..SetUniform(uColor, color);
+      Material(name)..setUniform(uColor, color);
 
   MeshData _quad(RenderProgram program, double size) =>
-      GeometryBuilderToMeshData('quad', program, QuadGeometry(size));
+      geometryBuilderToMeshData('quad', program, quadGeometry(size));
 
   void _geometry(bool mutate) {
     final program = _solid();
-    final root = Node.Container('parent')
+    final root = Node.container('parent')
       ..rotZ(-0.12)
       ..setPos(0.02, 0.04, 0.0);
     root.add(
       Node(
           'cube',
-          ShapeCube(program, x: 0.28, y: 0.28, z: 0.28),
-          _color('cube', mutate ? ColorGreen : ColorRed),
+          shapeCube(program, x: 0.28, y: 0.28, z: 0.28),
+          _color('cube', mutate ? colorGreen : colorRed),
         )
         ..rotX(0.4)
         ..rotY(0.55)
@@ -118,15 +118,15 @@ class GoldenScene {
     root.add(
       Node(
         'sphere',
-        ShapeIcosahedron(program, subdivisions: 2, scale: 0.3),
-        _color('sphere', ColorCyan),
+        shapeIcosahedron(program, subdivisions: 2, scale: 0.3),
+        _color('sphere', colorCyan),
       )..setPos(0.43, -0.25, 0.0),
     );
     root.add(
       Node(
           'wedge',
-          ShapeWedge(program, x: 0.25, y: 0.25, z: 0.25),
-          _color('wedge', ColorYellow),
+          shapeWedge(program, x: 0.25, y: 0.25, z: 0.25),
+          _color('wedge', colorYellow),
         )
         ..rotY(0.4)
         ..rotX(0.3)
@@ -139,11 +139,11 @@ class GoldenScene {
     final camera = _FixedCamera();
     if (orthographic) {
       return Orthographic(camera, -2.1, 2.1, -2.1, 0.1, 30.0)
-        ..AdjustAspect(size, size);
+        ..adjustAspect(size, size);
     }
     return Perspective(camera, 0.1, 30.0)
-      ..UpdateFov(28.0)
-      ..AdjustAspect(size, size);
+      ..updateFov(28.0)
+      ..adjustAspect(size, size);
   }
 
   void _camera(bool orthographic) {
@@ -154,12 +154,12 @@ class GoldenScene {
       vm.Vector3(0.7, -0.45, -0.8),
       vm.Vector3(0.0, 0.8, 0.0),
     ];
-    final colors = [ColorRed, ColorGreen, ColorBlue];
+    final colors = [colorRed, colorGreen, colorBlue];
     for (var i = 0; i < positions.length; i++) {
       scene.add(
         Node(
             'cube-$i',
-            ShapeCube(program, x: 0.4, y: 0.4, z: 0.4),
+            shapeCube(program, x: 0.4, y: 0.4, z: 0.4),
             _color('color-$i', colors[i]),
           )
           ..rotY(0.2 + i * 0.2)
@@ -194,7 +194,7 @@ class GoldenScene {
       canvas,
       TextureProperties()
         ..clamp = true
-        ..SetFilterNearest(),
+        ..setFilterNearest(),
     );
   }
 
@@ -205,8 +205,8 @@ class GoldenScene {
       texturedVertexShader,
       texturedFragmentShader,
     );
-    final material = _color('texture', ColorBlack)
-      ..SetUniform(uTexture, _canvasTexture());
+    final material = _color('texture', colorBlack)
+      ..setUniform(uTexture, _canvasTexture());
     final quad = Node('quad', _quad(program, 0.72), material)..rotZ(0.18);
     phase.add(Scene('texture', program, [_identity()])..add(quad));
   }
@@ -216,15 +216,15 @@ class GoldenScene {
     final scene = Scene('depth', program, [_identity()]);
     // Submit the nearest surface first: a broken depth test lets blue cover it.
     scene.add(
-      Node('near', _quad(program, 0.44), _color('near', ColorRed))
+      Node('near', _quad(program, 0.44), _color('near', colorRed))
         ..setPos(-0.18, 0.12, -0.4),
     );
     scene.add(
-      Node('far', _quad(program, 0.65), _color('far', ColorBlue))
+      Node('far', _quad(program, 0.65), _color('far', colorBlue))
         ..setPos(0.13, -0.08, 0.3),
     );
     scene.add(
-      Node('middle', _quad(program, 0.32), _color('middle', ColorGreen))
+      Node('middle', _quad(program, 0.32), _color('middle', colorGreen))
         ..setPos(0.35, 0.36, -0.1),
     );
     phase.add(scene);
@@ -234,23 +234,23 @@ class GoldenScene {
     final solid = _solid();
     phase.add(
       Scene('background', solid, [_identity()])..add(
-        Node('blue', _quad(solid, 0.8), _color('blue', ColorBlue))
+        Node('blue', _quad(solid, 0.8), _color('blue', colorBlue))
           ..setPos(0.0, 0.0, 0.5),
       ),
     );
     final fragment = ShaderObject('half-alpha')
-      ..AddUniformVars([uColor])
-      ..SetBodyWithMain(['$oFragColor = vec4($uColor, 0.5);']);
+      ..addUniformVars([uColor])
+      ..setBodyWithMain(['$oFragColor = vec4($uColor, 0.5);']);
     final program = RenderProgram(
       'alpha',
       cgl,
       solidColorVertexShader,
       fragment,
     );
-    final red = Material.Transparent('red', BlendEquationStandard)
-      ..SetUniform(uColor, ColorRed);
-    final green = Material.Transparent('green', BlendEquationStandard)
-      ..SetUniform(uColor, ColorGreen);
+    final red = Material.transparent('red', blendEquationStandard)
+      ..setUniform(uColor, colorRed);
+    final green = Material.transparent('green', blendEquationStandard)
+      ..setUniform(uColor, colorGreen);
     phase.add(
       Scene('transparent', program, [_identity()])
         ..add(Node('red', _quad(program, 0.48), red)..setPos(-0.22, 0.12, 0.0))
@@ -268,7 +268,7 @@ class GoldenScene {
       lightFragmentShaderBlinnPhong,
     );
     final illumination = Illumination()
-      ..AddLight(
+      ..addLight(
         DirectionalLight(
           'key',
           vm.Vector3(-1.0, -1.5, -2.0),
@@ -277,7 +277,7 @@ class GoldenScene {
           10.0,
         ),
       )
-      ..AddLight(
+      ..addLight(
         DirectionalLight(
           'fill',
           vm.Vector3(1.0, 0.0, -0.5),
@@ -287,19 +287,19 @@ class GoldenScene {
         ),
       );
     final material = Material('lit')
-      ..SetUniform(uTexture, _canvasTexture(black: true))
-      ..SetUniform(uShininess, 24.0);
+      ..setUniform(uTexture, _canvasTexture(black: true))
+      ..setUniform(uShininess, 24.0);
     phase.add(
       Scene('light', program, [_projection(false), illumination])
         ..add(
           Node(
             'sphere',
-            ShapeIcosahedron(program, subdivisions: 3, scale: 0.9),
+            shapeIcosahedron(program, subdivisions: 3, scale: 0.9),
             material,
           )..setPos(-0.65, 0.0, 0.0),
         )
         ..add(
-          Node('cube', ShapeCube(program, x: 0.5, y: 0.5, z: 0.5), material)
+          Node('cube', shapeCube(program, x: 0.5, y: 0.5, z: 0.5), material)
             ..rotY(0.4)
             ..setPos(0.85, 0.0, 0.0),
         ),

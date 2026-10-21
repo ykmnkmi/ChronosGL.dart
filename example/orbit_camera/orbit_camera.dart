@@ -1,10 +1,10 @@
 import 'package:chronosgl/chronosgl.dart';
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
-Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
+Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
     "stars",
     RenderProgram(
@@ -15,17 +15,17 @@ Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
     ),
     [perspective],
   );
-  scene.add(Utils.MakeParticles(scene.program, num));
+  scene.add(Utils.makeParticles(scene.program, num));
   return scene;
 }
 
-Node MakeHead(RenderProgram program) {
-  MeshData sphere = ShapeIcosahedron(program);
+Node makeHead(RenderProgram program) {
+  MeshData sphere = shapeIcosahedron(program);
   Material headMat = Material("head")
-    ..SetUniform(uColor, VM.Vector3(0.94, 0.72, 0.63));
+    ..setUniform(uColor, vm.Vector3(0.94, 0.72, 0.63));
   Node head = Node("head", sphere, headMat);
 
-  Material eyeMat = Material("eye")..SetUniform(uColor, ColorBlue);
+  Material eyeMat = Material("eye")..setUniform(uColor, colorBlue);
   Node leftEye = Node("leftEye", sphere, eyeMat)
     ..setPos(-0.2, 0.4, -0.8)
     ..transform.scaleByDouble(0.2, 0.2, 0.2, 1.0);
@@ -37,7 +37,7 @@ Node MakeHead(RenderProgram program) {
   head.add(rightEye);
 
   Material noseMat = Material("nose")
-    ..SetUniform(uColor, VM.Vector3(0.9, 0.7, 0.6));
+    ..setUniform(uColor, vm.Vector3(0.9, 0.7, 0.6));
   Node nose = Node("nose", sphere, noseMat)
     ..transform.scaleByDouble(0.3, 0.3, 0.3, 1.0)
     ..setPos(0.0, 0.0, -0.9);
@@ -46,8 +46,8 @@ Node MakeHead(RenderProgram program) {
 }
 
 void main() {
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
   OrbitCamera orbit = OrbitCamera(15.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -63,12 +63,12 @@ void main() {
     [perspective],
   );
 
-  scene.add(MakeHead(scene.program));
+  scene.add(makeHead(scene.program));
 
   final RenderPhaseResizeAware phase =
       RenderPhaseResizeAware("main", cgl, canvas, perspective)
         ..add(scene)
-        ..add(MakeStarScene(cgl, perspective, 2000));
+        ..add(makeStarScene(cgl, perspective, 2000));
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -76,9 +76,9 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    phase.Draw();
+    phase.draw();
 
-    HTML.window.animationFrame.then(animate);
+    html.window.animationFrame.then(animate);
   }
 
   animate(0.0);

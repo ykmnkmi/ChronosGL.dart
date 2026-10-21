@@ -409,8 +409,8 @@ List<ShaderObject> createStandardShader(
     ..AddUniformVar(uModelMatrix)
     ..AddAttributeVar(aTexUV)
     ..AddVaryingVar(vTexUV)
-    ..SetBodyWithMain(
-        [StdVertexBody, "${vTexUV} = ${aTexUV};"]);
+    ..setBodyWithMain(
+        [stdVertexBody, "${vTexUV} = ${aTexUV};"]);
 
   ShaderObject f = new ShaderObject("StandardF")
     ..AddVaryingVar(vVertexPosition)
@@ -423,7 +423,7 @@ List<ShaderObject> createStandardShader(
     ..AddUniformVar(uLightSourceInfo1)
     ..AddUniformVar(uLightSourceInfo2)
     ..AddUniformVar(uLightSourceInfo3)
-    ..SetBody([MakeStandardFragment(useSpecularTerm, configs)]);
+    ..setBody([MakeStandardFragment(useSpecularTerm, configs)]);
   return [v, f];
 }
 */

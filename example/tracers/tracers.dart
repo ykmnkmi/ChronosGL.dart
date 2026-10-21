@@ -1,15 +1,15 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 final ShaderObject blurdVertexShader = ShaderObject("bluredV")
-  ..AddAttributeVars([aPosition])
-  ..SetBody([NullVertexShaderString]);
+  ..addAttributeVars([aPosition])
+  ..setBody([nullVertexShaderString]);
 
 final ShaderObject bluredFragmentShader = ShaderObject("bluredF")
-  ..AddUniformVars([uColorAlpha])
-  ..SetBody([
+  ..addUniformVars([uColorAlpha])
+  ..setBody([
     """
 void main() {  
     $oFragColor = $uColorAlpha;
@@ -17,7 +17,7 @@ void main() {
     """,
   ]);
 
-Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
+Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
     "stars",
     RenderProgram(
@@ -28,19 +28,19 @@ Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
     ),
     [perspective],
   );
-  scene.add(Utils.MakeParticles(scene.program, num));
+  scene.add(Utils.makeParticles(scene.program, num));
   return scene;
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, preserveDrawingBuffer: true);
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -61,11 +61,11 @@ void main() {
   phase.add(scene);
 
   // Every frame 4% of the screen will be blurred
-  Material matBlur = Material.Transparent("blur", BlendEquationStandard)
-    ..SetUniform(uColorAlpha, VM.Vector4(0.0, 0.0, 0.0, 0.04));
-  scene.add(Node("", ShapeQuad(scene.program, 1), matBlur));
+  Material matBlur = Material.transparent("blur", blendEquationStandard)
+    ..setUniform(uColorAlpha, vm.Vector4(0.0, 0.0, 0.0, 0.04));
+  scene.add(Node("", shapeQuad(scene.program, 1), matBlur));
 
-  phase.add(MakeStarScene(cgl, perspective, 2000));
+  phase.add(makeStarScene(cgl, perspective, 2000));
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -75,14 +75,14 @@ void main() {
     orbit.animate(elapsed);
 
     List<DrawStats> stats = [];
-    phase.Draw(stats);
+    phase.draw(stats);
     List<String> out = [];
     for (DrawStats d in stats) {
       out.add(d.toString());
     }
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs, out.join("<br>"));
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs, out.join("<br>"));
   }
 
   animate(0.0);

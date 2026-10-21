@@ -1,56 +1,56 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-final HTML.InputElement gWidth =
-    HTML.document.querySelector('#width') as HTML.InputElement;
-final HTML.InputElement gHeight =
-    HTML.document.querySelector('#height') as HTML.InputElement;
-final HTML.InputElement gSegments =
-    HTML.document.querySelector('#segments') as HTML.InputElement;
+final html.InputElement gWidth =
+    html.document.querySelector('#width') as html.InputElement;
+final html.InputElement gHeight =
+    html.document.querySelector('#height') as html.InputElement;
+final html.InputElement gSegments =
+    html.document.querySelector('#segments') as html.InputElement;
 
-final HTML.SelectElement gEasingWidth =
-    HTML.document.querySelector('#easingWidth') as HTML.SelectElement;
-final HTML.SelectElement gEasingHeight =
-    HTML.document.querySelector('#easingHeight') as HTML.SelectElement;
-final List<VM.Vector2> gBase = ContourCircle(20, 10.0);
-final List<VM.Vector2> gGrad = GetContourGradient(gBase);
+final html.SelectElement gEasingWidth =
+    html.document.querySelector('#easingWidth') as html.SelectElement;
+final html.SelectElement gEasingHeight =
+    html.document.querySelector('#easingHeight') as html.SelectElement;
+final List<vm.Vector2> gBase = contourCircle(20, 10.0);
+final List<vm.Vector2> gGrad = getContourGradient(gBase);
 
-MeshData MakeBevelMesh(RenderProgram prog) {
+MeshData makeBevelMesh(RenderProgram prog) {
   double width = gWidth.valueAsNumber! + 0.0;
   double height = gHeight.valueAsNumber! + 0.0;
-  Easing easingWidth = MapStringToEasing[gEasingWidth.value]!;
-  Easing easingHeight = MapStringToEasing[gEasingHeight.value]!;
+  Easing easingWidth = mapStringToEasing[gEasingWidth.value]!;
+  Easing easingHeight = mapStringToEasing[gEasingHeight.value]!;
   int segments = gSegments.valueAsNumber!.toInt();
-  List<VM.Vector2> supports = BevelSupportPoints(
+  List<vm.Vector2> supports = bevelSupportPoints(
     width,
     height,
     segments,
     widthEasing: easingWidth,
     heightEasing: easingHeight,
   );
-  List<List<VM.Vector3>> strips = BevelStrips(
+  List<List<vm.Vector3>> strips = bevelStrips(
     gBase,
     gGrad,
     supports,
-    VM.Matrix3.identity(),
+    vm.Matrix3.identity(),
   );
   GeometryBuilder gb = GeometryBuilder();
-  gb.AddFaces4Strips(strips, true);
-  return GeometryBuilderToMeshDataWireframe("", prog, gb);
+  gb.addFaces4Strips(strips, true);
+  return geometryBuilderToMeshDataWireframe("", prog, gb);
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -69,20 +69,20 @@ void main() {
   );
 
   final Material matWire = Material("wire")
-    ..SetUniform(uColor, ColorYellow)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
+    ..setUniform(uColor, colorYellow)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     // For simplicity we create a new mesh every frame.
-    MeshData wire = MakeBevelMesh(prog);
+    MeshData wire = makeBevelMesh(prog);
     orbit.animate(elapsed);
-    prog.Draw(wire, [perspective, matWire]);
+    prog.draw(wire, [perspective, matWire]);
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

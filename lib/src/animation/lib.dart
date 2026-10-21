@@ -2,7 +2,7 @@ library;
 
 import 'dart:typed_data';
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 /// # Layer: Animation
 /// provides abstractions for animated meshes.

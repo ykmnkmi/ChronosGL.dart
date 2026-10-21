@@ -2,7 +2,7 @@ part of 'lib.dart';
 
 // https://github.com/ashima/webgl-noise
 
-const String PerlinNoiseFunctions = """
+const String perlinNoiseFunctions = """
 vec3 mod289(vec3 x)
 {
   return x - floor(x * (1.0 / 289.0)) * 289.0;

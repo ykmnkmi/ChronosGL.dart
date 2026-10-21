@@ -12,7 +12,7 @@ part of 'lib.dart';
 //               https://github.com/stegu/webgl-noise
 //
 
-const String SimplexNoiseHelpers = """
+const String simplexNoiseHelpers = """
 vec2 mod289(vec2 x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
@@ -39,7 +39,7 @@ vec4 taylorInvSqrt(vec4 r)
 }
 """;
 
-const String SimplexNoiseFunction2 = """
+const String simplexNoiseFunction2 = """
 float snoise2(vec2 v) {
   const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
                       0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
@@ -89,7 +89,7 @@ float snoise2(vec2 v) {
 }
 """;
 
-const String SimplexNoiseFunction3 = """
+const String simplexNoiseFunction3 = """
 float snoise3(vec3 v) { 
   const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
   const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);

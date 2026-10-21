@@ -1,14 +1,14 @@
 part of 'lib.dart';
 
 final ShaderObject sobelVertexShader = ShaderObject("SobelV")
-  ..AddAttributeVars([aPosition, aTexUV])
-  ..AddVaryingVars([vTexUV])
-  ..SetBody([NullVertexShaderWithTextureForwardString]);
+  ..addAttributeVars([aPosition, aTexUV])
+  ..addVaryingVars([vTexUV])
+  ..setBody([nullVertexShaderWithTextureForwardString]);
 
 final ShaderObject sobelFragmentShader = ShaderObject("SobelF")
-  ..AddVaryingVars([vTexUV])
-  ..AddUniformVars([uTexture, uCanvasSize])
-  ..SetBody([
+  ..addVaryingVars([vTexUV])
+  ..addUniformVars([uTexture, uCanvasSize])
+  ..setBody([
     """
   float lum(vec4 c) {
     return dot(c.xyz, vec3(0.3, 0.59, 0.11));

@@ -1,9 +1,9 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:async';
-import 'dart:math' as Math;
+import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const String modelFile = "../ct_logo.obj";
 
@@ -11,12 +11,12 @@ final List<Future<Object>> gLoadables = [];
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(25.0, 0.0, 0.0, canvas);
   final PerspectiveResizeAware perspective = PerspectiveResizeAware(
@@ -35,16 +35,16 @@ void main() {
   );
 
   late MeshData ctLogo; // we be initialized when loaded
-  var future = LoadRaw(modelFile)
+  var future = loadRaw(modelFile)
     ..then((String content) {
-      GeometryBuilder gb = ImportGeometryFromWavefront(content);
-      ctLogo = GeometryBuilderToMeshData("", progDemo, gb);
+      GeometryBuilder gb = importGeometryFromWavefront(content);
+      ctLogo = geometryBuilderToMeshData("", progDemo, gb);
     });
   gLoadables.add(future);
 
   final Material material = Material("mat")
-    ..SetUniform(uColor, ColorGray8)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity()..rotateX(Math.pi / 2));
+    ..setUniform(uColor, colorGray8)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -52,9 +52,9 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    progDemo.Draw(ctLogo, [perspective, material]);
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    progDemo.draw(ctLogo, [perspective, material]);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   Future.wait(gLoadables).then((list) {

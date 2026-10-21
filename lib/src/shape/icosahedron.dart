@@ -1,16 +1,16 @@
 part of 'lib.dart';
 
 double getU2(double z, double x) {
-  return 0.5 * (1.0 + Math.atan2(z, x) * (1 / Math.pi));
+  return 0.5 * (1.0 + math.atan2(z, x) * (1 / math.pi));
 }
 
 double getV2(double y) {
-  return Math.acos(y) * (1 / Math.pi);
+  return math.acos(y) * (1 / math.pi);
 }
 
 /*
 double getU1(double z, double x) {
-  return 1 - (((Math.atan2(z, x) + Math.PI) % Math.PI) / Math.PI * 0.5);
+  return 1 - (((math.atan2(z, x) + math.PI) % math.PI) / math.PI * 0.5);
 }
 
 double getV1(double y) {
@@ -18,7 +18,7 @@ double getV1(double y) {
 }
 */
 
-final List<Face3> IcosahedronFaceList = [
+final List<Face3> icosahedronFaceList = [
   // 5 faces around point 0
   Face3(0, 11, 5),
   Face3(0, 5, 1),
@@ -48,23 +48,23 @@ final List<Face3> IcosahedronFaceList = [
   Face3(9, 8, 1),
 ];
 
-final double t = (1 + Math.sqrt(5)) / 2;
+final double t = (1 + math.sqrt(5)) / 2;
 
-final List<VM.Vector3> IcosahedronVertexList = [
-  VM.Vector3(-1.0, t, 0.0)..normalize(),
-  VM.Vector3(1.0, t, 0.0)..normalize(),
-  VM.Vector3(-1.0, -t, 0.0)..normalize(),
-  VM.Vector3(1.0, -t, 0.0)..normalize(),
+final List<vm.Vector3> icosahedronVertexList = [
+  vm.Vector3(-1.0, t, 0.0)..normalize(),
+  vm.Vector3(1.0, t, 0.0)..normalize(),
+  vm.Vector3(-1.0, -t, 0.0)..normalize(),
+  vm.Vector3(1.0, -t, 0.0)..normalize(),
   //
-  VM.Vector3(0.0, -1.0, t)..normalize(),
-  VM.Vector3(0.0, 1.0, t)..normalize(),
-  VM.Vector3(0.0, -1.0, -t)..normalize(),
-  VM.Vector3(0.0, 1.0, -t)..normalize(),
+  vm.Vector3(0.0, -1.0, t)..normalize(),
+  vm.Vector3(0.0, 1.0, t)..normalize(),
+  vm.Vector3(0.0, -1.0, -t)..normalize(),
+  vm.Vector3(0.0, 1.0, -t)..normalize(),
   //
-  VM.Vector3(t, 0.0, -1.0)..normalize(),
-  VM.Vector3(t, 0.0, 1.0)..normalize(),
-  VM.Vector3(-t, 0.0, -1.0)..normalize(),
-  VM.Vector3(-t, 0.0, 1.0)..normalize(),
+  vm.Vector3(t, 0.0, -1.0)..normalize(),
+  vm.Vector3(t, 0.0, 1.0)..normalize(),
+  vm.Vector3(-t, 0.0, -1.0)..normalize(),
+  vm.Vector3(-t, 0.0, 1.0)..normalize(),
 ];
 
 // This produces the mash for an icosahedron when subdivisions == 0
@@ -75,17 +75,17 @@ final List<VM.Vector3> IcosahedronVertexList = [
 //   2            320          312
 //   3           1280         1272
 //   4           5120         5112
-GeometryBuilder IcosahedronGeometry({
+GeometryBuilder icosahedronGeometry({
   int subdivisions = 4,
   double scale = 1.0,
   bool computeNormals = true,
 }) {
   List<Face3> faces = [];
-  List<VM.Vector3> vertices = [];
+  List<vm.Vector3> vertices = [];
 
   // start with 12 vertices and 20 faces of a Icosahedron
-  faces.addAll(IcosahedronFaceList);
-  vertices.addAll(IcosahedronVertexList);
+  faces.addAll(icosahedronFaceList);
+  vertices.addAll(icosahedronVertexList);
   //print("@@@@ ${vertices.length} ${faces.length}");
 
   // subdivide faces to refine the triangles
@@ -94,17 +94,17 @@ GeometryBuilder IcosahedronGeometry({
     List<Face3> tmp = [];
     for (Face3 f in faces) {
       // Note: a,b,c are unit vectors
-      VM.Vector3 a = VM.Vector3.copy(vertices[f.a]);
+      vm.Vector3 a = vm.Vector3.copy(vertices[f.a]);
       a
         ..add(vertices[f.b])
         ..scale(0.5)
         ..normalize();
-      VM.Vector3 b = VM.Vector3.copy(vertices[f.b]);
+      vm.Vector3 b = vm.Vector3.copy(vertices[f.b]);
       b
         ..add(vertices[f.c])
         ..scale(0.5)
         ..normalize();
-      VM.Vector3 c = VM.Vector3.copy(vertices[f.c]);
+      vm.Vector3 c = vm.Vector3.copy(vertices[f.c]);
       c
         ..add(vertices[f.a])
         ..scale(0.5)
@@ -126,30 +126,30 @@ GeometryBuilder IcosahedronGeometry({
   }
 
   GeometryBuilder gb = GeometryBuilder();
-  gb.EnableAttribute(aTexUV);
+  gb.enableAttribute(aTexUV);
   if (computeNormals) {
-    gb.EnableAttribute(aNormal);
+    gb.enableAttribute(aNormal);
   }
   // create final vertices and uvs of a Icosahedron
   for (Face3 f in faces) {
-    VM.Vector3 v1 = vertices[f.a];
+    vm.Vector3 v1 = vertices[f.a];
     assert(v1.length < 1.01 && v1.length > 0.99);
-    VM.Vector3 v2 = vertices[f.b];
+    vm.Vector3 v2 = vertices[f.b];
     assert(v2.length < 1.01 && v2.length > 0.99);
-    VM.Vector3 v3 = vertices[f.c];
+    vm.Vector3 v3 = vertices[f.c];
     assert(v3.length < 1.01 && v3.length > 0.99);
 
     //print ("@ ${v1.subtract(v2).length()}");
     //print ("@ ${v2.subtract(v3).length()}");
     //print ("@ ${v3.subtract(v1).length()}");
-    VM.Vector2 t1 = VM.Vector2(getU2(v1.z, v1.x), getV2(v1.y));
-    VM.Vector2 t2 = VM.Vector2(getU2(v2.z, v2.x), getV2(v2.y));
-    VM.Vector2 t3 = VM.Vector2(getU2(v3.z, v3.x), getV2(v3.y));
+    vm.Vector2 t1 = vm.Vector2(getU2(v1.z, v1.x), getV2(v1.y));
+    vm.Vector2 t2 = vm.Vector2(getU2(v2.z, v2.x), getV2(v2.y));
+    vm.Vector2 t3 = vm.Vector2(getU2(v3.z, v3.x), getV2(v3.y));
     if (computeNormals) {
-      gb.AddAttributesVector3(aNormal, [v1, v2, v3]);
+      gb.addAttributesVector3(aNormal, [v1, v2, v3]);
     }
-    gb.AddVerticesFace3([v1.scaled(scale), v2.scaled(scale), v3.scaled(scale)]);
-    gb.AddAttributesVector2(aTexUV, [t1, t2, t3]);
+    gb.addVerticesFace3([v1.scaled(scale), v2.scaled(scale), v3.scaled(scale)]);
+    gb.addAttributesVector2(aTexUV, [t1, t2, t3]);
   }
   return gb;
 }

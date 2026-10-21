@@ -1,22 +1,22 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 // TODO: the 2torusknot cannot be seen through the other objects -why
 
-final HTML.InputElement gOpaque =
-    HTML.document.querySelector('#opaque') as HTML.InputElement;
+final html.InputElement gOpaque =
+    html.document.querySelector('#opaque') as html.InputElement;
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -36,83 +36,83 @@ void main() {
   phase.add(scene);
 
   final Material matWireframe = Material("wire")
-    ..SetUniform(uThickness, 2.0)
-    ..SetUniform(uColorAlpha, VM.Vector4(1.0, 1.0, 0.0, 1.0))
-    ..SetUniform(uColorAlpha2, VM.Vector4(0.0, 0.0, 0.0, 0.5));
+    ..setUniform(uThickness, 2.0)
+    ..setUniform(uColorAlpha, vm.Vector4(1.0, 1.0, 0.0, 1.0))
+    ..setUniform(uColorAlpha2, vm.Vector4(0.0, 0.0, 0.0, 0.5));
 
   {
-    GeometryBuilder gb = IcosahedronGeometry(subdivisions: 2)
-      ..GenerateWireframeCenters();
+    GeometryBuilder gb = icosahedronGeometry(subdivisions: 2)
+      ..generateWireframeCenters();
     Node ico = Node(
       "sphere",
-      GeometryBuilderToMeshData("icosahedron", scene.program, gb),
+      geometryBuilderToMeshData("icosahedron", scene.program, gb),
       matWireframe,
     )..setPos(0.0, 0.0, 0.0);
     scene.add(ico);
   }
 
   {
-    GeometryBuilder gb = CubeGeometry()..GenerateWireframeCenters();
+    GeometryBuilder gb = cubeGeometry()..generateWireframeCenters();
     Node cube = Node(
       "cube",
-      GeometryBuilderToMeshData("cube", scene.program, gb),
+      geometryBuilderToMeshData("cube", scene.program, gb),
       matWireframe,
     )..setPos(-5.0, 0.0, -5.0);
     scene.add(cube);
   }
 
   {
-    GeometryBuilder gb = WedgeGeometry()..GenerateWireframeCenters();
+    GeometryBuilder gb = wedgeGeometry()..generateWireframeCenters();
     Node wedge = Node(
       "wedge",
-      GeometryBuilderToMeshData("wedge", scene.program, gb),
+      geometryBuilderToMeshData("wedge", scene.program, gb),
       matWireframe,
     )..setPos(0.0, -5.0, 0.0);
     scene.add(wedge);
   }
 
   {
-    GeometryBuilder gb = CylinderGeometryWireframeFriendly(3.0, 4.0, 2.0, 16)
-      ..GenerateWireframeCenters();
+    GeometryBuilder gb = cylinderGeometryWireframeFriendly(3.0, 4.0, 2.0, 16)
+      ..generateWireframeCenters();
     Node cyl = Node(
       "cylinder",
-      GeometryBuilderToMeshData("cylinder", scene.program, gb),
+      geometryBuilderToMeshData("cylinder", scene.program, gb),
       matWireframe,
     )..setPos(5.0, 0.0, -5.0);
     scene.add(cyl);
   }
 
   {
-    GeometryBuilder gb = QuadGeometry(2)..GenerateWireframeCenters();
+    GeometryBuilder gb = quadGeometry(2)..generateWireframeCenters();
     Node quad = Node(
       "quad",
-      GeometryBuilderToMeshData("quad", scene.program, gb),
+      geometryBuilderToMeshData("quad", scene.program, gb),
       matWireframe,
     )..setPos(-5.0, 0.0, 5.0);
     scene.add(quad);
   }
 
   {
-    GeometryBuilder gb = TorusKnotGeometryWireframeFriendly(
+    GeometryBuilder gb = torusKnotGeometryWireframeFriendly(
       radius: 1.0,
       tubeRadius: 0.4,
-    )..GenerateWireframeCenters();
+    )..generateWireframeCenters();
     Node torus = Node(
       "torus",
-      GeometryBuilderToMeshData("torus", scene.program, gb),
+      geometryBuilderToMeshData("torus", scene.program, gb),
       matWireframe,
     )..setPos(5.0, 0.0, 5.0);
     scene.add(torus);
   }
 
   {
-    GeometryBuilder gb = TorusKnotGeometryTriangularWireframeFriendly(
+    GeometryBuilder gb = torusKnotGeometryTriangularWireframeFriendly(
       radius: 1.0,
       tubeRadius: 0.4,
-    )..GenerateWireframeCenters();
+    )..generateWireframeCenters();
     Node torus = Node(
       "torus",
-      GeometryBuilderToMeshData("torus", scene.program, gb),
+      geometryBuilderToMeshData("torus", scene.program, gb),
       matWireframe,
     )..setPos(0.0, 5.0, 0.0);
     scene.add(torus);
@@ -124,14 +124,14 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    matWireframe.ForceUniform(
+    matWireframe.forceUniform(
       cBlendEquation,
-      gOpaque.checked! ? BlendEquationNone : BlendEquationStandard,
+      gOpaque.checked! ? blendEquationNone : blendEquationStandard,
     );
-    phase.Draw();
+    phase.draw();
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

@@ -1,14 +1,14 @@
 library;
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-final List<double> SquareData = [1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0];
+final List<double> squareData = [1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0];
 
-final List<double> TriangleData = [1.0, -1.0, 1.0, 1.0, -1.0, 1.0];
+final List<double> triangleData = [1.0, -1.0, 1.0, 1.0, -1.0, 1.0];
 
-final List<double> TriangleData2 = [0.0, 0.0, 1.0, 0.0, -1.0, 1.0];
+final List<double> triangleData2 = [0.0, 0.0, 1.0, 0.0, -1.0, 1.0];
 
-final List<double> BirdData = [
+final List<double> birdData = [
   4.57998, 4.03402, 4.06435, 4.06435, 3.51839, 4.21601, 3.09376, 4.42832, //
   2.60846, 4.57998, 2.09284, 4.7013, 1.51655, 4.82263, 0.909929, 4.94395, //
   0.242648, 5.06527, -0.30331, 5.0956, -1.15258, 5.12594, -1.72887, 5.12594,
@@ -92,21 +92,21 @@ final List<double> BirdData = [
 ];
 
 // https://github.com/mapbox/earcut/tree/master/test/fixtures
-final List<int> BuildingData = [
+final List<int> buildingData = [
   661, 112, 661, 96, 666, 96, 666, 87, 743, 87,
   //
   771, 87, 771, 114, 750, 114, 750, 113, 742, 113,
   742, 106, 710, 106, 710, 113, 666, 113, 666, 112,
 ];
 
-final List<int> HardExample1Data = [
+final List<int> hardExample1Data = [
   440, 4152, 440, 4208, 296, 4192, 368, 4192,
   //
   400, 4200, 400, 4176, 368, 4192, 296, 4192,
   264, 4200, 288, 4160, 296, 4192,
 ];
 
-final List<double> HardExample2Data = [
+final List<double> hardExample2Data = [
   143.129527283745121, 61.240160826593640,
   //
   147.399527283763751, 74.780160826630892,
@@ -122,7 +122,7 @@ final List<double> HardExample2Data = [
   155.759527283749781, 64.880160826258362,
 ];
 
-List<VM.Vector2> MakeContour(
+List<vm.Vector2> makeContour(
   List<num> data,
   double scalex,
   double scaley, [
@@ -130,9 +130,9 @@ List<VM.Vector2> MakeContour(
   double offsety = 0.0,
 ]) {
   assert(data.length & 1 == 0);
-  List<VM.Vector2> out = List.generate(
+  List<vm.Vector2> out = List.generate(
     data.length ~/ 2,
-    (i) => VM.Vector2(
+    (i) => vm.Vector2(
       (data[2 * i] + offsetx) * scalex,
       (data[2 * i + 1] + offsety) * scaley,
     ),
@@ -141,31 +141,31 @@ List<VM.Vector2> MakeContour(
   return out;
 }
 
-final List<VM.Vector2> Square = MakeContour(SquareData, 1.0, 1.0);
+final List<vm.Vector2> square = makeContour(squareData, 1.0, 1.0);
 
-final List<VM.Vector2> Triangle = MakeContour(TriangleData, 1.0, 1.0);
+final List<vm.Vector2> triangle = makeContour(triangleData, 1.0, 1.0);
 
-final List<VM.Vector2> Triangle2 = MakeContour(TriangleData2, 1.0, 1.0);
-final List<VM.Vector2> Bird = MakeContour(BirdData, 0.1, 0.1);
+final List<vm.Vector2> triangle2 = makeContour(triangleData2, 1.0, 1.0);
+final List<vm.Vector2> bird = makeContour(birdData, 0.1, 0.1);
 
-final List<VM.Vector2> Building = MakeContour(
-  BuildingData,
+final List<vm.Vector2> building = makeContour(
+  buildingData,
   0.01,
   0.01,
   -700.0,
   -100.0,
 );
 
-final List<VM.Vector2> HardExample1 = MakeContour(
-  HardExample1Data,
+final List<vm.Vector2> hardExample1 = makeContour(
+  hardExample1Data,
   0.005,
   0.005,
   -350.0,
   -4150.0,
 );
 
-final List<VM.Vector2> HardExample2 = MakeContour(
-  HardExample2Data,
+final List<vm.Vector2> hardExample2 = makeContour(
+  hardExample2Data,
   0.03,
   0.03,
   -155.0,

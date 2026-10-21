@@ -1,15 +1,15 @@
-import 'dart:html' as HTML;
-import "dart:math" as MATH;
+import 'dart:html' as html;
+import "dart:math" as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-final VM.Vector3 posLight = VM.Vector3(11.0, 20.0, 0.0);
-final VM.Vector3 dirLight = VM.Vector3(0.0, -50.0, 0.0);
-final VM.Vector3 spotDirLight = VM.Vector3(-11.0, -30.0, 0.0);
+final vm.Vector3 posLight = vm.Vector3(11.0, 20.0, 0.0);
+final vm.Vector3 dirLight = vm.Vector3(0.0, -50.0, 0.0);
+final vm.Vector3 spotDirLight = vm.Vector3(-11.0, -30.0, 0.0);
 
 final double range = 80.0;
-final double angle = MATH.pi / 7.0;
+final double angle = math.pi / 7.0;
 final double glossiness = 50.0;
 
 // These must be in-sync with the .html file
@@ -21,17 +21,17 @@ final Map<String, Light> gLightSources = {
   idDirectional: DirectionalLight(
     "dir",
     dirLight,
-    ColorWhite,
-    ColorWhite,
+    colorWhite,
+    colorWhite,
     40.0,
   ),
-  idPoint: PointLight("point", posLight, ColorWhite, ColorWhite, range),
+  idPoint: PointLight("point", posLight, colorWhite, colorWhite, range),
   idSpot: SpotLight(
     "spot",
     posLight,
     spotDirLight,
-    ColorWhite,
-    ColorWhite,
+    colorWhite,
+    colorWhite,
     range,
     angle,
     2.0,
@@ -42,7 +42,7 @@ final Map<String, Light> gLightSources = {
 
 final Map<String, Node> gLightVisualizers = {};
 
-Scene LightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
+Scene lightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   Scene scene = Scene(
     "Fixed",
     RenderProgram(
@@ -54,11 +54,11 @@ Scene LightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
     uniforms,
   );
 
-  Material lightSourceMat = Material("light")..SetUniform(uColor, ColorYellow);
+  Material lightSourceMat = Material("light")..setUniform(uColor, colorYellow);
   for (String k in gLightSources.keys) {
     gLightVisualizers[k] = Node(
       k,
-      LightVisualizer(scene.program, gLightSources[k]!),
+      lightVisualizer(scene.program, gLightSources[k]!),
       lightSourceMat,
     );
   }
@@ -68,35 +68,35 @@ Scene LightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   return scene;
 }
 
-void MakeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
-  MeshData cubeMeshData = ShapeCube(prog, x: 2.0, y: 2.0, z: 2.0);
-  MeshData sphereMeshData = ShapeIcosahedron(prog);
+void makeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
+  MeshData cubeMeshData = shapeCube(prog, x: 2.0, y: 2.0, z: 2.0);
+  MeshData sphereMeshData = shapeIcosahedron(prog);
 
   List<Material> mats = [
     Material("mat0")
-      ..SetUniform(
+      ..setUniform(
         uTexture,
-        MakeSolidColorTextureRGB(cgl, "blue", ColorBlue * 0.5),
+        makeSolidColorTextureRGB(cgl, "blue", colorBlue * 0.5),
       )
-      ..SetUniform(uShininess, glossiness),
+      ..setUniform(uShininess, glossiness),
     Material("mat1")
-      ..SetUniform(
+      ..setUniform(
         uTexture,
-        MakeSolidColorTextureRGB(cgl, "red", ColorRed * 0.5),
+        makeSolidColorTextureRGB(cgl, "red", colorRed * 0.5),
       )
-      ..SetUniform(uShininess, glossiness),
+      ..setUniform(uShininess, glossiness),
     Material("mat2")
-      ..SetUniform(
+      ..setUniform(
         uTexture,
-        MakeSolidColorTextureRGB(cgl, "white", ColorWhite * 0.5),
+        makeSolidColorTextureRGB(cgl, "white", colorWhite * 0.5),
       )
-      ..SetUniform(uShininess, glossiness),
+      ..setUniform(uShininess, glossiness),
     Material("mat3")
-      ..SetUniform(
+      ..setUniform(
         uTexture,
-        MakeSolidColorTextureRGB(cgl, "green", ColorGreen * 0.5),
+        makeSolidColorTextureRGB(cgl, "green", colorGreen * 0.5),
       )
-      ..SetUniform(uShininess, glossiness),
+      ..setUniform(uShininess, glossiness),
   ];
 
   for (int i = 0; i < 8; i++) {
@@ -113,20 +113,20 @@ void MakeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
   }
 
   // Subdivide plane to show Gourad shading issues
-  Node grid = Node("grid", ShapeGrid(prog, 20, 20, 80.0, 80.0), mats[2]);
-  grid.rotX(-MATH.pi * 0.48);
+  Node grid = Node("grid", shapeGrid(prog, 20, 20, 80.0, 80.0), mats[2]);
+  grid.rotX(-math.pi * 0.48);
   grid.setPos(0.0, -20.0, 20.0);
   container.add(grid);
 }
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   final OrbitCamera orbit = OrbitCamera(50.0, 10.0, 0.0, canvas)
@@ -135,10 +135,10 @@ void main() {
 
   final Illumination illumination = Illumination();
   for (Light l in gLightSources.values) {
-    illumination.AddLight(l);
+    illumination.addLight(l);
   }
 
-  final Scene sceneFixed = LightSourceVisualizerScene(cgl, [perspective]);
+  final Scene sceneFixed = lightSourceVisualizerScene(cgl, [perspective]);
 
   final Scene sceneBlinnPhong = Scene(
     "BlinnPhong",
@@ -162,7 +162,7 @@ void main() {
     [perspective, illumination],
   );
   assert(
-    sceneBlinnPhong.program.HasCompatibleAttributesTo(sceneGourad.program),
+    sceneBlinnPhong.program.hasCompatibleAttributesTo(sceneGourad.program),
   );
 
   // We have two phases
@@ -179,20 +179,20 @@ void main() {
     ..add(sceneGourad)
     ..add(sceneFixed);
 
-  Node node = Node.Container("scene");
-  MakeSceneCubeSphere(cgl, sceneBlinnPhong.program, node);
+  Node node = Node.container("scene");
+  makeSceneCubeSphere(cgl, sceneBlinnPhong.program, node);
 
   sceneGourad.add(node);
   sceneBlinnPhong.add(node);
 
-  HTML.SelectElement selectPhase =
-      HTML.document.querySelector('#phase') as HTML.SelectElement;
+  html.SelectElement selectPhase =
+      html.document.querySelector('#phase') as html.SelectElement;
   selectPhase.selectedIndex = 0;
 
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.Element input = node as HTML.Element;
-    input.onChange.listen((HTML.Event e) {
-      HTML.InputElement input = e.target as HTML.InputElement;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.Element input = node as html.Element;
+    input.onChange.listen((html.Event e) {
+      html.InputElement input = e.target as html.InputElement;
       final String tag = input.id;
       print("$tag toggle ${input.checked}");
       if (tag == "lightDiffuse") {
@@ -213,19 +213,19 @@ void main() {
   }
 
   // Update default settings
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.Element input = node as HTML.Element;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.Element input = node as html.Element;
     print("initialize inputs ${input.id}");
-    input.dispatchEvent(HTML.Event("change"));
+    input.dispatchEvent(html.Event("change"));
   }
 
-  void resolutionChange(HTML.Event? ev) {
+  void resolutionChange(html.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
     canvas.height = h;
     print("size change $w $h");
-    perspective.AdjustAspect(w, h);
+    perspective.adjustAspect(w, h);
     phaseGourad.viewPortW = w;
     phaseGourad.viewPortH = h;
 
@@ -234,7 +234,7 @@ void main() {
   }
 
   resolutionChange(null);
-  HTML.window.onResize.listen(resolutionChange);
+  html.window.onResize.listen(resolutionChange);
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -253,9 +253,9 @@ void main() {
     RenderPhase phase = selectPhase.selectedIndex == 0
         ? phaseBlinnPhong
         : phaseGourad;
-    phase.Draw();
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    phase.draw();
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

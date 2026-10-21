@@ -28,14 +28,14 @@ Internally this is wrapper around a Vertex Array Object (VAO).
 MeshData objects can be populated directly but often they
 will derived from **GeometryBuilder** objects.
 The other common way to create a MeshData object is via
-RenderProgram.MakeMeshData().
+RenderProgram.makeMeshData().
 Note, MeshData is always associated with a specific RenderProgram
 but it is possible to assert compatibility with multiple RenderPrograms.
 
 ## class GeometryBuilder 
 Helper for Shader independent Mesh creation.
 Supports Faces with 3 and 4 Nodes or point clouds.
-Use  GeometryBuilderToMeshData() to create the Mesh
+Use  geometryBuilderToMeshData() to create the Mesh
 for a specific Shader.
 
 ## class TextureProperties 
@@ -75,7 +75,7 @@ Important subclasses are:
 * Illumination provides uniforms describing light sources
 
 ## class DrawStats 
-Helper class for holding info produced by RenderProgram::Draw().
+Helper class for holding info produced by RenderProgram::draw().
 
 ## class RenderProgram extends NamedEntity 
 represents program (Fragment + Vertex Shader) running on the GPU with an API to invoke it.

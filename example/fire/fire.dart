@@ -1,6 +1,6 @@
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 const String uFlameHeight = "uFlameHeight";
 const String uFlameWidth = "uFlameWidth";
@@ -13,11 +13,11 @@ const String uRandomSeed = "uRandomSeed";
 // http://lodev.org/cgtutor/fire.html
 
 final ShaderObject nullVertexShader = ShaderObject("nullShaderV")
-  ..AddAttributeVars([aPosition])
-  ..SetBody([NullVertexShaderString]);
+  ..addAttributeVars([aPosition])
+  ..setBody([nullVertexShaderString]);
 
 final ShaderObject fireFragmentShader = ShaderObject("fireShaderF")
-  ..AddUniformVars([
+  ..addUniformVars([
     uTexture,
     uFlameThrottle,
     uRandomSeed,
@@ -25,7 +25,7 @@ final ShaderObject fireFragmentShader = ShaderObject("fireShaderF")
     uFlameHeight,
     uFlameTurbulence,
   ])
-  ..SetBody([
+  ..setBody([
     """
 float rand(vec2 xy){
     return fract(sin(dot(xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -59,9 +59,9 @@ void main() {
   ]);
 
 final ShaderObject colorFragmentShader = ShaderObject("colorShaderF")
-  ..AddUniformVars([uTexture])
-  ..SetBody([
-    ColorFunctions,
+  ..addUniformVars([uTexture])
+  ..setBody([
+    colorFunctions,
     """
 float get(vec2 xy) {
     vec2 DIM = vec2(textureSize($uTexture, 0));
@@ -77,37 +77,37 @@ void main() {
   ]);
 
 void main() {
-  IntroduceNewShaderVar(uFlameHeight, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uFlameWidth, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uFlameTurbulence, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uFlameThrottle, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uFlameHeight, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uFlameWidth, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uFlameTurbulence, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uFlameThrottle, const ShaderVarDesc("float", ""));
 
-  IntroduceNewShaderVar(uRandomSeed, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uRandomSeed, const ShaderVarDesc("float", ""));
 
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
   canvas.width = w;
   canvas.height = h;
 
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  final Framebuffer screen = Framebuffer.Screen(cgl);
+  final Framebuffer screen = Framebuffer.screen(cgl);
 
   final TypedTextureMutable t1 = TypedTextureMutable(
     cgl,
     "t1",
     w,
     h,
-    GL_RGBA,
-    TexturePropertiesFramebuffer,
-    GL_RGBA,
-    GL_UNSIGNED_BYTE,
+    glRgba,
+    texturePropertiesFramebuffer,
+    glRgba,
+    glUnsignedByte,
     null,
   );
 
@@ -116,10 +116,10 @@ void main() {
     "t2",
     w,
     h,
-    GL_RGBA,
-    TexturePropertiesFramebuffer,
-    GL_RGBA,
-    GL_UNSIGNED_BYTE,
+    glRgba,
+    texturePropertiesFramebuffer,
+    glRgba,
+    glUnsignedByte,
     null,
   );
 
@@ -137,36 +137,36 @@ void main() {
     colorFragmentShader,
   );
 
-  final MeshData unit = ShapeQuad(programFire, 1);
+  final MeshData unit = shapeQuad(programFire, 1);
 
   // Set up Ping-Ponging
   final Framebuffer fb1 = Framebuffer(cgl, t1);
   final Framebuffer fb2 = Framebuffer(cgl, t2);
   final UniformGroup ug = UniformGroup("ug")
-    ..ForceUniform(uRandomSeed, 0.0)
-    ..ForceUniform(uFlameTurbulence, 0.2)
-    ..ForceUniform(uFlameHeight, 3.5)
-    ..ForceUniform(uFlameWidth, 1.2)
-    ..ForceUniform(uFlameThrottle, 0.248); // needs to smaller than 1/4.0
+    ..forceUniform(uRandomSeed, 0.0)
+    ..forceUniform(uFlameTurbulence, 0.2)
+    ..forceUniform(uFlameHeight, 3.5)
+    ..forceUniform(uFlameWidth, 1.2)
+    ..forceUniform(uFlameThrottle, 0.248); // needs to smaller than 1/4.0
 
   // Event Handling
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.Element input = node as HTML.Element;
-    input.onChange.listen((HTML.Event e) {
-      HTML.InputElement input = e.target as HTML.InputElement;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.Element input = node as html.Element;
+    input.onChange.listen((html.Event e) {
+      html.InputElement input = e.target as html.InputElement;
       if (input.type == "range") {
-        HTML.OutputElement output =
-            HTML.document.getElementById("${input.id}2") as HTML.OutputElement;
-        ug.ForceUniform(input.id, double.parse(input.value!));
+        html.OutputElement output =
+            html.document.getElementById("${input.id}2") as html.OutputElement;
+        ug.forceUniform(input.id, double.parse(input.value!));
         output.value = input.value;
       }
     });
   }
 
   // Trigger handlers
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.Element input = node as HTML.Element;
-    input.dispatchEvent(HTML.Event("change"));
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.Element input = node as html.Element;
+    input.dispatchEvent(html.Event("change"));
   }
 
   double lastTimeMs = 0.0;
@@ -174,26 +174,26 @@ void main() {
   void animate(num timeMs) {
     lastTimeMs = timeMs + 0.0;
     frame++;
-    ug.ForceUniform(uRandomSeed, lastTimeMs);
+    ug.forceUniform(uRandomSeed, lastTimeMs);
 
     if (frame % 2 == 0) {
-      fb1.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug.ForceUniform(uTexture, t2);
-      programFire.Draw(unit, [ug]);
-      screen.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug.ForceUniform(uTexture, t1);
-      programColor.Draw(unit, [ug]);
+      fb1.activate(glClearAll, 0, 0, w, h);
+      ug.forceUniform(uTexture, t2);
+      programFire.draw(unit, [ug]);
+      screen.activate(glClearAll, 0, 0, w, h);
+      ug.forceUniform(uTexture, t1);
+      programColor.draw(unit, [ug]);
     } else {
-      fb2.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug.ForceUniform(uTexture, t1);
-      programFire.Draw(unit, [ug]);
-      screen.Activate(GL_CLEAR_ALL, 0, 0, w, h);
-      ug.ForceUniform(uTexture, t2);
-      programColor.Draw(unit, [ug]);
+      fb2.activate(glClearAll, 0, 0, w, h);
+      ug.forceUniform(uTexture, t1);
+      programFire.draw(unit, [ug]);
+      screen.activate(glClearAll, 0, 0, w, h);
+      ug.forceUniform(uTexture, t2);
+      programColor.draw(unit, [ug]);
     }
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs, "$frame");
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs, "$frame");
   }
 
   animate(0.0);

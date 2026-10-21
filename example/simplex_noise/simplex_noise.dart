@@ -1,7 +1,7 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const String uFreqMul = "uFreqMul";
 const String uAmplMul = "uAmplMul";
@@ -14,8 +14,8 @@ const String uMode = "uMode";
 const String uSpeed = "uSpeed";
 
 final ShaderObject nullVertexShader = ShaderObject("nullShaderV")
-  ..AddAttributeVars([aPosition])
-  ..SetBody([NullVertexShaderString]);
+  ..addAttributeVars([aPosition])
+  ..setBody([nullVertexShaderString]);
 
 String shader =
     """
@@ -80,7 +80,7 @@ String shader =
  """;
 
 final ShaderObject noiseFragmentShader = ShaderObject("noiseShaderF")
-  ..AddUniformVars([
+  ..addUniformVars([
     uTime,
     uCanvasSize,
     uAmpl1,
@@ -91,29 +91,29 @@ final ShaderObject noiseFragmentShader = ShaderObject("noiseShaderF")
     uMode,
     uSpeed,
   ])
-  ..SetBody([
-    ColorFunctions,
-    SimplexNoiseHelpers,
-    SimplexNoiseFunction3,
+  ..setBody([
+    colorFunctions,
+    simplexNoiseHelpers,
+    simplexNoiseFunction3,
     shader,
   ]);
 
 void main() {
-  IntroduceNewShaderVar(uFreqMul, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uAmplMul, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uAmpl1, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uAmpl2, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uAmpl3, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uMode, const ShaderVarDesc("float", ""));
-  IntroduceNewShaderVar(uSpeed, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uFreqMul, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uAmplMul, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uAmpl1, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uAmpl2, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uAmpl3, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uMode, const ShaderVarDesc("float", ""));
+  introduceNewShaderVar(uSpeed, const ShaderVarDesc("float", ""));
 
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
   canvas.width = w;
@@ -128,45 +128,45 @@ void main() {
     noiseFragmentShader,
   );
 
-  final MeshData quad = ShapeQuad(programPerlin, 1);
+  final MeshData quad = shapeQuad(programPerlin, 1);
 
   final UniformGroup uniforms = UniformGroup("simplex")
-    ..ForceUniform(uTime, 0.0)
-    ..ForceUniform(uCanvasSize, VM.Vector2(w + 0.0, h + 0.0));
+    ..forceUniform(uTime, 0.0)
+    ..forceUniform(uCanvasSize, vm.Vector2(w + 0.0, h + 0.0));
 
   // Event Handling
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.Element input = node as HTML.Element;
-    input.onChange.listen((HTML.Event e) {
-      HTML.InputElement input = e.target as HTML.InputElement;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.Element input = node as html.Element;
+    input.onChange.listen((html.Event e) {
+      html.InputElement input = e.target as html.InputElement;
       if (input.type == "range") {
-        HTML.OutputElement output =
-            HTML.document.getElementById(input.name!) as HTML.OutputElement;
-        uniforms.ForceUniform(input.name!, double.parse(input.value!));
+        html.OutputElement output =
+            html.document.getElementById(input.name!) as html.OutputElement;
+        uniforms.forceUniform(input.name!, double.parse(input.value!));
         output.value = input.value;
       }
       if (input.type == "radio") {
-        uniforms.ForceUniform(input.name!, double.parse(input.value!));
+        uniforms.forceUniform(input.name!, double.parse(input.value!));
       }
     });
   }
 
   // Trigger handlers
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.InputElement input = node as HTML.InputElement;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.InputElement input = node as html.InputElement;
     if (input.type! == "radio" && !input.checked!) continue;
-    input.dispatchEvent(HTML.Event("change"));
+    input.dispatchEvent(html.Event("change"));
   }
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
     lastTimeMs = timeMs + 0.0;
 
-    uniforms.ForceUniform(uTime, timeMs / 1000.0);
-    programPerlin.Draw(quad, [uniforms]);
+    uniforms.forceUniform(uTime, timeMs / 1000.0);
+    programPerlin.draw(quad, [uniforms]);
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

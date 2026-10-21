@@ -1,26 +1,26 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:async';
-import 'dart:math' as Math;
+import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const String modelFile = "../ct_logo.obj";
 
 final List<Future<Object>> gLoadables = [];
 
-final HTML.InputElement gSSAO =
-    HTML.document.querySelector('#activate') as HTML.InputElement;
+final html.InputElement gSSAO =
+    html.document.querySelector('#activate') as html.InputElement;
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final width = canvas.clientWidth;
   final height = canvas.clientHeight;
   canvas.width = width;
@@ -29,10 +29,10 @@ void main() {
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, -45.0, 0.3, canvas);
   final Perspective perspective = Perspective(orbit, 0.1, 2520.0)
-    ..AdjustAspect(width, height);
+    ..adjustAspect(width, height);
 
-  final Framebuffer screen = Framebuffer.Screen(cgl);
-  final Framebuffer fb = Framebuffer.Default(cgl, width, height);
+  final Framebuffer screen = Framebuffer.screen(cgl);
+  final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, width, height);
 
   final RenderProgram progSolid = RenderProgram(
     "solid",
@@ -49,25 +49,25 @@ void main() {
   );
 
   final UniformGroup uniforms = UniformGroup("plain")
-    ..SetUniform(uCameraNear, 0.1)
-    ..SetUniform(uCameraFar, 2529.0)
-    ..SetUniform(uCanvasSize, VM.Vector2(0.0 + width, 0.0 + height))
-    ..SetUniform(uDepthMap, fb.depthTexture!)
-    ..SetUniform(uTexture, fb.colorTexture!);
+    ..setUniform(uCameraNear, 0.1)
+    ..setUniform(uCameraFar, 2529.0)
+    ..setUniform(uCanvasSize, vm.Vector2(0.0 + width, 0.0 + height))
+    ..setUniform(uDepthMap, fb.depthTexture!)
+    ..setUniform(uTexture, fb.colorTexture!);
 
-  final MeshData unitQuad = ShapeQuad(progSSAO, 1);
+  final MeshData unitQuad = shapeQuad(progSSAO, 1);
 
   late MeshData ctLogo;
-  var future = LoadRaw(modelFile)
+  var future = loadRaw(modelFile)
     ..then((String content) {
-      GeometryBuilder gb = ImportGeometryFromWavefront(content);
-      ctLogo = GeometryBuilderToMeshData("", progSolid, gb);
+      GeometryBuilder gb = importGeometryFromWavefront(content);
+      ctLogo = geometryBuilderToMeshData("", progSolid, gb);
     });
   gLoadables.add(future);
 
   Material material = Material("mat")
-    ..SetUniform(uColor, ColorGray8)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity()..rotateX(Math.pi / 2));
+    ..setUniform(uColor, colorGray8)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -76,16 +76,16 @@ void main() {
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     if (gSSAO.checked!) {
-      fb.Activate(GL_CLEAR_ALL, 0, 0, width, height);
-      progSolid.Draw(ctLogo, [perspective, material]);
-      screen.Activate(GL_CLEAR_ALL, 0, 0, width, height);
-      progSSAO.Draw(unitQuad, [uniforms]);
+      fb.activate(glClearAll, 0, 0, width, height);
+      progSolid.draw(ctLogo, [perspective, material]);
+      screen.activate(glClearAll, 0, 0, width, height);
+      progSSAO.draw(unitQuad, [uniforms]);
     } else {
-      progSolid.Draw(ctLogo, [perspective, material]);
+      progSolid.draw(ctLogo, [perspective, material]);
     }
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   Future.wait(gLoadables).then((list) {

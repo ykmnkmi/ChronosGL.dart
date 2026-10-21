@@ -1,15 +1,15 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -33,21 +33,21 @@ void main() {
   Scene scenePerspective = Scene("objects", prog, [perspective]);
   phasePerspective.add(scenePerspective);
 
-  final Material mat1 = Material("mat1")..SetUniform(uColor, ColorBlue);
-  final Material mat2 = Material("mat2")..SetUniform(uColor, ColorRed);
-  final Material mat3 = Material("mat3")..SetUniform(uColor, ColorGreen);
-  final Material mat4 = Material("mat4")..SetUniform(uColor, ColorCyan);
-  final Material mat5 = Material("plane")..SetUniform(uColor, ColorGray8);
+  final Material mat1 = Material("mat1")..setUniform(uColor, colorBlue);
+  final Material mat2 = Material("mat2")..setUniform(uColor, colorRed);
+  final Material mat3 = Material("mat3")..setUniform(uColor, colorGreen);
+  final Material mat4 = Material("mat4")..setUniform(uColor, colorCyan);
+  final Material mat5 = Material("plane")..setUniform(uColor, colorGray8);
 
   final List<Node> nodes = [
-    Node("sphere", ShapeIcosahedron(prog, subdivisions: 3), mat1)
+    Node("sphere", shapeIcosahedron(prog, subdivisions: 3), mat1)
       ..setPos(0.0, 0.0, 0.0),
-    Node("cube", ShapeCube(prog), mat2)..setPos(-5.0, 0.0, -5.0),
-    Node("cylinder", ShapeCylinder(prog, 3.0, 6.0, 2.0, 32), mat3)
+    Node("cube", shapeCube(prog), mat2)..setPos(-5.0, 0.0, -5.0),
+    Node("cylinder", shapeCylinder(prog, 3.0, 6.0, 2.0, 32), mat3)
       ..setPos(5.0, 0.0, -5.0),
-    Node("torus", ShapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4), mat4)
+    Node("torus", shapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4), mat4)
       ..setPos(5.0, 0.0, 5.0),
-    Node("cube", ShapeCube(prog, x: 20.0, y: 0.1, z: 20.0), mat5)
+    Node("cube", shapeCube(prog, x: 20.0, y: 0.1, z: 20.0), mat5)
       ..setPos(0.0, -10.0, 0.0),
   ];
 
@@ -57,15 +57,15 @@ void main() {
   }
 
   // This sets the viewports among other things
-  void resolutionChange(HTML.Event? ev) {
+  void resolutionChange(html.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
     canvas.height = h;
     print("size change $w $h");
     w = w ~/ 2;
-    perspective.AdjustAspect(w, h);
-    orthographic.AdjustAspect(w, h);
+    perspective.adjustAspect(w, h);
+    orthographic.adjustAspect(w, h);
     phaseOrthograhic.viewPortW = w;
     phaseOrthograhic.viewPortH = h;
     phasePerspective.viewPortW = w;
@@ -74,7 +74,7 @@ void main() {
   }
 
   resolutionChange(null);
-  HTML.window.onResize.listen(resolutionChange);
+  html.window.onResize.listen(resolutionChange);
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -82,10 +82,10 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    phaseOrthograhic.Draw();
-    phasePerspective.Draw();
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    phaseOrthograhic.draw();
+    phasePerspective.draw();
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

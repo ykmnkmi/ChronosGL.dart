@@ -1,4 +1,4 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
@@ -6,11 +6,11 @@ import 'package:chronosgl/chronosgl.dart';
 const int kDim = 500;
 
 final ShaderObject computeVertexShader = ShaderObject("computeVertexShader")
-  ..AddAttributeVars([aPosition])
-  ..SetBody([NullVertexShaderString]);
+  ..addAttributeVars([aPosition])
+  ..setBody([nullVertexShaderString]);
 
 final ShaderObject computeFragmentShader = ShaderObject("computeFragmentShader")
-  ..SetBody([
+  ..setBody([
     """
 void main() { 
     $oFragColor.b = gl_FragCoord.x / $kDim.0;
@@ -20,8 +20,8 @@ void main() {
     """,
   ]);
 
-String ExtractAndSummarizeBytes(Framebuffer fb, int w, int h) {
-  Uint8List buf = fb.ExtractByteData(null, 0, 0, w, h);
+String extractAndSummarizeBytes(Framebuffer fb, int w, int h) {
+  Uint8List buf = fb.extractByteData(null, 0, 0, w, h);
   int channels = buf.length ~/ (w * h);
   print("Buffer length: ${buf.length} channels: $channels");
   int r = 0;
@@ -35,8 +35,8 @@ String ExtractAndSummarizeBytes(Framebuffer fb, int w, int h) {
   return "${r / (w * h)} ${g / (w * h)} ${b / (w * h)}";
 }
 
-String ExtractAndSummarizeFloat(Framebuffer fb, int w, int h) {
-  Float32List buf = fb.ExtractFloatData(null, 0, 0, w, h);
+String extractAndSummarizeFloat(Framebuffer fb, int w, int h) {
+  Float32List buf = fb.extractFloatData(null, 0, 0, w, h);
   int channels = buf.length ~/ (w * h);
   print("Buffer length: ${buf.length} channels: $channels");
   double r = 0.0;
@@ -54,12 +54,12 @@ String ExtractAndSummarizeFloat(Framebuffer fb, int w, int h) {
 }
 
 void main() {
-  final HTML.DivElement results =
-      HTML.document.querySelector('#results') as HTML.DivElement;
+  final html.DivElement results =
+      html.document.querySelector('#results') as html.DivElement;
 
   // The canvas is what we render the 3d scene into.
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   canvas
     ..width = kDim
     ..height = kDim;
@@ -73,17 +73,17 @@ void main() {
     computeFragmentShader,
   );
 
-  final MeshData unitQuad = ShapeQuad(program, 1);
+  final MeshData unitQuad = shapeQuad(program, 1);
 
   {
-    final Framebuffer fb = Framebuffer.Default(cgl, kDim, kDim);
+    final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, kDim, kDim);
 
     results.innerHtml =
         "${results.innerHtml!}<h3>Drawing into default format FB</h3>";
-    fb.Activate(GL_CLEAR_ALL, 0, 0, kDim, kDim);
-    program.Draw(unitQuad, []);
+    fb.activate(glClearAll, 0, 0, kDim, kDim);
+    program.draw(unitQuad, []);
     results.innerHtml =
-        "${results.innerHtml!}${ExtractAndSummarizeBytes(fb, kDim, kDim)}\n";
+        "${results.innerHtml!}${extractAndSummarizeBytes(fb, kDim, kDim)}\n";
   }
 
   {
@@ -99,14 +99,14 @@ void main() {
       "float",
       kDim,
       kDim,
-      GL_RGBA32F,
-      TexturePropertiesFramebuffer,
+      glRgba32f,
+      texturePropertiesFramebuffer,
     );
 
     Framebuffer fb = Framebuffer(cgl, tex);
-    fb.Activate(GL_CLEAR_ALL, 0, 0, kDim, kDim);
-    program.Draw(unitQuad, []);
+    fb.activate(glClearAll, 0, 0, kDim, kDim);
+    program.draw(unitQuad, []);
     results.innerHtml =
-        "${results.innerHtml!}${ExtractAndSummarizeFloat(fb, kDim, kDim)}\n";
+        "${results.innerHtml!}${extractAndSummarizeFloat(fb, kDim, kDim)}\n";
   }
 }

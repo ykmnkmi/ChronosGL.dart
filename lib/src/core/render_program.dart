@@ -1,6 +1,6 @@
 part of 'lib.dart';
 
-/// Helper class for holding info produced by RenderProgram::Draw().
+/// Helper class for holding info produced by RenderProgram::draw().
 class DrawStats {
   DrawStats(
     this.name,
@@ -24,7 +24,7 @@ class DrawStats {
 /// represents program (Fragment + Vertex Shader) running on the GPU with an API to invoke it.
 class RenderProgram extends NamedEntity {
   RenderProgram(super.name, this._cgl, this._shaderObjectV, this._shaderObjectF)
-    : _program = _cgl.CompileWholeProgram(
+    : _program = _cgl.compileWholeProgram(
         _shaderObjectV.shader!,
         _shaderObjectF.shader!,
         _shaderObjectV.transformVars,
@@ -57,24 +57,24 @@ class RenderProgram extends NamedEntity {
 
   ShaderObject get shaderObjectF => _shaderObjectF;
 
-  int GetTransformBindingIndex(String canonical) {
-    return _shaderObjectV.GetTransformBindingIndex(canonical);
+  int getTransformBindingIndex(String canonical) {
+    return _shaderObjectV.getTransformBindingIndex(canonical);
   }
 
-  MeshData MakeMeshData(String name, int drawMode) {
+  MeshData makeMeshData(String name, int drawMode) {
     return MeshData(
       name,
       _cgl,
       drawMode,
-      _shaderObjectV.GetAttributeLayoutMap(),
+      _shaderObjectV.getAttributeLayoutMap(),
     );
   }
 
   /// If you want to re-use meshes across programs you can use
   /// this predicate to assert that two programs are compatible.
-  bool HasCompatibleAttributesTo(RenderProgram other) {
-    var a = _shaderObjectV.GetAttributeLayoutMap();
-    var b = other._shaderObjectV.GetAttributeLayoutMap();
+  bool hasCompatibleAttributesTo(RenderProgram other) {
+    var a = _shaderObjectV.getAttributeLayoutMap();
+    var b = other._shaderObjectV.getAttributeLayoutMap();
     if (a.length != b.length) return false;
     for (String key in a.keys) {
       if (a[key] != b[key]) return false;
@@ -85,9 +85,9 @@ class RenderProgram extends NamedEntity {
   /// If you want to re-use meshes across programs you can use
   /// this predicate to assert that any mesh for `other` will work
   /// for `this`.
-  bool HasDownwardCompatibleAttributesTo(RenderProgram other) {
-    var a = _shaderObjectV.GetAttributeLayoutMap();
-    var b = other._shaderObjectV.GetAttributeLayoutMap();
+  bool hasDownwardCompatibleAttributesTo(RenderProgram other) {
+    var a = _shaderObjectV.getAttributeLayoutMap();
+    var b = other._shaderObjectV.getAttributeLayoutMap();
     for (String key in a.keys) {
       if (a[key] != b[key]) {
         return false;
@@ -96,23 +96,23 @@ class RenderProgram extends NamedEntity {
     return true;
   }
 
-  void _ClearState() {
+  void _clearState() {
     _nextTextureUnit = 0;
   }
 
   ChronosGL getContext() => _cgl;
 
-  bool _HasUniform(String canonical) {
+  bool _hasUniform(String canonical) {
     return _uniformLocations.containsKey(canonical);
   }
 
-  void _SetControl(String canonical, Object val) {
+  void _setControl(String canonical, Object val) {
     switch (canonical) {
       case cDepthTest:
         if (val == true) {
-          _cgl.enable(GL_DEPTH_TEST);
+          _cgl.enable(glDepthTest);
         } else {
-          _cgl.disable(GL_DEPTH_TEST);
+          _cgl.disable(glDepthTest);
         }
         break;
       case cDepthFunc:
@@ -120,10 +120,10 @@ class RenderProgram extends NamedEntity {
         break;
       case cStencilFunc:
         final TheStencilFunction sfun = val as TheStencilFunction;
-        if (sfun.func == GL_INVALID_VALUE) {
-          _cgl.disable(GL_STENCIL_TEST);
+        if (sfun.func == glInvalidValue) {
+          _cgl.disable(glStencilTest);
         } else {
-          _cgl.enable(GL_STENCIL_TEST);
+          _cgl.enable(glStencilTest);
           _cgl.stencilFunc(sfun.func, sfun.value, sfun.mask);
         }
         break;
@@ -136,10 +136,10 @@ class RenderProgram extends NamedEntity {
         break;
       case cBlendEquation:
         final TheBlendEquation beq = val as TheBlendEquation;
-        if (beq.equation == GL_INVALID_VALUE) {
-          _cgl.disable(GL_BLEND);
+        if (beq.equation == glInvalidValue) {
+          _cgl.disable(glBlend);
         } else {
-          _cgl.enable(GL_BLEND);
+          _cgl.enable(glBlend);
           _cgl.blendFunc(beq.srcFactor, beq.dstFactor);
           _cgl.blendEquation(beq.equation);
         }
@@ -157,10 +157,10 @@ class RenderProgram extends NamedEntity {
     }
   }
 
-  void _SetUniform(String group, String canonical, Object val) {
+  void _setUniform(String group, String canonical, Object val) {
     // enable only for debug
     if (_uniformsInitialized.containsKey(canonical)) {
-      LogError(
+      logError(
         "$name:  $canonical : group [$group] overwrites [$canonical] (${_uniformsInitialized[canonical]})",
       );
     }
@@ -168,74 +168,74 @@ class RenderProgram extends NamedEntity {
 
     // Note, we could make this smarter and skip
     // overwriting values with the same values;
-    ShaderVarDesc desc = RetrieveShaderVarDesc(canonical);
+    ShaderVarDesc desc = retrieveShaderVarDesc(canonical);
     assert(_uniformLocations.containsKey(canonical));
     GlUniformLocation l = _uniformLocations[canonical]!;
     switch (desc.type) {
-      case VarTypeInt:
+      case varTypeInt:
         if (desc.arraySize == 0) {
           _cgl.uniform1i(l, val as int);
         } else if (val is Int32List) {
           _cgl.uniform1iv(l, val);
         }
         break;
-      case VarTypeFloat:
+      case varTypeFloat:
         if (desc.arraySize == 0) {
           _cgl.uniform1f(l, (val as num).toDouble());
         } else if (val is Float32List) {
           _cgl.uniform1fv(l, val);
         }
         break;
-      case VarTypeMat4:
+      case varTypeMat4:
         if (desc.arraySize == 0) {
-          _cgl.uniformMatrix4fv(l, false, (val as VM.Matrix4).storage);
+          _cgl.uniformMatrix4fv(l, false, (val as vm.Matrix4).storage);
         } else if (val is Float32List) {
           _cgl.uniformMatrix4fv(l, false, val);
         } else {
           assert(false, "bad unform: $canonical");
         }
         break;
-      case VarTypeMat3:
+      case varTypeMat3:
         if (desc.arraySize == 0) {
-          _cgl.uniformMatrix3fv(l, false, (val as VM.Matrix3).storage);
+          _cgl.uniformMatrix3fv(l, false, (val as vm.Matrix3).storage);
         } else if (val is Float32List) {
           _cgl.uniformMatrix3fv(l, false, val);
         } else {
           assert(false, "bad unform: $canonical");
         }
         break;
-      case VarTypeVec4:
+      case varTypeVec4:
         if (desc.arraySize == 0) {
-          _cgl.uniform4fv(l, (val as VM.Vector4).storage);
+          _cgl.uniform4fv(l, (val as vm.Vector4).storage);
         } else {
           _cgl.uniform4fv(l, val as Float32List);
         }
         break;
-      case VarTypeVec3:
+      case varTypeVec3:
         if (desc.arraySize == 0) {
-          _cgl.uniform3fv(l, (val as VM.Vector3).storage);
+          _cgl.uniform3fv(l, (val as vm.Vector3).storage);
         } else {
           _cgl.uniform3fv(l, val as Float32List);
         }
         break;
-      case VarTypeVec2:
+      case varTypeVec2:
         if (desc.arraySize == 0) {
-          _cgl.uniform2fv(l, (val as VM.Vector2).storage);
+          _cgl.uniform2fv(l, (val as vm.Vector2).storage);
         } else {
           _cgl.uniform2fv(l, val as Float32List);
         }
         break;
-      case VarTypeSampler2D:
-      case VarTypeSampler2DShadow:
-        _cgl.activeTexture(GL_TEXTURE0 + _nextTextureUnit);
-        _cgl.bindTexture(GL_TEXTURE_2D, (val as Texture).GetTexture());
+      case varTypeSampler2D:
+      case varTypeSampler2DShadow:
+        _cgl.activeTexture(glTexture0 + _nextTextureUnit);
+        _cgl.bindTexture(glTexture2D, (val as Texture).getTexture());
         _cgl.uniform1i(l, _nextTextureUnit);
         _nextTextureUnit++;
         break;
-      case VarTypeSamplerCube:
+      case varTypeSamplerCube:
         assert(canonical == uCubeTexture);
-        _cgl.activeTexture(GL_TEXTURE0 + _nextTextureUnit);
-        _cgl.bindTexture(GL_TEXTURE_CUBE_MAP, (val as Texture).GetTexture());
+        _cgl.activeTexture(glTexture0 + _nextTextureUnit);
+        _cgl.bindTexture(glTextureCubeMap, (val as Texture).getTexture());
         _cgl.uniform1i(l, _nextTextureUnit);
         _nextTextureUnit++;
         break;
@@ -245,7 +245,7 @@ class RenderProgram extends NamedEntity {
     }
   }
 
-  List<String> UninitializedInputs() {
+  List<String> uninitializedInputs() {
     if (_uniformsInitialized.length == _uniformLocations.length &&
         _attributesInitialized.length == _attributes.length) {
       return [];
@@ -260,42 +260,42 @@ class RenderProgram extends NamedEntity {
     return out;
   }
 
-  void _ActivateUniforms(String group, Map<String, Object> inputs) {
+  void _activateUniforms(String group, Map<String, Object> inputs) {
     int count = 0;
     final DateTime start = DateTime.now();
 
     for (String canonical in inputs.keys) {
       switch (canonical.codeUnitAt(0)) {
         case prefixUniform:
-          if (_HasUniform(canonical)) {
-            _SetUniform(group, canonical, inputs[canonical]!);
+          if (_hasUniform(canonical)) {
+            _setUniform(group, canonical, inputs[canonical]!);
             ++count;
           }
           break;
         case prefixControl:
-          _SetControl(canonical, inputs[canonical]!);
+          _setControl(canonical, inputs[canonical]!);
           ++count;
           break;
       }
     }
     final Duration delta = DateTime.now().difference(start);
-    LogDebug("setting $count var in $delta");
+    logDebug("setting $count var in $delta");
   }
 
-  void Draw(
+  void draw(
     MeshData md,
     List<UniformGroup> uniforms, [
     List<DrawStats>? stats,
   ]) {
     final DateTime start = DateTime.now();
     _cgl.useProgram(_program);
-    _ClearState();
+    _clearState();
 
     // TODO: put this behind a flag
     _uniformsInitialized.clear();
     bool haveSeenMaterial = false;
     for (UniformGroup u in uniforms) {
-      _ActivateUniforms(u.name, u.GetUniforms());
+      _activateUniforms(u.name, u.getUniforms());
       if (u is Material) {
         assert(
           !haveSeenMaterial,
@@ -306,31 +306,31 @@ class RenderProgram extends NamedEntity {
     }
 
     _attributesInitialized.clear();
-    for (String a in md.GetAttributes()) {
+    for (String a in md.getAttributes()) {
       _attributesInitialized.add(a);
     }
     if (debug) {
       print(
-        "[$name] draw points: ${md.drawMode} instances${md.GetNumInstances()}",
+        "[$name] draw points: ${md.drawMode} instances${md.getNumInstances()}",
       );
     }
     // TODO: put this behind a flag
-    List<String> uninitialized = UninitializedInputs();
+    List<String> uninitialized = uninitializedInputs();
     if (uninitialized.isNotEmpty) {
       String mesg =
           "$name mesh:${md.name} mode:${md.drawMode}: uninitialized inputs: $uninitialized";
-      LogError(mesg);
+      logError(mesg);
       //throw mesg;
     }
 
-    md.Activate();
+    md.activate();
     bool hasTransforms = _shaderObjectV.transformVars.isNotEmpty;
     _cgl.draw(
       md.drawMode,
-      md.GetNumItems(),
+      md.getNumItems(),
       md.elementArrayBufferType,
       0,
-      md.GetNumInstances(),
+      md.getNumInstances(),
       hasTransforms,
     );
     if (debug) print(_cgl.getProgramInfoLog(_program));
@@ -338,8 +338,8 @@ class RenderProgram extends NamedEntity {
       stats.add(
         DrawStats(
           name,
-          md.GetNumInstances(),
-          md.GetNumItems(),
+          md.getNumInstances(),
+          md.getNumItems(),
           md.drawMode,
           DateTime.now().difference(start),
         ),

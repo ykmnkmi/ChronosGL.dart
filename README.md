@@ -36,6 +36,10 @@ To run examples see Makefile
 
 ## Usage
 
+Constants, functions, methods, and variables use lowerCamelCase, for example
+`glArrayBuffer`, `geometryBuilderToMeshData`, and `Keyboard.pageUp`.
+See [MIGRATION.md](MIGRATION.md) for the previous names.
+
 
 Create a new Dart webapp project, add this as a `pubspec.yaml` dependency:
 ```
@@ -53,7 +57,7 @@ It should look like this:
 
 If you need to import `dart:html`, do so as follows:
 ```
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 ```
 This will avoid a naming conflict for `Node`.
 

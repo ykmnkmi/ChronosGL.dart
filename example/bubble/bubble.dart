@@ -1,21 +1,21 @@
 import "dart:async";
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 String textureFile = "sphere.png";
 // https://cycling74.com/forums/topic/shader-help-recreating-gl_sphere_map/
 // https://www.opengl.org/wiki/Mathematics_of_glTexGen
 
 ShaderObject sphereVertexShader = ShaderObject("sphereV")
-  ..AddAttributeVars([aPosition, aNormal])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
-  ..AddVaryingVars([vTexUV])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aNormal])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
+  ..addVaryingVars([vTexUV])
+  ..setBody([
     """
 void main() {
-    $StdVertexBody
+    $stdVertexBody
     vec3 u = normalize(vec3($uModelMatrix * vec4($aPosition, 1.0)));
     vec3 n = normalize($uNormalMatrix * $aNormal );
     vec3 r = reflect( u, n );
@@ -27,9 +27,9 @@ void main() {
   ]);
 
 ShaderObject sphereFragmentShader = ShaderObject("sphereF")
-  ..AddVaryingVars([vTexUV])
-  ..AddUniformVars([uTexture])
-  ..SetBody([
+  ..addVaryingVars([vTexUV])
+  ..addUniformVars([uTexture])
+  ..setBody([
     """
 void main() {
     $oFragColor = texture($uTexture, $vTexUV);
@@ -41,12 +41,12 @@ final List<Future<Object>> gLoadables = [];
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   final OrbitCamera orbit = OrbitCamera(5.0, 10.0, 0.0, canvas);
@@ -64,17 +64,17 @@ void main() {
     sphereVertexShader,
     sphereFragmentShader,
   );
-  final MeshData mdSphere = ShapeIcosahedron(progSphere, subdivisions: 3);
-  final VM.Matrix4 modelMat = VM.Matrix4.identity();
-  final VM.Matrix3 normalMat = VM.Matrix3.identity();
+  final MeshData mdSphere = shapeIcosahedron(progSphere, subdivisions: 3);
+  final vm.Matrix4 modelMat = vm.Matrix4.identity();
+  final vm.Matrix3 normalMat = vm.Matrix3.identity();
 
-  final Material matSphere = Material.Transparent("sphere", BlendEquationMix)
-    ..SetUniform(uNormalMatrix, normalMat)
-    ..SetUniform(uModelMatrix, modelMat);
-  var future = LoadImage(textureFile)
-    ..then((HTML.ImageElement img) {
+  final Material matSphere = Material.transparent("sphere", blendEquationMix)
+    ..setUniform(uNormalMatrix, normalMat)
+    ..setUniform(uModelMatrix, modelMat);
+  var future = loadImage(textureFile)
+    ..then((html.ImageElement img) {
       Texture bubble = ImageTexture(cgl, textureFile, img);
-      matSphere.SetUniform(uTexture, bubble);
+      matSphere.setUniform(uTexture, bubble);
     });
   gLoadables.add(future);
 
@@ -84,9 +84,9 @@ void main() {
     pointSpritesVertexShader,
     pointSpritesFragmentShader,
   );
-  final Material matStars = Utils.MakeStarMaterial(cgl)
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity());
-  final MeshData mdStars = Utils.MakeStarMesh(progStars, 2000, 100.0);
+  final Material matStars = Utils.makeStarMaterial(cgl)
+    ..setUniform(uModelMatrix, vm.Matrix4.identity());
+  final MeshData mdStars = Utils.makeStarMesh(progStars, 2000, 100.0);
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -95,13 +95,13 @@ void main() {
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     modelMat.setIdentity();
-    progSphere.Draw(mdSphere, [matSphere, perspective]);
+    progSphere.draw(mdSphere, [matSphere, perspective]);
     modelMat.setTranslationRaw(1.5, 0.0, 0.0);
-    progSphere.Draw(mdSphere, [matSphere, perspective]);
-    progStars.Draw(mdStars, [matStars, perspective]);
+    progSphere.draw(mdSphere, [matSphere, perspective]);
+    progStars.draw(mdStars, [matStars, perspective]);
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   Future.wait(gLoadables).then((list) {

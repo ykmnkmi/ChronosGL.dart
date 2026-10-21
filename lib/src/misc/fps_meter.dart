@@ -4,15 +4,15 @@ const int _numBars = 90;
 const int _graphHeight = 30;
 const int _maxFps = 90;
 
-HTML.Element _MakeText(String initial) {
-  HTML.Element text = HTML.Element.div();
+html.Element _makeText(String initial) {
+  html.Element text = html.Element.div();
   text.style.fontWeight = "bold";
   text.text = initial;
   return text;
 }
 
-HTML.Element _MakeGraph(String fg, String bg, int bars, int height) {
-  HTML.Element graph = HTML.Element.div();
+html.Element _makeGraph(String fg, String bg, int bars, int height) {
+  html.Element graph = html.Element.div();
   graph.style
     ..width = "${bars}px"
     ..height = "${height}px"
@@ -20,7 +20,7 @@ HTML.Element _MakeGraph(String fg, String bg, int bars, int height) {
     ..background = fg;
 
   for (int i = 0; i < bars; i++) {
-    HTML.Element e = HTML.Element.span();
+    html.Element e = html.Element.span();
     e.style
       ..width = "1px"
       ..height = "${height}px"
@@ -34,7 +34,7 @@ HTML.Element _MakeGraph(String fg, String bg, int bars, int height) {
 
 class Stats {
   Stats(this._root, String fg, String bg)
-    : _graph = _MakeGraph(fg, bg, _numBars, _graphHeight) {
+    : _graph = _makeGraph(fg, bg, _numBars, _graphHeight) {
     _root.style
       ..color = fg
       ..fontFamily = "Helvetica,Arial,sans-serif"
@@ -49,25 +49,25 @@ class Stats {
     _root.append(_extra);
   }
 
-  final HTML.Element _root;
-  final HTML.Element _text = _MakeText("@@@@");
-  final HTML.Element _extra = HTML.Element.div();
-  final HTML.Element _graph;
+  final html.Element _root;
+  final html.Element _text = _makeText("@@@@");
+  final html.Element _extra = html.Element.div();
+  final html.Element _graph;
 
-  void ChangeExtra(String s) {
+  void changeExtra(String s) {
     _extra.innerHtml = s;
   }
 
-  void AddRawValue(int v) {
+  void addRawValue(int v) {
     if (v < 0) v = 0;
     if (v > _graphHeight) v = _graphHeight;
-    HTML.Element e = _graph.firstChild! as HTML.Element;
+    html.Element e = _graph.firstChild! as html.Element;
     e.style.height = "${v}px";
     _graph.append(e);
   }
 }
 
-const double _SAMPLE_RATE_MS = 1000.0;
+const double _sampleRateMs = 1000.0;
 
 class StatsFps extends Stats {
   StatsFps(super.root, super.fg, super.bg);
@@ -75,15 +75,15 @@ class StatsFps extends Stats {
   int _frames = 0;
   double _lastSample = 0.0;
 
-  void UpdateFrameCount(double now, [String extra = ""]) {
+  void updateFrameCount(double now, [String extra = ""]) {
     _frames++;
-    if ((now - _lastSample) < _SAMPLE_RATE_MS) return;
-    double fps = _frames * 1000.0 / _SAMPLE_RATE_MS;
+    if ((now - _lastSample) < _sampleRateMs) return;
+    double fps = _frames * 1000.0 / _sampleRateMs;
     //print("${fps}");
     _frames = 0;
     _lastSample = now;
     _text.text = "${fps.toStringAsFixed(2)} fps";
     _extra.innerHtml = extra;
-    AddRawValue(_graphHeight * fps.ceil() ~/ _maxFps);
+    addRawValue(_graphHeight * fps.ceil() ~/ _maxFps);
   }
 }

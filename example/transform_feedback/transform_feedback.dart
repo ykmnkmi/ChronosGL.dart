@@ -1,36 +1,36 @@
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:math' as Math;
-import 'dart:html' as HTML;
+import 'dart:math' as math;
+import 'dart:html' as html;
 import 'dart:typed_data';
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const double kMaxDistance = 100.1;
 const double kMinDistance = 0.2;
 
-final VM.Vector3 kVecOutOfBounds = VM.Vector3.all(kMaxDistance * 100.0);
+final vm.Vector3 kVecOutOfBounds = vm.Vector3.all(kMaxDistance * 100.0);
 
 const String uSources = "uSources";
 const String uSinks = "uSinks";
 
-final HTML.SelectElement gParticles =
-    HTML.document.querySelector('#particles') as HTML.SelectElement;
+final html.SelectElement gParticles =
+    html.document.querySelector('#particles') as html.SelectElement;
 
-final HTML.InputElement gCpuCompute =
-    HTML.document.querySelector('#cpucompute') as HTML.InputElement;
+final html.InputElement gCpuCompute =
+    html.document.querySelector('#cpucompute') as html.InputElement;
 
 final ShaderObject particleVertexShader = ShaderObject("ParticleV")
-  ..AddAttributeVars([aPosition])
-  ..AddUniformVars([
+  ..addAttributeVars([aPosition])
+  ..addUniformVars([
     uPerspectiveViewMatrix,
     uModelMatrix,
     uPointSize,
     uSources,
     uSinks,
   ])
-  ..AddTransformVars([tPosition])
-  ..SetBody([
+  ..addTransformVars([tPosition])
+  ..setBody([
     """
 const float kMaxDistance = $kMaxDistance;
 const float kMinDistance = $kMinDistance;
@@ -87,8 +87,8 @@ void main() {
   ]);
 
 final ShaderObject particleFragmentShader = ShaderObject("ParticleF")
-  ..AddUniformVars([uTexture])
-  ..SetBody([
+  ..addUniformVars([uTexture])
+  ..setBody([
     """
 void main() {
       $oFragColor = texture( $uTexture,  gl_PointCoord);
@@ -96,41 +96,41 @@ void main() {
 """,
   ]);
 
-String DumpVec(VM.Vector3 v) => "${v.x} ${v.y} ${v.z}";
+String dumpVec(vm.Vector3 v) => "${v.x} ${v.y} ${v.z}";
 
 // Source or Sink for Ions. Can move themselves - currently not used.
 class Pole {
-  Pole(VM.Vector3 pos) : _pos = pos.clone();
+  Pole(vm.Vector3 pos) : _pos = pos.clone();
 
-  final VM.Vector3 _pos;
+  final vm.Vector3 _pos;
 
-  VM.Vector3 Pos() => _pos;
+  vm.Vector3 pos() => _pos;
 
   @override
-  String toString() => "POLE: ${DumpVec(_pos)}";
+  String toString() => "POLE: ${dumpVec(_pos)}";
 }
 
 // Particle emitted from a Source Pole and heading towards a Sink Pole.
 class Ion {
-  Ion(VM.Vector3 pos) : _pos = pos.clone();
+  Ion(vm.Vector3 pos) : _pos = pos.clone();
 
-  VM.Vector3 _pos;
+  vm.Vector3 _pos;
 
-  VM.Vector3 Pos() => _pos;
+  vm.Vector3 pos() => _pos;
 
   // Update position based on distance Source/Sink Poles
-  void Update(List<Pole> srcs, List<Pole> dsts, Math.Random rng, double dt) {
-    VM.Vector3 force = VM.Vector3.zero();
+  void update(List<Pole> srcs, List<Pole> dsts, math.Random rng, double dt) {
+    vm.Vector3 force = vm.Vector3.zero();
 
     for (Pole pole in srcs) {
       // accumulate pushing forces
-      VM.Vector3 t = _pos - pole.Pos();
+      vm.Vector3 t = _pos - pole.pos();
       final double dist = t.length;
       if (dist <= kMinDistance) continue;
       if (dist > kMaxDistance) {
         // too far away
         Pole p = srcs[rng.nextInt(srcs.length)];
-        _pos = p.Pos() + RandomVector(rng, 0.35);
+        _pos = p.pos() + randomVector(rng, 0.35);
         return;
       }
       force += t / (dist * dist);
@@ -138,12 +138,12 @@ class Ion {
 
     for (Pole pole in dsts) {
       // accumulate pulling forces
-      VM.Vector3 t = pole.Pos() - _pos; //
+      vm.Vector3 t = pole.pos() - _pos; //
       final double dist = t.length;
       if (dist <= kMinDistance) {
         // too close to dst pole
         Pole p = srcs[rng.nextInt(srcs.length)];
-        _pos = p.Pos() + RandomVector(rng, 0.35);
+        _pos = p.pos() + randomVector(rng, 0.35);
         return;
       }
       force += t / (dist * dist);
@@ -154,68 +154,68 @@ class Ion {
   }
 
   @override
-  String toString() => "ION: ${DumpVec(_pos)}";
+  String toString() => "ION: ${dumpVec(_pos)}";
 }
 
-VM.Vector3 RandomVector(Math.Random rng, double d) {
-  return VM.Vector3(
+vm.Vector3 randomVector(math.Random rng, double d) {
+  return vm.Vector3(
     (rng.nextDouble() - 0.5),
     (rng.nextDouble() - 0.5),
     (rng.nextDouble() - 0.5),
   )..scale(d);
 }
 
-List<Pole> MakeRowOfPoles(List<double> xx, double y, double z, double scale) {
+List<Pole> makeRowOfPoles(List<double> xx, double y, double z, double scale) {
   List<Pole> out = [];
   for (double x in xx) {
-    out.add(Pole(VM.Vector3(x, y, z) * scale));
+    out.add(Pole(vm.Vector3(x, y, z) * scale));
   }
   return out;
 }
 
-Float32List ExtractPolePos(List<Pole> poles) {
+Float32List extractPolePos(List<Pole> poles) {
   Float32List out = Float32List(3 * poles.length);
   int n = 0;
   for (Pole p in poles) {
-    out[n + 0] = p.Pos().x;
-    out[n + 1] = p.Pos().y;
-    out[n + 2] = p.Pos().z;
+    out[n + 0] = p.pos().x;
+    out[n + 1] = p.pos().y;
+    out[n + 2] = p.pos().z;
     n += 3;
   }
   return out;
 }
 
-void ExtractIonPos(List<Ion> ions, Float32List out) {
+void extractIonPos(List<Ion> ions, Float32List out) {
   assert(ions.length * 3 == out.length);
   int n = 0;
   for (Ion ion in ions) {
-    out[n + 0] = ion.Pos().x;
-    out[n + 1] = ion.Pos().y;
-    out[n + 2] = ion.Pos().z;
+    out[n + 0] = ion.pos().x;
+    out[n + 1] = ion.pos().y;
+    out[n + 2] = ion.pos().z;
     n += 3;
   }
 }
 
 void main() {
-  IntroduceNewShaderVar(
+  introduceNewShaderVar(
     uSources,
-    const ShaderVarDesc(VarTypeVec3, "", arraySize: 5),
+    const ShaderVarDesc(varTypeVec3, "", arraySize: 5),
   );
-  IntroduceNewShaderVar(
+  introduceNewShaderVar(
     uSinks,
-    const ShaderVarDesc(VarTypeVec3, "", arraySize: 5),
+    const ShaderVarDesc(varTypeVec3, "", arraySize: 5),
   );
 
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final Math.Random rng = Math.Random(0);
+  final math.Random rng = math.Random(0);
 
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final int width = canvas.clientWidth;
   final int height = canvas.clientHeight;
   canvas.width = width;
@@ -224,7 +224,7 @@ void main() {
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, 0.5, 0.5, canvas);
   final Perspective perspective = Perspective(orbit, 0.1, 1000.0)
-    ..AdjustAspect(width, height);
+    ..adjustAspect(width, height);
 
   final RenderProgram programJS = RenderProgram(
     "CPU",
@@ -238,105 +238,105 @@ void main() {
     particleVertexShader,
     particleFragmentShader,
   );
-  final int bindingIndex = programGPU.GetTransformBindingIndex(tPosition);
+  final int bindingIndex = programGPU.getTransformBindingIndex(tPosition);
   print("@@@@ $bindingIndex");
 
-  final List<Pole> srcPoles = MakeRowOfPoles(
+  final List<Pole> srcPoles = makeRowOfPoles(
     [2.0, 1.0, 0.0, -1.0, -2.0],
     0.0,
     2.0,
     3.0,
   );
-  final List<Pole> dstPoles = MakeRowOfPoles(
+  final List<Pole> dstPoles = makeRowOfPoles(
     [2.0, 1.0, 0.0, -1.0, -2.0],
     0.0,
     -2.0,
     3.0,
   );
 
-  List<Ion> ions = [Ion(RandomVector(rng, kMaxDistance * 100.0))];
+  List<Ion> ions = [Ion(randomVector(rng, kMaxDistance * 100.0))];
   Float32List ionsPos = Float32List(3 * ions.length);
-  ExtractIonPos(ions, ionsPos);
+  extractIonPos(ions, ionsPos);
 
   // JS version setup
-  Material matJS = Material.Transparent("stars", BlendEquationMix)
-    ..SetUniform(uTexture, Utils.createParticleTexture(cgl))
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity())
-    ..SetUniform(uPointSize, 200.0);
-  MeshData mdJS = programJS.MakeMeshData("mdJS", GL_POINTS)
-    ..AddVertices(ionsPos);
+  Material matJS = Material.transparent("stars", blendEquationMix)
+    ..setUniform(uTexture, Utils.createParticleTexture(cgl))
+    ..setUniform(uModelMatrix, vm.Matrix4.identity())
+    ..setUniform(uPointSize, 200.0);
+  MeshData mdJS = programJS.makeMeshData("mdJS", glPoints)
+    ..addVertices(ionsPos);
 
   // GPU version setup
-  Material matGPU = Material.Transparent("stars", BlendEquationMix)
-    ..SetUniform(uTexture, Utils.createParticleTexture(cgl))
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity())
-    ..SetUniform(uPointSize, 200.0)
-    ..SetUniform(uSources, ExtractPolePos(srcPoles))
-    ..SetUniform(uSinks, ExtractPolePos(dstPoles));
+  Material matGPU = Material.transparent("stars", blendEquationMix)
+    ..setUniform(uTexture, Utils.createParticleTexture(cgl))
+    ..setUniform(uModelMatrix, vm.Matrix4.identity())
+    ..setUniform(uPointSize, 200.0)
+    ..setUniform(uSources, extractPolePos(srcPoles))
+    ..setUniform(uSinks, extractPolePos(dstPoles));
 
-  MeshData mdOut = programGPU.MakeMeshData("ionsOut", GL_POINTS)
-    ..AddVertices(ionsPos);
-  MeshData mdIn = programGPU.MakeMeshData("ionsIn", GL_POINTS)
-    ..AddVertices(ionsPos);
+  MeshData mdOut = programGPU.makeMeshData("ionsOut", glPoints)
+    ..addVertices(ionsPos);
+  MeshData mdIn = programGPU.makeMeshData("ionsIn", glPoints)
+    ..addVertices(ionsPos);
 
-  void ResizeIons(HTML.Event? ev) {
+  void resizeIons(html.Event? ev) {
     int n = int.parse(gParticles.value!);
     print("resize to $n ions");
     ions.clear();
     for (int i = 0; i < n; i++) {
-      Ion ion = Ion(RandomVector(rng, kMaxDistance * 100.0));
+      Ion ion = Ion(randomVector(rng, kMaxDistance * 100.0));
       ions.add(ion);
     }
     ionsPos = Float32List(3 * n);
-    ExtractIonPos(ions, ionsPos);
-    cgl.bindBuffer(GL_ARRAY_BUFFER, null);
-    cgl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, bindingIndex, null);
-    mdOut.ChangeVertexData(ionsPos);
-    mdIn.ChangeVertexData(ionsPos);
+    extractIonPos(ions, ionsPos);
+    cgl.bindBuffer(glArrayBuffer, null);
+    cgl.bindBufferBase(glTransformFeedbackBuffer, bindingIndex, null);
+    mdOut.changeVertexData(ionsPos);
+    mdIn.changeVertexData(ionsPos);
     cgl.bindBufferBase(
-      GL_TRANSFORM_FEEDBACK_BUFFER,
+      glTransformFeedbackBuffer,
       bindingIndex,
-      mdOut.GetBuffer(aPosition),
+      mdOut.getBuffer(aPosition),
     );
   }
 
-  void UpdateIonsJS(double t) {
+  void updateIonsJS(double t) {
     for (Ion ion in ions) {
-      ion.Update(srcPoles, dstPoles, rng, t);
+      ion.update(srcPoles, dstPoles, rng, t);
     }
-    ExtractIonPos(ions, ionsPos);
-    mdJS.ChangeVertexData(ionsPos);
+    extractIonPos(ions, ionsPos);
+    mdJS.changeVertexData(ionsPos);
   }
 
   var transform = cgl.createTransformFeedback();
   cgl.bindTransformFeedback(transform);
 
-  ResizeIons(null);
+  resizeIons(null);
 
   void animate(num timeMs) {
     orbit.azimuth += 0.002;
     orbit.animate(0.0); // argument is not used
 
     if (gCpuCompute.checked!) {
-      UpdateIonsJS(0.06);
-      programJS.Draw(mdJS, [perspective, matJS]);
+      updateIonsJS(0.06);
+      programJS.draw(mdJS, [perspective, matJS]);
     } else {
-      programGPU.Draw(mdIn, [perspective, matGPU]);
+      programGPU.draw(mdIn, [perspective, matGPU]);
       // use vertex shader output as input for next round
-      cgl.bindBuffer(GL_ARRAY_BUFFER, mdIn.GetBuffer(aPosition));
-      cgl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, mdOut.GetBuffer(aPosition));
+      cgl.bindBuffer(glArrayBuffer, mdIn.getBuffer(aPosition));
+      cgl.bindBuffer(glTransformFeedbackBuffer, mdOut.getBuffer(aPosition));
       cgl.copyBufferSubData(
-        GL_TRANSFORM_FEEDBACK_BUFFER,
-        GL_ARRAY_BUFFER,
+        glTransformFeedbackBuffer,
+        glArrayBuffer,
         0,
         0,
         ions.length * 3 * 4,
       );
     }
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(timeMs + 0.0);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(timeMs + 0.0);
   }
 
-  gParticles.onChange.listen(ResizeIons);
+  gParticles.onChange.listen(resizeIons);
   animate(0.0);
 }

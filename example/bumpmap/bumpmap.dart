@@ -1,19 +1,19 @@
 import 'dart:async';
-import 'dart:html' as HTML;
-import "dart:math" as MATH;
+import 'dart:html' as html;
+import "dart:math" as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const String dir = "../asset/leeperrysmith/";
 const String modelFile = "${dir}LeePerrySmith.js";
 const String bumpmapFile = "${dir}Infinite-Level_02_Disp_NoSmoothUV-4096.jpg";
 
 final ShaderObject vertexShader = ShaderObject("LightBlinnPhongFancyV")
-  ..AddAttributeVars([aPosition, aNormal, aTexUV])
-  ..AddVaryingVars([vPosition, vNormal, vTexUV])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aNormal, aTexUV])
+  ..addVaryingVars([vPosition, vNormal, vTexUV])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
+  ..setBody([
     """
 void main() {
     vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
@@ -26,11 +26,11 @@ void main() {
   ]);
 
 final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongFancyF")
-  ..AddVaryingVars([vPosition, vNormal, vTexUV])
-  ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
-  ..AddUniformVars([uEyePosition, uColor])
-  ..AddUniformVars([uBumpScale, uBumpMap])
-  ..SetBody(
+  ..addVaryingVars([vPosition, vNormal, vTexUV])
+  ..addUniformVars([uLightDescs, uLightTypes, uShininess])
+  ..addUniformVars([uEyePosition, uColor])
+  ..addUniformVars([uBumpScale, uBumpMap])
+  ..setBody(
     [
       """
 void main() {
@@ -50,26 +50,26 @@ void main() {
 }
 """,
     ],
-    prolog: [StdLibShaderDerivative, StdLibShader],
+    prolog: [stdLibShaderDerivative, stdLibShader],
   );
 
-final VM.Vector3 colSkin = VM.Vector3(0.333, 0.157, 0.067);
-//const VM.Vector3 colGray = new VM.Vector3(0.2, 0.2, 0.2);
-final VM.Vector3 dirLight = VM.Vector3(-1.0, -1.0, 0.0);
-final VM.Vector3 colDiffuse = VM.Vector3.all(0.3);
-final VM.Vector3 colSpecular = VM.Vector3.all(0.133);
+final vm.Vector3 colSkin = vm.Vector3(0.333, 0.157, 0.067);
+//const vm.Vector3 colGray = new vm.Vector3(0.2, 0.2, 0.2);
+final vm.Vector3 dirLight = vm.Vector3(-1.0, -1.0, 0.0);
+final vm.Vector3 colDiffuse = vm.Vector3.all(0.3);
+final vm.Vector3 colSpecular = vm.Vector3.all(0.133);
 
 final double glossiness = 10.0;
-final double angle = MATH.pi / 6.0;
+final double angle = math.pi / 6.0;
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   final OrbitCamera orbit = OrbitCamera(0.3, 0.0, 0.0, canvas)
@@ -85,7 +85,7 @@ void main() {
   );
 
   final Illumination illumination = Illumination();
-  illumination.AddLight(light);
+  illumination.addLight(light);
 
   final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
     "main",
@@ -107,40 +107,40 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    phase.Draw();
+    phase.draw();
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
-  List<Future<Object>> futures = [LoadJson(modelFile), LoadImage(bumpmapFile)];
+  List<Future<Object>> futures = [loadJson(modelFile), loadImage(bumpmapFile)];
 
   Future.wait(futures).then((list) {
     // Setup Bumpmap
     final TextureProperties tp = TextureProperties()
-      ..SetMipmapLinear()
+      ..setMipmapLinear()
       ..clamp = true;
     final Texture bumpmap = ImageTexture(cgl, bumpmapFile, list[1], tp);
     final Material mat = Material("mat")
-      ..SetUniform(uColor, colSkin)
-      ..SetUniform(uShininess, glossiness)
-      ..SetUniform(uBumpMap, bumpmap)
-      ..SetUniform(uBumpScale, 0.01);
+      ..setUniform(uColor, colSkin)
+      ..setUniform(uShininess, glossiness)
+      ..setUniform(uBumpMap, bumpmap)
+      ..setUniform(uBumpScale, 0.01);
     // Setup Mesh
-    List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(
+    List<GeometryBuilder> gbs = importGeometryFromThreeJsJson(
       list[0] as Map<String, Object?>,
     );
     print(gbs[0]);
-    MeshData md = GeometryBuilderToMeshData(
+    MeshData md = geometryBuilderToMeshData(
       modelFile,
       sceneMain.program,
       gbs[0],
     );
 
     Node mesh = Node(md.name, md, mat);
-    Node n = Node.Container("wrapper", mesh);
+    Node n = Node.container("wrapper", mesh);
     //n.invert = true;
-    n.lookAt(VM.Vector3(100.0, 0.0, 0.0));
+    n.lookAt(vm.Vector3(100.0, 0.0, 0.0));
     //n.matrix.scale(0.02);
     sceneMain.add(n);
     // GO!

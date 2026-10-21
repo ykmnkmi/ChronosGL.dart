@@ -1,17 +1,17 @@
 part of 'lib.dart';
 
-MeshData EmptyLightVisualizer(RenderProgram prog, String name) {
-  MeshData md = prog.MakeMeshData(name, GL_LINES);
-  md.AddVertices(Float32List(3));
-  md.AddFaces([0, 0]);
+MeshData emptyLightVisualizer(RenderProgram prog, String name) {
+  MeshData md = prog.makeMeshData(name, glLines);
+  md.addVertices(Float32List(3));
+  md.addFaces([0, 0]);
   return md;
 }
 
-void UpdateDirectionalLightVisualizer(
+void updateDirectionalLightVisualizer(
   MeshData md,
   double dim,
   double delta,
-  VM.Vector3 dir,
+  vm.Vector3 dir,
 ) {
   if (dir.y == 0.0) {
     return;
@@ -19,14 +19,14 @@ void UpdateDirectionalLightVisualizer(
   final double d = dim * 0.5;
   final double end = delta * (d / delta).floor();
   final double start = -end;
-  final VM.Vector3 dir2y = dir * d / dir.y;
-  List<VM.Vector3> points = [];
+  final vm.Vector3 dir2y = dir * d / dir.y;
+  List<vm.Vector3> points = [];
   for (double x = start; x <= end; x += delta) {
     for (double z = start; z <= end; z += delta) {
       // we have an intersection  point with xz plane, now get the
       // intersection with the top and bottom face of the cube
-      points.add(VM.Vector3(x, 0.0, z)..add(dir2y));
-      points.add(VM.Vector3(x, 0.0, z)..sub(dir2y));
+      points.add(vm.Vector3(x, 0.0, z)..add(dir2y));
+      points.add(vm.Vector3(x, 0.0, z)..sub(dir2y));
     }
   }
   for (int i = 0; i < 8; ++i) {
@@ -34,52 +34,52 @@ void UpdateDirectionalLightVisualizer(
     int y = ((i & 2) == 2) ? 1 : -1;
     int z = ((i & 4) == 4) ? 1 : -1;
     if (x > 0) {
-      points.add(VM.Vector3(x * d, y * d, z * d));
-      points.add(VM.Vector3(-x * d, y * d, z * d));
+      points.add(vm.Vector3(x * d, y * d, z * d));
+      points.add(vm.Vector3(-x * d, y * d, z * d));
     }
     if (y > 0) {
-      points.add(VM.Vector3(x * d, y * d, z * d));
-      points.add(VM.Vector3(x * d, -y * d, z * d));
+      points.add(vm.Vector3(x * d, y * d, z * d));
+      points.add(vm.Vector3(x * d, -y * d, z * d));
     }
     if (z > 0) {
-      points.add(VM.Vector3(x * d, y * d, z * d));
-      points.add(VM.Vector3(x * d, y * d, -z * d));
+      points.add(vm.Vector3(x * d, y * d, z * d));
+      points.add(vm.Vector3(x * d, y * d, -z * d));
     }
   }
 
-  md.ChangeVertexData(FlattenVector3List(points));
+  md.changeVertexData(flattenVector3List(points));
   List<int> faces = List.generate(points.length, (index) => index);
-  md.ChangeFaces(faces);
+  md.changeFaces(faces);
 }
 
-VM.Vector3 GetOrthogonalVector3(VM.Vector3 dir) {
+vm.Vector3 getOrthogonalVector3(vm.Vector3 dir) {
   if (dir.x != 0.0) {
-    if (dir.y != 0.0) return VM.Vector3(-dir.y, dir.x, 0.0);
-    if (dir.z != 0.0) return VM.Vector3(-dir.z, 0.0, dir.x);
-    return VM.Vector3(0.0, 1.0, 1.0);
+    if (dir.y != 0.0) return vm.Vector3(-dir.y, dir.x, 0.0);
+    if (dir.z != 0.0) return vm.Vector3(-dir.z, 0.0, dir.x);
+    return vm.Vector3(0.0, 1.0, 1.0);
   } else {
-    if (dir.y == 0.0) return VM.Vector3(1.0, 1.0, 0.0);
-    if (dir.z == 0.0) return VM.Vector3(1.0, 0.0, 1.0);
-    return VM.Vector3(0.0, -dir.z, dir.y);
+    if (dir.y == 0.0) return vm.Vector3(1.0, 1.0, 0.0);
+    if (dir.z == 0.0) return vm.Vector3(1.0, 0.0, 1.0);
+    return vm.Vector3(0.0, -dir.z, dir.y);
   }
 }
 
-void UpdateSpotLightVisualizer(
+void updateSpotLightVisualizer(
   MeshData md,
-  VM.Vector3 pos,
-  VM.Vector3 dir,
+  vm.Vector3 pos,
+  vm.Vector3 dir,
   double range,
   double angle,
 ) {
   final int kSpines = 8;
-  VM.Vector3 center = pos + dir.normalized() * range;
-  List<VM.Vector3> points = [pos, center];
-  VM.Vector3 ortho = GetOrthogonalVector3(dir)
+  vm.Vector3 center = pos + dir.normalized() * range;
+  List<vm.Vector3> points = [pos, center];
+  vm.Vector3 ortho = getOrthogonalVector3(dir)
     ..normalize()
-    ..scale(Math.tan(angle) * range);
+    ..scale(math.tan(angle) * range);
   for (int i = 0; i < kSpines; i++) {
-    VM.Vector3 p = ortho.clone()
-      ..applyAxisAngle(dir, i * 2.0 * Math.pi / kSpines)
+    vm.Vector3 p = ortho.clone()
+      ..applyAxisAngle(dir, i * 2.0 * math.pi / kSpines)
       ..add(center);
     points.add(p);
   }
@@ -104,23 +104,23 @@ void UpdateSpotLightVisualizer(
       faces.add(i);
     }
   }
-  md.ChangeVertexData(FlattenVector3List(points));
-  md.ChangeFaces(faces);
+  md.changeVertexData(flattenVector3List(points));
+  md.changeFaces(faces);
 }
 
-void UpdatePointLightVisualizer2(MeshData md, VM.Vector3 pos, double range) {
-  List<VM.Vector3> points = [];
+void updatePointLightVisualizer2(MeshData md, vm.Vector3 pos, double range) {
+  List<vm.Vector3> points = [];
   List<int> faces = [];
   // Rays from center
-  for (VM.Vector3 v in IcosahedronVertexList) {
+  for (vm.Vector3 v in icosahedronVertexList) {
     faces.add(points.length);
-    faces.add(IcosahedronVertexList.length);
+    faces.add(icosahedronVertexList.length);
     points.add(pos + (v * range));
   }
   points.add(pos);
 
   // Faces
-  for (Face3 f in IcosahedronFaceList) {
+  for (Face3 f in icosahedronFaceList) {
     faces.add(f.a);
     faces.add(f.b);
     faces.add(f.b);
@@ -129,41 +129,41 @@ void UpdatePointLightVisualizer2(MeshData md, VM.Vector3 pos, double range) {
     faces.add(f.a);
   }
 
-  md.AddVertices(FlattenVector3List(points));
-  md.ChangeFaces(faces);
+  md.addVertices(flattenVector3List(points));
+  md.changeFaces(faces);
 }
 
-void UpdatePointLightVisualizer(MeshData md, VM.Vector3 pos, double range) {
-  List<VM.Vector3> points = [];
+void updatePointLightVisualizer(MeshData md, vm.Vector3 pos, double range) {
+  List<vm.Vector3> points = [];
   List<int> faces = [];
   // Rays from center
-  for (VM.Vector3 v in IcosahedronVertexList) {
+  for (vm.Vector3 v in icosahedronVertexList) {
     faces.add(points.length);
-    faces.add(IcosahedronVertexList.length);
+    faces.add(icosahedronVertexList.length);
     points.add(pos + (v * range));
   }
   points.add(pos);
-  md.ChangeVertexData(FlattenVector3List(points));
-  md.ChangeFaces(faces);
+  md.changeVertexData(flattenVector3List(points));
+  md.changeFaces(faces);
 }
 
-void UpdateLightVisualizer(MeshData md, Light light) {
+void updateLightVisualizer(MeshData md, Light light) {
   if (light is DirectionalLight) {
     DirectionalLight dl = light;
-    UpdateDirectionalLightVisualizer(md, dl.dim, dl.dim / 4, dl.dir);
+    updateDirectionalLightVisualizer(md, dl.dim, dl.dim / 4, dl.dir);
   } else if (light is SpotLight) {
     SpotLight sl = light;
-    UpdateSpotLightVisualizer(md, sl.pos, sl.dir, sl.range, sl.angle);
+    updateSpotLightVisualizer(md, sl.pos, sl.dir, sl.range, sl.angle);
   } else if (light is PointLight) {
     PointLight pl = light;
-    UpdatePointLightVisualizer(md, pl.pos, pl.range);
+    updatePointLightVisualizer(md, pl.pos, pl.range);
   } else {
     assert(false, "unknown light: ${light.runtimeType}");
   }
 }
 
-MeshData LightVisualizer(RenderProgram prog, Light light) {
-  MeshData md = EmptyLightVisualizer(prog, "dirLightViz");
-  UpdateLightVisualizer(md, light);
+MeshData lightVisualizer(RenderProgram prog, Light light) {
+  MeshData md = emptyLightVisualizer(prog, "dirLightViz");
+  updateLightVisualizer(md, light);
   return md;
 }

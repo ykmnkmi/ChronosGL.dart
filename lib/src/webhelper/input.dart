@@ -3,14 +3,14 @@ part of 'lib.dart';
 /// HTML keyboard handling
 class Keyboard {
   Keyboard(dynamic elem) {
-    elem ??= HTML.document;
+    elem ??= html.document;
 
-    elem.onKeyDown.listen((HTML.KeyboardEvent e) {
+    elem.onKeyDown.listen((html.KeyboardEvent e) {
       _currentlyPressedKeys.add(e.which!);
       _justPressedKeys.add(e.which!);
     });
 
-    elem.onKeyUp.listen((HTML.KeyboardEvent e) {
+    elem.onKeyUp.listen((html.KeyboardEvent e) {
       _currentlyPressedKeys.remove(e.which!);
       _justReleasedKeys.add(e.which!);
     });
@@ -28,73 +28,73 @@ class Keyboard {
   // if you use this function make sure you call AfterFrameCleanup
   bool justReleasedKey(int key) => _justReleasedKeys.contains(key);
 
-  void AfterFrameCleanup() {
+  void afterFrameCleanup() {
     _justReleasedKeys.clear();
     _justPressedKeys.clear();
   }
 
   // See http://keycode.info/
-  static const int PAGEUP = 33;
-  static const int PAGEDOWN = 34;
-  static const int END = 35;
-  static const int HOME = 36;
-  static const int LEFT = 37;
-  static const int RIGHT = 39;
-  static const int UP = 38;
-  static const int DOWN = 40;
-  static const int SPACE = 32;
-  static const int SHIFT = 16;
-  static const int CTRL = 17;
-  static const int ALT = 18;
-  static const int TAB = 9;
-  static const int A = 65;
-  static const int B = 66;
-  static const int C = 67;
-  static const int D = 68;
-  static const int E = 69;
-  static const int F = 70;
-  static const int G = 71;
-  static const int H = 72;
-  static const int I = 73;
-  static const int J = 74;
-  static const int K = 75;
-  static const int L = 76;
-  static const int M = 77;
-  static const int N = 78;
-  static const int O = 79;
-  static const int P = 80;
-  static const int Q = 81;
-  static const int R = 82;
-  static const int S = 83;
-  static const int T = 84;
-  static const int U = 85;
-  static const int V = 86;
-  static const int W = 87;
-  static const int X = 88;
-  static const int Y = 89;
-  static const int Z = 90;
+  static const int pageUp = 33;
+  static const int pageDown = 34;
+  static const int end = 35;
+  static const int home = 36;
+  static const int left = 37;
+  static const int right = 39;
+  static const int up = 38;
+  static const int down = 40;
+  static const int space = 32;
+  static const int shift = 16;
+  static const int ctrl = 17;
+  static const int alt = 18;
+  static const int tab = 9;
+  static const int a = 65;
+  static const int b = 66;
+  static const int c = 67;
+  static const int d = 68;
+  static const int e = 69;
+  static const int f = 70;
+  static const int g = 71;
+  static const int h = 72;
+  static const int i = 73;
+  static const int j = 74;
+  static const int k = 75;
+  static const int l = 76;
+  static const int m = 77;
+  static const int n = 78;
+  static const int o = 79;
+  static const int p = 80;
+  static const int q = 81;
+  static const int r = 82;
+  static const int s = 83;
+  static const int t = 84;
+  static const int u = 85;
+  static const int v = 86;
+  static const int w = 87;
+  static const int x = 88;
+  static const int y = 89;
+  static const int z = 90;
 
   //
-  static const int F1 = 112;
-  static const int F2 = 113;
-  static const int F3 = 114;
-  static const int F4 = 115;
-  static const int F5 = 116;
-  static const int F6 = 117;
-  static const int F7 = 118;
-  static const int F8 = 119;
-  static const int F9 = 120;
-  static const int F10 = 121;
-  static const int F11 = 122;
-  static const int F12 = 123;
+  static const int f1 = 112;
+  static const int f2 = 113;
+  static const int f3 = 114;
+  static const int f4 = 115;
+  static const int f5 = 116;
+  static const int f6 = 117;
+  static const int f7 = 118;
+  static const int f8 = 119;
+  static const int f9 = 120;
+  static const int f10 = 121;
+  static const int f11 = 122;
+  static const int f12 = 123;
 }
 
 /// HTML mouse handling
 class Mouse {
   Mouse(dynamic elem) {
-    elem ??= HTML.document;
+    elem ??= html.document;
 
-    elem.onMouseMove.listen((HTML.MouseEvent e) {
+    elem.onMouseMove.listen((html.MouseEvent e) {
       e.preventDefault();
 
       currentX = e.offset.x.toInt();
@@ -105,46 +105,46 @@ class Mouse {
       //print ("MOVE ${moveDeltaX}x${moveDeltaY}");
     });
 
-    elem.onMouseDown.listen((HTML.MouseEvent e) {
+    elem.onMouseDown.listen((html.MouseEvent e) {
       e.preventDefault();
       print("BUTTON ${e.button}");
       _currentlyPressedButtons.add(e.button);
       _justPressedButtons.add(e.button);
     });
 
-    elem.onMouseUp.listen((HTML.MouseEvent e) {
+    elem.onMouseUp.listen((html.MouseEvent e) {
       e.preventDefault();
       _currentlyPressedButtons.remove(e.button);
       _justReleasedButtons.add(e.button);
     });
 
-    elem.onMouseWheel.listen((HTML.WheelEvent e) {
+    elem.onMouseWheel.listen((html.WheelEvent e) {
       e.preventDefault();
       wheelDeltaY = e.deltaY.toInt();
     });
 
     /*
-  canvas.onContextMenu.listen((HTML.MouseEvent e) {
+  canvas.onContextMenu.listen((html.MouseEvent e) {
     e.preventDefault();
     //e.stopPropagation();
     //e.cancelBubble = true;
   });
 
-    canvas.onDragStart.listen((HTML.MouseEvent event) {
+    canvas.onDragStart.listen((html.MouseEvent event) {
       event.preventDefault();
     });
     */
     /*
 
-    eventElement.onTouchStart.listen((HTML.TouchEvent e) {
+    eventElement.onTouchStart.listen((html.TouchEvent e) {
       mouseDownX = e.touches[0].client.x;
       mouseDownY = e.touches[0].client.y;
     });
 
-    eventElement.onTouchMove.listen((HTML.TouchEvent e) {
+    eventElement.onTouchMove.listen((html.TouchEvent e) {
       //azimuth += e.movement.x*0.01;
       //polar += e.movement.y*0.01;
-      HTML.Point p = e.touches[0].client;
+      html.Point p = e.touches[0].client;
       azimuth += (p.x - mouseDownX) * 0.01;
       polar += (mouseDownY - p.y) * 0.01;
       mouseDownX = p.x;
@@ -155,9 +155,9 @@ class Mouse {
     */
   }
 
-  static const int RIGHT = 2;
-  static const int MIDDLE = 1;
-  static const int LEFT = 0;
+  static const int right = 2;
+  static const int middle = 1;
+  static const int left = 0;
 
   final Set<int> _currentlyPressedButtons = <int>{};
   final Set<int> _justPressedButtons = <int>{};
@@ -178,7 +178,7 @@ class Mouse {
   // if you use this function make sure you call AfterFrameCleanup
   bool justReleasedButton(int key) => _justReleasedButtons.contains(key);
 
-  void AfterFrameCleanup() {
+  void afterFrameCleanup() {
     moveDeltaY = 0;
     moveDeltaX = 0;
     wheelDeltaY = 0;

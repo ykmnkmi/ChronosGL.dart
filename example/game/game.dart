@@ -1,18 +1,18 @@
 import 'dart:typed_data';
-import 'dart:math' as Math;
-import 'dart:html' as HTML;
+import 'dart:math' as math;
+import 'dart:html' as html;
 import 'dart:js_interop';
 
-import 'package:web/web.dart' as JS;
+import 'package:web/web.dart' as js;
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
 
 final ShaderObject demoVertexShader = ShaderObject("demoVertexShader")
-  ..AddAttributeVars([aPosition, aPointSize, aColor])
-  ..AddVaryingVars([vColor])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aPointSize, aColor])
+  ..addVaryingVars([vColor])
+  ..setBody([
     """
 void main(void) {
     gl_Position = vec4($aPosition.xy, 0.0, 1.0);
@@ -23,8 +23,8 @@ void main(void) {
   ]);
 
 final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
-  ..AddVaryingVars([vColor])
-  ..SetBody([
+  ..addVaryingVars([vColor])
+  ..setBody([
     """
 void main(void) {
     float r = length(gl_PointCoord.xy - vec2(0.5, 0.5));
@@ -33,31 +33,31 @@ void main(void) {
 """,
   ]);
 
-final VM.Vector2 middle = VM.Vector2(0.5, 0.5);
+final vm.Vector2 middle = vm.Vector2(0.5, 0.5);
 
 class Sprite {
-  Sprite(this.isShip, this.size, Math.Random rng)
-    : pos = VM.Vector2.random(rng)
+  Sprite(this.isShip, this.size, math.Random rng)
+    : pos = vm.Vector2.random(rng)
         ..sub(middle)
         ..scale(2.0),
       velocity = rng.nextDouble(),
-      angle = 2.0 * Math.pi * rng.nextDouble(),
-      color = VM.Vector3.random(rng) {
+      angle = 2.0 * math.pi * rng.nextDouble(),
+      color = vm.Vector3.random(rng) {
     dir.setValues(dirX, dirY);
   }
 
   final bool isShip;
   double size;
-  final VM.Vector2 pos;
+  final vm.Vector2 pos;
   double angle;
   double velocity;
-  final VM.Vector2 dir = VM.Vector2.zero(); // cache cartesian direction
-  final VM.Vector3 color;
+  final vm.Vector2 dir = vm.Vector2.zero(); // cache cartesian direction
+  final vm.Vector3 color;
 
-  double get dirX => velocity * Math.sin(angle);
-  double get dirY => velocity * Math.cos(angle);
+  double get dirX => velocity * math.sin(angle);
+  double get dirY => velocity * math.cos(angle);
 
-  void AdvanceTime(double speed) {
+  void advanceTime(double speed) {
     pos.addScaled(dir, speed);
     if (isShip) {
       if (pos.x < -1.0) pos.x = 2.0 - pos.x;
@@ -79,20 +79,20 @@ class Sprite {
     dir.setValues(dirX, dirY);
   }
 
-  void TurnLeft() {
-    setAngle(angle - 2.0 * Math.pi * 0.005);
+  void turnLeft() {
+    setAngle(angle - 2.0 * math.pi * 0.005);
   }
 
-  void Accelerate() {
+  void accelerate() {
     setVelocity(velocity + 0.05);
   }
 
-  void Break() {
+  void brake() {
     setVelocity(velocity - 0.05);
   }
 
-  void TurnRight() {
-    setAngle(angle + 2.0 * Math.pi * 0.005);
+  void turnRight() {
+    setAngle(angle + 2.0 * math.pi * 0.005);
   }
 
   bool isInvisible() {
@@ -101,15 +101,15 @@ class Sprite {
   }
 }
 
-const int NumBullets = 10;
+const int numBullets = 10;
 
-void ExtractSpritePositions(List<Sprite> sprites, Float32List out) {
+void extractSpritePositions(List<Sprite> sprites, Float32List out) {
   int offset = 0;
   for (Sprite s in sprites) {
     if (s.isShip) {
       //s.size = 1000.0;
-      double dx = Math.sin(s.angle);
-      double dy = Math.cos(s.angle);
+      double dx = math.sin(s.angle);
+      double dy = math.cos(s.angle);
       double d2x = -dy * 0.05;
       double d2y = dx * 0.05;
       dx *= 0.07;
@@ -136,7 +136,7 @@ void ExtractSpritePositions(List<Sprite> sprites, Float32List out) {
   }
 }
 
-void ExtractSpriteColors(List<Sprite> sprites, Float32List out) {
+void extractSpriteColors(List<Sprite> sprites, Float32List out) {
   int offset = 0;
   for (Sprite s in sprites) {
     out[offset + 0] = s.color.r;
@@ -155,7 +155,7 @@ void ExtractSpriteColors(List<Sprite> sprites, Float32List out) {
   }
 }
 
-void ExtractSpriteSizes(List<Sprite> sprites, Float32List out) {
+void extractSpriteSizes(List<Sprite> sprites, Float32List out) {
   int offset = 0;
   for (Sprite s in sprites) {
     out[offset] = s.size;
@@ -170,8 +170,8 @@ void ExtractSpriteSizes(List<Sprite> sprites, Float32List out) {
   }
 }
 
-final HTML.DivElement info =
-    HTML.document.querySelector('#info') as HTML.DivElement;
+final html.DivElement info =
+    html.document.querySelector('#info') as html.DivElement;
 
 class Gamepad {
   Gamepad();
@@ -182,9 +182,9 @@ class Gamepad {
   bool justPressed = false;
   bool justReleased = false;
 
-  void Poll() {
-    JS.Gamepad? gp;
-    final pads = JS.window.navigator.getGamepads().toDart;
+  void poll() {
+    js.Gamepad? gp;
+    final pads = js.window.navigator.getGamepads().toDart;
     for (var p in pads) {
       gp = p;
       break;
@@ -210,24 +210,24 @@ class Gamepad {
     // button = _gp!.buttons[0].pressed;
   }
 
-  void AfterFrameCleanup() {
+  void afterFrameCleanup() {
     justPressed = false;
     justReleased = false;
   }
 }
 
-void HandleUseInput(Keyboard input, Gamepad gamepad, List<Sprite> sprites) {
-  gamepad.Poll();
+void handleUseInput(Keyboard input, Gamepad gamepad, List<Sprite> sprites) {
+  gamepad.poll();
 
-  if (input.currentlyPressedKey(Keyboard.LEFT) || gamepad.x < -0.5) {
-    sprites[0].TurnLeft();
-  } else if (input.currentlyPressedKey(Keyboard.RIGHT) || gamepad.x > 0.5) {
-    sprites[0].TurnRight();
-  } else if (input.currentlyPressedKey(Keyboard.UP) || gamepad.y < -0.5) {
-    sprites[0].Accelerate();
-  } else if (input.currentlyPressedKey(Keyboard.DOWN) || gamepad.y > 0.5) {
-    sprites[0].Break();
-  } else if (input.justPressedKey(Keyboard.SPACE) || gamepad.justPressed) {
+  if (input.currentlyPressedKey(Keyboard.left) || gamepad.x < -0.5) {
+    sprites[0].turnLeft();
+  } else if (input.currentlyPressedKey(Keyboard.right) || gamepad.x > 0.5) {
+    sprites[0].turnRight();
+  } else if (input.currentlyPressedKey(Keyboard.up) || gamepad.y < -0.5) {
+    sprites[0].accelerate();
+  } else if (input.currentlyPressedKey(Keyboard.down) || gamepad.y > 0.5) {
+    sprites[0].brake();
+  } else if (input.justPressedKey(Keyboard.space) || gamepad.justPressed) {
     print("fire");
     for (Sprite s in sprites) {
       Sprite ship = sprites[0];
@@ -239,17 +239,17 @@ void HandleUseInput(Keyboard input, Gamepad gamepad, List<Sprite> sprites) {
       }
     }
   }
-  gamepad.AfterFrameCleanup();
-  input.AfterFrameCleanup();
+  gamepad.afterFrameCleanup();
+  input.afterFrameCleanup();
 }
 
 void main() {
-  final Math.Random rng = Math.Random();
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final math.Random rng = math.Random();
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
-  final int d = Math.min(w, h);
+  final int d = math.min(w, h);
   // use a square canvas to avoid distortion
   canvas.width = d;
   canvas.height = d;
@@ -258,7 +258,7 @@ void main() {
   final Gamepad gamepad = Gamepad();
 
   final List<Sprite> sprites = [Sprite(true, 50.0, rng)];
-  for (int i = 0; i < NumBullets; ++i) {
+  for (int i = 0; i < numBullets; ++i) {
     sprites.add(Sprite(false, 20.0, rng));
   }
 
@@ -275,35 +275,35 @@ void main() {
   final Float32List sizes = Float32List(sprites.length + 2);
   final Float32List colors = Float32List(3 * (sprites.length + 2));
 
-  ExtractSpritePositions(sprites, points);
-  ExtractSpriteSizes(sprites, sizes);
-  ExtractSpriteColors(sprites, colors);
+  extractSpritePositions(sprites, points);
+  extractSpriteSizes(sprites, sizes);
+  extractSpriteColors(sprites, colors);
 
-  final MeshData mesh = prog.MakeMeshData("points", GL_POINTS)
-    ..AddVertices(points)
-    ..AddAttribute(aPointSize, sizes, 1)
-    ..AddAttribute(aColor, colors, 3);
+  final MeshData mesh = prog.makeMeshData("points", glPoints)
+    ..addVertices(points)
+    ..addAttribute(aPointSize, sizes, 1)
+    ..addAttribute(aColor, colors, 3);
 
   Material mat = Material("nodepth")
-    ..ForceUniform(cBlendEquation, BlendEquationAdd)
-    ..ForceUniform(cDepthTest, false)
-    ..ForceUniform(cDepthWrite, false);
+    ..forceUniform(cBlendEquation, blendEquationAdd)
+    ..forceUniform(cDepthTest, false)
+    ..forceUniform(cDepthWrite, false);
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     for (Sprite s in sprites) {
-      s.AdvanceTime(elapsed / 10000.0);
+      s.advanceTime(elapsed / 10000.0);
     }
 
-    HandleUseInput(input, gamepad, sprites);
+    handleUseInput(input, gamepad, sprites);
 
-    ExtractSpritePositions(sprites, points);
-    mesh.ChangeVertexData(points);
+    extractSpritePositions(sprites, points);
+    mesh.changeVertexData(points);
 
-    prog.Draw(mesh, [mat]);
-    HTML.window.animationFrame.then(animate);
+    prog.draw(mesh, [mat]);
+    html.window.animationFrame.then(animate);
   }
 
   animate(0.0);

@@ -23,43 +23,43 @@ List<String> kDirs = [
 
 final Set<String> gAlreadyProcessed = <String>{};
 
-void MaybeEmitDocumentation(List<String> comment_block, String line) {
-  if (comment_block[0].startsWith("#")) {
-    for (String line in comment_block) {
+void maybeEmitDocumentation(List<String> commentBlock, String line) {
+  if (commentBlock[0].startsWith("#")) {
+    for (String line in commentBlock) {
       print(line);
     }
     print("");
   } else if (line.startsWith("class") || line.startsWith("abstract")) {
     print("## ${line.substring(0, line.length - 1)}");
-    for (String line in comment_block) {
+    for (String line in commentBlock) {
       print(line);
     }
     print("");
   }
 }
 
-void ExtractDoc(File file) {
-  List<String> comment_block = <String>[];
+void extractDoc(File file) {
+  List<String> commentBlock = <String>[];
 
   if (gAlreadyProcessed.contains(file.path)) return;
   gAlreadyProcessed.add(file.path);
   for (String line in file.readAsLinesSync()) {
     if (!line.startsWith("///")) {
-      if (comment_block.isNotEmpty) {
-        MaybeEmitDocumentation(comment_block, line);
-        comment_block.clear();
+      if (commentBlock.isNotEmpty) {
+        maybeEmitDocumentation(commentBlock, line);
+        commentBlock.clear();
       }
       continue;
     }
     if (line.length < 4) {
-      comment_block.add("");
+      commentBlock.add("");
     } else {
-      comment_block.add(line.substring(4));
+      commentBlock.add(line.substring(4));
     }
   }
 
-  if (comment_block.isNotEmpty) {
-    MaybeEmitDocumentation(comment_block, "");
+  if (commentBlock.isNotEmpty) {
+    maybeEmitDocumentation(commentBlock, "");
   }
 }
 
@@ -77,11 +77,11 @@ void main(List<String> args) {
       );
       for (FileSystemEntity f in content) {
         if (f is File) {
-          ExtractDoc(f);
+          extractDoc(f);
         }
       }
     } else if (FileSystemEntity.isFileSync(d)) {
-      ExtractDoc(File(d));
+      extractDoc(File(d));
     }
   }
 }

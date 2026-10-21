@@ -1,20 +1,20 @@
 import 'dart:async';
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
-String Dir = "../asset/leeperrysmith/";
-String modelFile = "${Dir}LeePerrySmith.js";
-String normalmapFile = "${Dir}Infinite-Level_02_Tangent_SmoothUV.jpg";
-String textureFile = "${Dir}Map-COL.jpg";
-String specularmapFile = "${Dir}Map-SPEC.jpg";
+String dir = "../asset/leeperrysmith/";
+String modelFile = "${dir}LeePerrySmith.js";
+String normalmapFile = "${dir}Infinite-Level_02_Tangent_SmoothUV.jpg";
+String textureFile = "${dir}Map-COL.jpg";
+String specularmapFile = "${dir}Map-SPEC.jpg";
 
 final ShaderObject vertexShader = ShaderObject("LightBlinnPhongV")
-  ..AddAttributeVars([aPosition, aNormal, aTexUV])
-  ..AddVaryingVars([vPosition, vNormal, vTexUV])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
-  ..SetBody([
+  ..addAttributeVars([aPosition, aNormal, aTexUV])
+  ..addVaryingVars([vPosition, vNormal, vTexUV])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
+  ..setBody([
     """
 void main() {
     vec4 pos = $uModelMatrix * vec4($aPosition, 1.0);
@@ -27,10 +27,10 @@ void main() {
   ]);
 
 final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongF")
-  ..AddVaryingVars([vPosition, vNormal, vTexUV])
-  ..AddUniformVars([uLightDescs, uLightTypes, uShininess])
-  ..AddUniformVars([uEyePosition, uColor, uTexture])
-  ..SetBody(
+  ..addVaryingVars([vPosition, vNormal, vTexUV])
+  ..addUniformVars([uLightDescs, uLightTypes, uShininess])
+  ..addUniformVars([uEyePosition, uColor, uTexture])
+  ..setBody(
     [
       """
 void main() {
@@ -49,28 +49,28 @@ void main() {
 
 """,
     ],
-    prolog: [StdLibShader],
+    prolog: [stdLibShader],
   );
 
-VM.Vector3 posLight = VM.Vector3(0.5, 1.0, 0.0);
-VM.Vector3 dirLight = VM.Vector3(0.0, 10.0, 0.0);
-VM.Vector3 colDiffuse = VM.Vector3.all(0.866);
-VM.Vector3 colSpecular = VM.Vector3.all(0.133);
+vm.Vector3 posLight = vm.Vector3(0.5, 1.0, 0.0);
+vm.Vector3 dirLight = vm.Vector3(0.0, 10.0, 0.0);
+vm.Vector3 colDiffuse = vm.Vector3.all(0.866);
+vm.Vector3 colSpecular = vm.Vector3.all(0.133);
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(0.5, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 100.0);
   Illumination illumination = Illumination();
-  illumination.AddLight(
+  illumination.addLight(
     SpotLight(
       "spot",
       posLight,
@@ -104,11 +104,11 @@ void main() {
   phase.add(sceneFixed);
 
   Material lightSourceMat = Material("light")
-    ..SetUniform(uColor, ColorYellow)
-    ..SetUniform(uShininess, 25.0);
+    ..setUniform(uColor, colorYellow)
+    ..setUniform(uShininess, 25.0);
   Node shapePointLight = Node(
     "pointLight",
-    ShapeIcosahedron(sceneFixed.program, subdivisions: 4, scale: 0.1),
+    shapeIcosahedron(sceneFixed.program, subdivisions: 4, scale: 0.1),
     lightSourceMat,
   )..setPosFromVec(posLight);
   sceneFixed.add(shapePointLight);
@@ -126,21 +126,21 @@ void main() {
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    phase.Draw();
+    phase.draw();
 
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   Material mat = Material("mat")
-    ..SetUniform(uColor, ColorGray4)
-    ..SetUniform(uShininess, 25.0);
+    ..setUniform(uColor, colorGray4)
+    ..setUniform(uShininess, 25.0);
 
   List<Future<Object>> futures = [
-    LoadJson(modelFile),
-    LoadImage(textureFile),
-    LoadImage(specularmapFile),
-    LoadImage(normalmapFile),
+    loadJson(modelFile),
+    loadImage(textureFile),
+    loadImage(specularmapFile),
+    loadImage(normalmapFile),
   ];
 
   Future.wait(futures).then((list) {
@@ -151,26 +151,26 @@ void main() {
         new ImageTexture(cgl, specularmapFile, list[2]);
     Texture normalmap = new ImageTexture(cgl, normalmapFile, list[3]);
     */
-    mat.SetUniform(uTexture, texture);
-    //mat.SetUniform(uNormalMap, normalmap);
-    //mat.SetUniform(uSpecularMap, specularmap);
-    mat.SetUniform(uNormalScale, 0.8);
+    mat.setUniform(uTexture, texture);
+    //mat.setUniform(uNormalMap, normalmap);
+    //mat.setUniform(uSpecularMap, specularmap);
+    mat.setUniform(uNormalScale, 0.8);
 
     // Setup Mesh
-    List<GeometryBuilder> gbs = ImportGeometryFromThreeJsJson(
+    List<GeometryBuilder> gbs = importGeometryFromThreeJsJson(
       list[0] as Map<String, Object?>,
     );
     print(gbs[0]);
-    MeshData md = GeometryBuilderToMeshData(
+    MeshData md = geometryBuilderToMeshData(
       modelFile,
       sceneMain.program,
       gbs[0],
     );
 
     Node mesh = Node(md.name, md, mat);
-    Node n = Node.Container("wrapper", mesh);
+    Node n = Node.container("wrapper", mesh);
     //n.invert = true;
-    n.lookAt(VM.Vector3(100.0, 0.0, 0.0));
+    n.lookAt(vm.Vector3(100.0, 0.0, 0.0));
     //n.matrix.scale(0.02);
     sceneMain.add(n);
     // GO!

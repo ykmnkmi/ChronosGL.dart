@@ -29,20 +29,20 @@ class UniformGroup extends NamedEntity {
 
   final Map<String, Object> _uniforms = {};
 
-  void SetUniform(String canonical, Object val) {
+  void setUniform(String canonical, Object val) {
     assert(!_uniforms.containsKey(canonical), "uniform $canonical already set");
-    ForceUniform(canonical, val);
+    forceUniform(canonical, val);
   }
 
-  void ForceUniform(String canonical, Object val) {
+  void forceUniform(String canonical, Object val) {
     _uniforms[canonical] = val;
   }
 
-  bool HasUniform(String canonical) {
+  bool hasUniform(String canonical) {
     return _uniforms.containsKey(canonical);
   }
 
-  Map<String, Object> GetUniforms() => _uniforms;
+  Map<String, Object> getUniforms() => _uniforms;
 
   @override
   String toString() {

@@ -2,7 +2,7 @@ part of 'lib.dart';
 
 class MidiInput {
   MidiInput() {
-    //HTML.window.navigator.requestMidiAccess()
+    //html.window.navigator.requestMidiAccess()
   }
 
   // Dart HTML bindings are broken

@@ -2,10 +2,10 @@ part of 'lib.dart';
 
 // https://en.wikipedia.org/wiki/Wavefront_.obj_file
 
-GeometryBuilder ImportGeometryFromWavefront(String text) {
+GeometryBuilder importGeometryFromWavefront(String text) {
   GeometryBuilder gb = GeometryBuilder();
-  gb.EnableAttribute(aTexUV);
-  gb.EnableAttribute(aNormal);
+  gb.enableAttribute(aTexUV);
+  gb.enableAttribute(aNormal);
 
   // This is a map which associates a range of indices with a name
   // The name comes from the 'g' tag (of the form "g NAME"). Indices
@@ -18,15 +18,15 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
   final RegExp lineEnd = RegExp(r"\s*\n");
   final RegExp sep = RegExp(r"\s+");
 
-  final List<VM.Vector3> vertices = [];
-  final List<VM.Vector3> normals = [];
-  final List<VM.Vector2> uvs = [];
+  final List<vm.Vector3> vertices = [];
+  final List<vm.Vector3> normals = [];
+  final List<vm.Vector2> uvs = [];
 
   final DateTime start = DateTime.now();
 
-  final List<VM.Vector3> faceVertices = [];
-  final List<VM.Vector3> faceNormal = [];
-  final List<VM.Vector2> faceUvs = [];
+  final List<vm.Vector3> faceVertices = [];
+  final List<vm.Vector3> faceNormal = [];
+  final List<vm.Vector2> faceUvs = [];
 
   final List<String> lines = text.split(lineEnd);
 
@@ -43,17 +43,17 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
       groups[array[1]] = vertices.length;
     } else if (array[0] == "v") {
       vertices.add(
-        VM.Vector3(
+        vm.Vector3(
           double.parse(array[1]),
           double.parse(array[2]),
           double.parse(array[3]),
         ),
       );
     } else if (array[0] == "vt") {
-      uvs.add(VM.Vector2(double.parse(array[1]), double.parse(array[2])));
+      uvs.add(vm.Vector2(double.parse(array[1]), double.parse(array[2])));
     } else if (array[0] == "vn") {
       normals.add(
-        VM.Vector3(
+        vm.Vector3(
           double.parse(array[1]),
           double.parse(array[2]),
           double.parse(array[3]),
@@ -86,36 +86,36 @@ GeometryBuilder ImportGeometryFromWavefront(String text) {
         if (vtx < vertices.length) {
           faceVertices.add(vertices[vtx]);
         } else {
-          faceVertices.add(VM.Vector3.zero());
+          faceVertices.add(vm.Vector3.zero());
         }
 
         if (uvs.isEmpty) {
-          faceUvs.add(VM.Vector2.zero());
+          faceUvs.add(vm.Vector2.zero());
         } else if (tex != -1 && tex < uvs.length) {
           faceUvs.add(uvs[tex]);
         } else {
-          LogWarn("problem uv $i $tex");
-          faceUvs.add(VM.Vector2.zero());
+          logWarn("problem uv $i $tex");
+          faceUvs.add(vm.Vector2.zero());
         }
         if (normals.isEmpty) {
-          faceNormal.add(VM.Vector3.zero());
+          faceNormal.add(vm.Vector3.zero());
         } else if (nor != -1 && nor < normals.length) {
           faceNormal.add(normals[nor]);
         } else {
-          LogWarn("problem normals $i $nor");
-          faceNormal.add(VM.Vector3.zero());
+          logWarn("problem normals $i $nor");
+          faceNormal.add(vm.Vector3.zero());
         }
       }
       if (array.length == 4) {
-        gb.AddVerticesFace3TakeOwnership(faceVertices);
+        gb.addVerticesFace3TakeOwnership(faceVertices);
       } else {
-        gb.AddVerticesFace4TakeOwnership(faceVertices);
+        gb.addVerticesFace4TakeOwnership(faceVertices);
       }
-      gb.AddAttributesVector3(aNormal, faceNormal);
-      gb.AddAttributesVector2(aTexUV, faceUvs);
+      gb.addAttributesVector3(aNormal, faceNormal);
+      gb.addAttributesVector2(aTexUV, faceUvs);
     }
   }
   final Duration delta = DateTime.now().difference(start);
-  LogInfo("Wavefront loaded in ($delta) $gb");
+  logInfo("Wavefront loaded in ($delta) $gb");
   return gb;
 }

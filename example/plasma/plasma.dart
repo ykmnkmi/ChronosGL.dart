@@ -1,4 +1,4 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
 
@@ -9,15 +9,15 @@ import 'package:chronosgl/chronosgl.dart';
 // TODO: Add www.shadertoy.com/view/4dlGDN www.shadertoy.com/view/lsfGzr
 
 final ShaderObject plasmaVertexShader1 = ShaderObject("Plasma1V")
-  ..AddAttributeVars([aPosition, aTexUV])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..AddVaryingVars([vTexUV])
-  ..SetBody([StdVertexShaderWithTextureForwardString]);
+  ..addAttributeVars([aPosition, aTexUV])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..addVaryingVars([vTexUV])
+  ..setBody([stdVertexShaderWithTextureForwardString]);
 
 final ShaderObject plasmaFragmentShader1 = ShaderObject("Plasma1F")
-  ..AddVaryingVars([vTexUV])
-  ..AddUniformVars([uTime])
-  ..SetBody([
+  ..addVaryingVars([vTexUV])
+  ..addUniformVars([uTime])
+  ..setBody([
     """
 void main() {  
     #define PI 3.1415926535897932384626433832795
@@ -41,15 +41,15 @@ void main() {
   ]);
 
 final ShaderObject plasmaVertexShader2 = ShaderObject("Plasma2V")
-  ..AddAttributeVars([aPosition, aTexUV])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..AddVaryingVars([vTexUV])
-  ..SetBody([StdVertexShaderWithTextureForwardString]);
+  ..addAttributeVars([aPosition, aTexUV])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..addVaryingVars([vTexUV])
+  ..setBody([stdVertexShaderWithTextureForwardString]);
 
 final ShaderObject plasmaFragmentShader2 = ShaderObject("Plasma2F")
-  ..AddVaryingVars([vTexUV])
-  ..AddUniformVars([uTime])
-  ..SetBody([
+  ..addVaryingVars([vTexUV])
+  ..addUniformVars([uTime])
+  ..setBody([
     """
 void main() {  
     float x = $vTexUV.x;
@@ -63,15 +63,15 @@ void main() {
   ]);
 
 final ShaderObject plasmaVertexShader3 = ShaderObject("Plasma3V")
-  ..AddAttributeVars([aPosition, aTexUV])
-  ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..AddVaryingVars([vTexUV])
-  ..SetBody([StdVertexShaderWithTextureForwardString]);
+  ..addAttributeVars([aPosition, aTexUV])
+  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
+  ..addVaryingVars([vTexUV])
+  ..setBody([stdVertexShaderWithTextureForwardString]);
 
 final ShaderObject plasmaFragmentShader3 = ShaderObject("Plasma3F")
-  ..AddVaryingVars([vTexUV])
-  ..AddUniformVars([uTime])
-  ..SetBody([
+  ..addVaryingVars([vTexUV])
+  ..addUniformVars([uTime])
+  ..setBody([
     """
 void main() {  
     float x = $vTexUV.x*1000.0; // gl_FragCoord.x;
@@ -88,7 +88,7 @@ void main() {
   """,
   ]);
 
-Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
+Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
     "stars",
     RenderProgram(
@@ -99,18 +99,18 @@ Scene MakeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
     ),
     [perspective],
   );
-  scene.add(Utils.MakeParticles(scene.program, num));
+  scene.add(Utils.makeParticles(scene.program, num));
   return scene;
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(65.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -145,7 +145,7 @@ void main() {
   }
 
   Material mat = Material("mat");
-  MeshData md = ShapeCube(scenes[0].program, x: 10.0, y: 10.0, z: 10.0);
+  MeshData md = shapeCube(scenes[0].program, x: 10.0, y: 10.0, z: 10.0);
 
   Node cube = Node(md.name, md, mat)
     ..setPos(0.0, 0.0, 0.0)
@@ -158,22 +158,22 @@ void main() {
   scenes[activeScene].add(cube);
 
   // Advance scene when an arbitrary key is pressed
-  HTML.document.addEventListener('keypress', (event) {
+  html.document.addEventListener('keypress', (event) {
     scenes[activeScene % 3].remove(cube);
     scenes[(activeScene + 1) % 3].add(cube);
     activeScene = (activeScene + 1) % 3;
   });
 
   // Chose a specific scene
-  HTML.SelectElement myselect =
-      HTML.document.querySelector('#myselect') as HTML.SelectElement;
-  myselect.onChange.listen((HTML.Event e) {
+  html.SelectElement myselect =
+      html.document.querySelector('#myselect') as html.SelectElement;
+  myselect.onChange.listen((html.Event e) {
     scenes[activeScene].remove(cube);
     activeScene = myselect.selectedIndex!;
     scenes[(activeScene)].add(cube);
   });
 
-  phase.add(MakeStarScene(cgl, perspective, 2000));
+  phase.add(makeStarScene(cgl, perspective, 2000));
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -184,11 +184,11 @@ void main() {
 
     cube.rollLeft(elapsed * 0.0005);
     cube.lookLeft(elapsed * 0.0005);
-    mat.ForceUniform(uTime, timeMs / 1000.0);
+    mat.forceUniform(uTime, timeMs / 1000.0);
 
-    phase.Draw();
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    phase.draw();
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   animate(0.0);

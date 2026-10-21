@@ -4,16 +4,16 @@ const String uFadeFactor = "uFadeFactor";
 
 final ShaderObject _perlinNoiseVertexShader =
     ShaderObject("perlinNoiseVertexShader")
-      ..AddAttributeVars([aPosition])
-      ..AddVaryingVars([vColor])
-      ..AddUniformVars([
+      ..addAttributeVars([aPosition])
+      ..addVaryingVars([vColor])
+      ..addUniformVars([
         uPerspectiveViewMatrix,
         uModelMatrix,
         uTime,
         uFadeFactor,
       ])
-      ..SetBody([
-        PerlinNoiseFunctions,
+      ..setBody([
+        perlinNoiseFunctions,
         """
 vec3 lerp( vec3 vec, float factor) {
       vec.x += factor * (1. - vec.x);
@@ -47,8 +47,8 @@ void main() {
 
 final ShaderObject _perlinNoiseFragmentShader =
     ShaderObject("perlinNoiseFragmentShader")
-      ..AddVaryingVars([vColor])
-      ..SetBody([
+      ..addVaryingVars([vColor])
+      ..setBody([
         """
 void main(void) {
   oFragColor.rgb = vColor;
@@ -57,7 +57,7 @@ void main(void) {
 """,
       ]);
 
-RenderProgram MakeVertexColorShader(ChronosGL cgl) {
+RenderProgram makeVertexColorShader(ChronosGL cgl) {
   return RenderProgram(
     "basic",
     cgl,
@@ -68,11 +68,11 @@ RenderProgram MakeVertexColorShader(ChronosGL cgl) {
 
 final ShaderObject deformingPerlinNoiseVertexShader =
     ShaderObject("PerlinNoiseV")
-      ..AddAttributeVars([aPosition])
-      ..AddVaryingVars([vNormal])
-      ..AddUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
-      ..SetBody([
-        PerlinNoiseFunctions,
+      ..addAttributeVars([aPosition])
+      ..addVaryingVars([vNormal])
+      ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
+      ..setBody([
+        perlinNoiseFunctions,
         """
 void main() {
     vec3 normal = normalize($aPosition);

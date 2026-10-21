@@ -1,17 +1,17 @@
-import 'dart:html' as HTML;
-import "dart:math" as MATH;
+import 'dart:html' as html;
+import "dart:math" as math;
 import 'dart:async';
 
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
 
-final VM.Vector3 posLight = VM.Vector3(11.0, 20.0, 0.0);
-final VM.Vector3 dirLight = VM.Vector3(0.0, -50.0, 0.0);
-final VM.Vector3 spotDirLight = VM.Vector3(-11.0, -30.0, 0.0);
+final vm.Vector3 posLight = vm.Vector3(11.0, 20.0, 0.0);
+final vm.Vector3 dirLight = vm.Vector3(0.0, -50.0, 0.0);
+final vm.Vector3 spotDirLight = vm.Vector3(-11.0, -30.0, 0.0);
 
 final double range = 50.0;
-final double angle = MATH.pi / 7.0;
+final double angle = math.pi / 7.0;
 final double glossiness = 10.0;
 
 // These must be in-sync with the .html file
@@ -26,17 +26,17 @@ final Map<String, Light> gLightSources = {
   idDirectional: DirectionalLight(
     "dir",
     dirLight,
-    ColorBlack,
-    ColorWhite,
+    colorBlack,
+    colorWhite,
     40.0,
   ),
-  idPoint: PointLight("point", posLight, ColorLiteBlue, ColorWhite, range),
+  idPoint: PointLight("point", posLight, colorLiteBlue, colorWhite, range),
   idSpot: SpotLight(
     "spot",
     posLight,
     spotDirLight,
-    ColorLiteGreen,
-    ColorWhite,
+    colorLiteGreen,
+    colorWhite,
     range,
     angle,
     2.0,
@@ -49,7 +49,7 @@ final Map<String, Node> gLightVisualizers = {};
 
 final List<Future<dynamic>> gLoadables = [];
 
-Scene LightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
+Scene lightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   Scene scene = Scene(
     "Fixed",
     RenderProgram(
@@ -61,11 +61,11 @@ Scene LightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
     uniforms,
   );
 
-  Material lightSourceMat = Material("light")..SetUniform(uColor, ColorYellow);
+  Material lightSourceMat = Material("light")..setUniform(uColor, colorYellow);
   for (String k in gLightSources.keys) {
     gLightVisualizers[k] = Node(
       k,
-      LightVisualizer(scene.program, gLightSources[k]!),
+      lightVisualizer(scene.program, gLightSources[k]!),
       lightSourceMat,
     );
   }
@@ -75,24 +75,24 @@ Scene LightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   return scene;
 }
 
-Node Dragon(ChronosGL cgl, RenderProgram prog) {
+Node dragon(ChronosGL cgl, RenderProgram prog) {
   final Material mat = Material("matDragon")
-    ..SetUniform(uShininess, glossiness);
+    ..setUniform(uShininess, glossiness);
 
   // This will be populated when the model has loaded
-  final Node node = Node.Container("dragon");
-  var f1 = LoadImage(textureFile).then((HTML.ImageElement img) {
-    mat.SetUniform(uTexture, ImageTexture(cgl, textureFile, img));
+  final Node node = Node.container("dragon");
+  var f1 = loadImage(textureFile).then((html.ImageElement img) {
+    mat.setUniform(uTexture, ImageTexture(cgl, textureFile, img));
   });
   gLoadables.add(f1);
 
-  var f2 = LoadRaw(meshFile).then((String content) {
-    GeometryBuilder gb = ImportGeometryFromWavefront(content);
-    MeshData md = GeometryBuilderToMeshData(meshFile, prog, gb);
+  var f2 = loadRaw(meshFile).then((String content) {
+    GeometryBuilder gb = importGeometryFromWavefront(content);
+    MeshData md = geometryBuilderToMeshData(meshFile, prog, gb);
     Node mesh = Node(md.name, md, mat);
     //..rotX(-3.14 / 4);
-    Node n = Node.Container("wrapper", mesh);
-    n.lookAt(VM.Vector3(100.0, 0.0, 0.0));
+    Node n = Node.container("wrapper", mesh);
+    n.lookAt(vm.Vector3(100.0, 0.0, 0.0));
 
     node.add(n);
   });
@@ -103,12 +103,12 @@ Node Dragon(ChronosGL cgl, RenderProgram prog) {
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   final OrbitCamera orbit = OrbitCamera(50.0, 10.0, 0.0, canvas)
@@ -117,7 +117,7 @@ void main() {
 
   final Illumination illumination = Illumination();
   for (Light l in gLightSources.values) {
-    illumination.AddLight(l);
+    illumination.addLight(l);
   }
   final Scene sceneBlinnPhong = Scene(
     "BlinnPhong",
@@ -141,10 +141,10 @@ void main() {
     [perspective, illumination],
   );
   assert(
-    sceneBlinnPhong.program.HasCompatibleAttributesTo(sceneGourad.program),
+    sceneBlinnPhong.program.hasCompatibleAttributesTo(sceneGourad.program),
   );
 
-  final Scene sceneFixed = LightSourceVisualizerScene(cgl, [perspective]);
+  final Scene sceneFixed = lightSourceVisualizerScene(cgl, [perspective]);
 
   // We have two phases (only one will be active)
   // 1 BlinnPhong
@@ -160,37 +160,37 @@ void main() {
     ..add(sceneGourad)
     ..add(sceneFixed);
 
-  final Node dragonNode = Dragon(cgl, sceneBlinnPhong.program);
+  final Node dragonNode = dragon(cgl, sceneBlinnPhong.program);
   sceneGourad.add(dragonNode);
   sceneBlinnPhong.add(dragonNode);
 
-  final HTML.SelectElement selectPhase =
-      HTML.document.querySelector('#phase') as HTML.SelectElement;
+  final html.SelectElement selectPhase =
+      html.document.querySelector('#phase') as html.SelectElement;
   selectPhase.selectedIndex = 0;
 
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.Element input = node as HTML.Element;
-    input.onChange.listen((HTML.Event e) {
-      HTML.InputElement input = e.target as HTML.InputElement;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.Element input = node as html.Element;
+    input.onChange.listen((html.Event e) {
+      html.InputElement input = e.target as html.InputElement;
       print("${input.id} toggle ${input.checked}");
       gLightSources[input.id]!.enabled = input.checked!;
       gLightVisualizers[input.id]!.enabled = input.checked!;
     });
   }
 
-  for (HTML.Node node in HTML.document.getElementsByTagName("input")) {
-    HTML.Element input = node as HTML.Element;
+  for (html.Node node in html.document.getElementsByTagName("input")) {
+    html.Element input = node as html.Element;
     print("initialize inputs ${input.id}");
-    input.dispatchEvent(HTML.Event("change"));
+    input.dispatchEvent(html.Event("change"));
   }
 
-  void resolutionChange(HTML.Event? ev) {
+  void resolutionChange(html.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
     canvas.height = h;
     print("size change $w $h");
-    perspective.AdjustAspect(w, h);
+    perspective.adjustAspect(w, h);
     phaseGourad.viewPortW = w;
     phaseGourad.viewPortH = h;
 
@@ -199,7 +199,7 @@ void main() {
   }
 
   resolutionChange(null);
-  HTML.window.onResize.listen(resolutionChange);
+  html.window.onResize.listen(resolutionChange);
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -211,9 +211,9 @@ void main() {
     RenderPhase phase = selectPhase.selectedIndex == 0
         ? phaseBlinnPhong
         : phaseGourad;
-    phase.Draw();
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    phase.draw();
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   Future.wait(gLoadables).then((list) {

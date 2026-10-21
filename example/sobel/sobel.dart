@@ -1,26 +1,26 @@
-import 'dart:html' as HTML;
+import 'dart:html' as html;
 import 'dart:async';
-import 'dart:math' as Math;
+import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:vector_math/vector_math.dart' as VM;
+import 'package:vector_math/vector_math.dart' as vm;
 
 const String modelFile = "../ct_logo.obj";
 
-final HTML.InputElement gSobel =
-    HTML.document.querySelector('#activate') as HTML.InputElement;
+final html.InputElement gSobel =
+    html.document.querySelector('#activate') as html.InputElement;
 
 final List<Future<Object>> gLoadables = [];
 
 void main() {
   final StatsFps fps = StatsFps(
-    HTML.document.getElementById("stats")!,
+    html.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final HTML.CanvasElement canvas =
-      HTML.document.querySelector('#webgl-canvas') as HTML.CanvasElement;
+  final html.CanvasElement canvas =
+      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
   final width = canvas.clientWidth;
   final height = canvas.clientHeight;
   canvas.width = width;
@@ -28,10 +28,10 @@ void main() {
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, -45.0, 0.3, canvas);
   final Perspective perspective = Perspective(orbit, 0.1, 2520.0)
-    ..AdjustAspect(width, height);
+    ..adjustAspect(width, height);
 
-  final Framebuffer screen = Framebuffer.Screen(cgl);
-  final Framebuffer fb = Framebuffer.Default(cgl, width, height);
+  final Framebuffer screen = Framebuffer.screen(cgl);
+  final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, width, height);
 
   final List<ShaderObject> greyShader = createPlane2GreyShader();
   final RenderProgram progGrey = RenderProgram(
@@ -49,22 +49,22 @@ void main() {
   );
 
   final UniformGroup uniforms = UniformGroup("plain")
-    ..SetUniform(uCanvasSize, VM.Vector2(0.0 + width, 0.0 + height))
-    ..SetUniform(uDepthMap, fb.depthTexture!)
-    ..SetUniform(uTexture, fb.colorTexture!);
+    ..setUniform(uCanvasSize, vm.Vector2(0.0 + width, 0.0 + height))
+    ..setUniform(uDepthMap, fb.depthTexture!)
+    ..setUniform(uTexture, fb.colorTexture!);
 
-  final MeshData unitQuad = ShapeQuad(progSobel, 1);
+  final MeshData unitQuad = shapeQuad(progSobel, 1);
   late MeshData ctLogo;
 
-  var future = LoadRaw(modelFile)
+  var future = loadRaw(modelFile)
     ..then((String content) {
-      GeometryBuilder gb = ImportGeometryFromWavefront(content);
-      ctLogo = GeometryBuilderToMeshData("", progGrey, gb);
+      GeometryBuilder gb = importGeometryFromWavefront(content);
+      ctLogo = geometryBuilderToMeshData("", progGrey, gb);
     });
   gLoadables.add(future);
 
   Material material = Material("mat")
-    ..SetUniform(uModelMatrix, VM.Matrix4.identity()..rotateX(Math.pi / 2));
+    ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;
   void animate(num timeMs) {
@@ -74,16 +74,16 @@ void main() {
     orbit.animate(elapsed);
     if (gSobel.checked!) {
       // Draw objects into fb
-      fb.Activate(GL_CLEAR_ALL, 0, 0, width, height);
-      progGrey.Draw(ctLogo, [perspective, material]);
+      fb.activate(glClearAll, 0, 0, width, height);
+      progGrey.draw(ctLogo, [perspective, material]);
       // Apply sobel to fb and show result on screen
-      screen.Activate(GL_CLEAR_ALL, 0, 0, width, height);
-      progSobel.Draw(unitQuad, [uniforms]);
+      screen.activate(glClearAll, 0, 0, width, height);
+      progSobel.draw(unitQuad, [uniforms]);
     } else {
-      progGrey.Draw(ctLogo, [perspective, material]);
+      progGrey.draw(ctLogo, [perspective, material]);
     }
-    HTML.window.animationFrame.then(animate);
-    fps.UpdateFrameCount(lastTimeMs);
+    html.window.animationFrame.then(animate);
+    fps.updateFrameCount(lastTimeMs);
   }
 
   Future.wait(gLoadables).then((list) {
