@@ -20,13 +20,66 @@ String _addLineNumbers(String text) {
   return out.join("\n");
 }
 
-GlShader _compileShader(webgl.RenderingContext2 gl, int type, String text) {
-  GlShader shader = gl.createShader(type);
+JSObject _toJSBufferView(TypedData data) => switch (data) {
+  Int8List() => data.toJS,
+  Uint8List() => data.toJS,
+  Uint8ClampedList() => data.toJS,
+  Int16List() => data.toJS,
+  Uint16List() => data.toJS,
+  Int32List() => data.toJS,
+  Uint32List() => data.toJS,
+  Float32List() => data.toJS,
+  Float64List() => data.toJS,
+  ByteData() => data.toJS,
+  _ => data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes).toJS,
+};
+
+JSObject _toJSNumericBuffer(List<num> data) => data is TypedData
+    ? _toJSBufferView(data as TypedData)
+    : Float32List.fromList([for (final value in data) value.toDouble()]).toJS;
+
+void _copyJSBufferView(JSObject source, TypedData destination) {
+  // toJS may clone Dart-owned storage on Wasm. Copy readbacks into the
+  // caller's exact view when the conversion does not share its storage.
+  final data = source.dartify() as TypedData;
+  if (!identical(data, destination)) {
+    destination.buffer
+        .asUint8List(destination.offsetInBytes, destination.lengthInBytes)
+        .setAll(
+          0,
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        );
+  }
+}
+
+@JS('ArrayBuffer.isView')
+external bool _isArrayBufferView(JSAny value);
+
+Object? _fromJSParameter(JSAny? value) {
+  if (value == null) return null;
+  if (value.isA<JSBoolean>()) return (value as JSBoolean).toDart;
+  if (value.isA<JSNumber>()) {
+    final number = (value as JSNumber).toDartDouble;
+    return number.isFinite && number == number.truncateToDouble()
+        ? number.toInt()
+        : number;
+  }
+  if (value.isA<JSString>()) return (value as JSString).toDart;
+  if (value.isA<JSArray<JSAny?>>() || _isArrayBufferView(value)) {
+    return value.dartify();
+  }
+  return value;
+}
+
+GlShader _compileShader(web.WebGL2RenderingContext gl, int type, String text) {
+  GlShader shader =
+      gl.createShader(type) ?? (throw StateError('Cannot create shader'));
 
   gl.shaderSource(shader, text);
   gl.compileShader(shader);
 
-  bool result = gl.getShaderParameter(shader, glCompileStatus) as bool;
+  bool result =
+      (gl.getShaderParameter(shader, glCompileStatus) as JSBoolean).toDart;
   if (!result) {
     String error =
         gl.getShaderInfoLog(shader) ?? 'Unknown shader compilation error';
@@ -43,30 +96,33 @@ GlShader _compileShader(webgl.RenderingContext2 gl, int type, String text) {
 /// WebGL2 bindings
 class ChronosGL {
   ChronosGL(
-    this._canvas, {
+    Object canvas, {
     bool preserveDrawingBuffer = false,
     bool faceCulling = false,
     bool antialiasing = true,
   }) {
-    Map<String, Object> attributes = {
-      "alpha": false,
-      "depth": true,
-      "stencil": true,
-      "antialias": antialiasing,
-      "premultipliedAlpha": true,
-      "preserveDrawingBuffer": preserveDrawingBuffer,
-      "failIfMajorPerformanceCaveat": false,
-    };
+    final attributes = web.WebGLContextAttributes(
+      alpha: false,
+      depth: true,
+      stencil: true,
+      antialias: antialiasing,
+      premultipliedAlpha: true,
+      preserveDrawingBuffer: preserveDrawingBuffer,
+      failIfMajorPerformanceCaveat: false,
+    );
 
+    // Accept both package:web and legacy browser canvas objects while callers
+    // migrate. All context calls use static JS interop after this boundary.
+    final element = JSObject.fromInteropObject(canvas) as web.HTMLCanvasElement;
     final context =
-        _canvas.getContext("webgl2", attributes) as webgl.RenderingContext2?;
+        element.getContext("webgl2", attributes) as web.WebGL2RenderingContext?;
     if (context == null) {
       throw Exception(noWebglMessage);
     }
     _gl = context;
 
     final actual = _gl.getContextAttributes();
-    logInfo("ChronosGL Config: $actual");
+    logInfo("ChronosGL Config: ${actual.dartify()}");
 
     _gl.clearColor(0.0, 0.0, 0.0, 1.0);
     _gl.enable(glDepthTest);
@@ -75,18 +131,14 @@ class ChronosGL {
     }
   }
 
-  late final webgl.RenderingContext2 _gl;
-
-  // Keep the HTML dependency out of core. The WebGL context is checked once
-  // at this browser boundary and is statically typed everywhere after that.
-  final dynamic _canvas;
+  late final web.WebGL2RenderingContext _gl;
 
   GlProgram compileWholeProgram(
     String vertShaderText,
     String fragShaderText,
     List<String> transformVarying,
   ) {
-    GlProgram program = _gl.createProgram();
+    GlProgram program = createProgram();
     GlShader vs = _compileShader(_gl, glVertexShader, vertShaderText);
     _gl.attachShader(program, vs);
     // delete shader vs?
@@ -98,14 +150,14 @@ class ChronosGL {
     if (transformVarying.isNotEmpty) {
       _gl.transformFeedbackVaryings(
         program,
-        transformVarying,
+        transformVarying.map((name) => name.toJS).toList().toJS,
         glInterleavedAttribs,
       );
     }
 
     _gl.linkProgram(program);
 
-    if (!(_gl.getProgramParameter(program, glLinkStatus) as bool)) {
+    if (!(_gl.getProgramParameter(program, glLinkStatus) as JSBoolean).toDart) {
       throw _gl.getProgramInfoLog(program) ?? 'Unknown program linking error';
     }
 
@@ -114,39 +166,47 @@ class ChronosGL {
 
   void changeArrayBuffer(GlBuffer buffer, List<num> data) {
     _gl.bindBuffer(glArrayBuffer, buffer);
-    _gl.bufferData(glArrayBuffer, data, glDynamicDraw);
+    _gl.bufferData(glArrayBuffer, _toJSNumericBuffer(data), glDynamicDraw);
   }
 
   void getArrayBuffer(GlBuffer buffer, TypedData data) {
     _gl.bindBuffer(glArrayBuffer, buffer);
-    _gl.getBufferSubData(glArrayBuffer, 0, data);
+    final view = _toJSBufferView(data);
+    _gl.getBufferSubData(glArrayBuffer, 0, view);
+    _copyJSBufferView(view, data);
   }
 
   void bufferDataSetSize(int kind, GlBuffer buf, int size, int usage) {
     _gl.bindBuffer(kind, buf);
-    _gl.bufferData(kind, size, usage);
+    _gl.bufferData(kind, size.toJS, usage);
     _gl.bindBuffer(kind, null);
   }
 
   void getTransformBuffer(GlBuffer buf, TypedData data) {
     _gl.bindBuffer(glTransformFeedbackBuffer, buf);
-    _gl.getBufferSubData(glTransformFeedbackBuffer, 0, data);
+    final view = _toJSBufferView(data);
+    _gl.getBufferSubData(glTransformFeedbackBuffer, 0, view);
+    _copyJSBufferView(view, data);
   }
 
   GlBuffer createBuffer() {
-    return _gl.createBuffer();
+    return _gl.createBuffer() ?? (throw StateError('Cannot create buffer'));
   }
 
   void changeElementArrayBuffer(GlBuffer buf, TypedData data) {
     assert((data is Uint16List) || (data is Uint32List) || (data is Uint8List));
     _gl.bindBuffer(glElementArrayBuffer, buf);
-    _gl.bufferData(glElementArrayBuffer, data, glDynamicDraw);
+    _gl.bufferData(glElementArrayBuffer, _toJSBufferView(data), glDynamicDraw);
   }
 
   // Not really useful other than tesying
   void changeTransformBuffer(GlBuffer buffer, List<num> data) {
     _gl.bindBuffer(glTransformFeedbackBuffer, buffer);
-    _gl.bufferData(glTransformFeedbackBuffer, data, glDynamicDraw);
+    _gl.bufferData(
+      glTransformFeedbackBuffer,
+      _toJSNumericBuffer(data),
+      glDynamicDraw,
+    );
   }
 
   // Why all these shims?
@@ -180,7 +240,8 @@ class ChronosGL {
   }
 
   GlFramebuffer createFramebuffer() {
-    return _gl.createFramebuffer();
+    return _gl.createFramebuffer() ??
+        (throw StateError('Cannot create framebuffer'));
   }
 
   void bindFramebuffer(int kind, GlFramebuffer? framebuffer) {
@@ -202,7 +263,7 @@ class ChronosGL {
   }
 
   GlTexture createTexture() {
-    return _gl.createTexture();
+    return _gl.createTexture() ?? (throw StateError('Cannot create texture'));
   }
 
   void bindTexture(int kind, GlTexture? texture) {
@@ -307,7 +368,7 @@ class ChronosGL {
   }
 
   Object? getParameter(int kind) {
-    return _gl.getParameter(kind);
+    return _fromJSParameter(_gl.getParameter(kind));
   }
 
   void vertexAttribPointer(
@@ -331,7 +392,14 @@ class ChronosGL {
     int type,
     Object data,
   ) {
-    _gl.texImage2D(target, level, iformat, format, type, data);
+    _gl.texImage2D(
+      target,
+      level,
+      iformat,
+      format.toJS,
+      type.toJS,
+      JSObject.fromInteropObject(data),
+    );
   }
 
   void texImage2D(
@@ -345,7 +413,17 @@ class ChronosGL {
     int type,
     TypedData? data,
   ) {
-    _gl.texImage2D(target, level, iformat, w, h, border, format, type, data);
+    _gl.texImage2D(
+      target,
+      level,
+      iformat,
+      w.toJS,
+      h.toJS,
+      border.toJS,
+      format,
+      type,
+      data == null ? null : _toJSBufferView(data),
+    );
   }
 
   void texStorage2D(int target, int level, int iformat, int w, int h) {
@@ -363,7 +441,17 @@ class ChronosGL {
     int type,
     TypedData? data,
   ) {
-    _gl.texSubImage2D(target, level, x, y, w, h, format, type, data);
+    _gl.texSubImage2D(
+      target,
+      level,
+      x,
+      y,
+      w.toJS,
+      h.toJS,
+      format.toJS,
+      type,
+      data == null ? null : _toJSBufferView(data),
+    );
   }
 
   void copyTexImage2D(
@@ -383,7 +471,7 @@ class ChronosGL {
   }
 
   GlProgram createProgram() {
-    return _gl.createProgram();
+    return _gl.createProgram() ?? (throw StateError('Cannot create program'));
   }
 
   void linkProgram(GlProgram obj) {
@@ -395,7 +483,7 @@ class ChronosGL {
   }
 
   GlShader createShader(int kind) {
-    return _gl.createShader(kind);
+    return _gl.createShader(kind) ?? (throw StateError('Cannot create shader'));
   }
 
   GlUniformLocation? getUniformLocation(GlProgram program, String uniform) {
@@ -425,7 +513,9 @@ class ChronosGL {
     int implType,
     TypedData buf,
   ) {
-    _gl.readPixels(x, y, w, h, implFormat, implType, buf);
+    final view = _toJSBufferView(buf);
+    _gl.readPixels(x, y, w, h, implFormat, implType, view);
+    _copyJSBufferView(view, buf);
   }
 
   void readPixelsToBuffer(
@@ -437,7 +527,7 @@ class ChronosGL {
     int implType,
     int offset,
   ) {
-    _gl.readPixels2(x, y, w, h, implFormat, implType, offset);
+    _gl.readPixels(x, y, w, h, implFormat, implType, offset.toJS);
   }
 
   String getProgramInfoLog(GlProgram program) {
@@ -449,10 +539,15 @@ class ChronosGL {
   }
 
   List<String> getSupportedExtensions() {
-    return _gl.getSupportedExtensions() ?? <String>[];
+    return _gl
+            .getSupportedExtensions()
+            ?.toDart
+            .map((extension) => extension.toDart)
+            .toList() ??
+        <String>[];
   }
 
-  Object? getExtension(String name) {
+  JSObject? getExtension(String name) {
     return _gl.getExtension(name);
   }
 
@@ -470,7 +565,7 @@ class ChronosGL {
       return kNoAnisotropicFilterLevel;
     }
     return (getParameter(
-      webgl.ExtTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT,
+      web.EXT_texture_filter_anisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT,
     ) as num).toInt();
   }
 
@@ -508,23 +603,23 @@ class ChronosGL {
   }
 
   void uniform1iv(GlUniformLocation location, Int32List value) {
-    _gl.uniform1iv(location, value);
+    _gl.uniform1iv(location, value.toJS);
   }
 
   void uniform1fv(GlUniformLocation location, Float32List value) {
-    _gl.uniform1fv(location, value);
+    _gl.uniform1fv(location, value.toJS);
   }
 
   void uniform2fv(GlUniformLocation location, Float32List value) {
-    _gl.uniform2fv(location, value);
+    _gl.uniform2fv(location, value.toJS);
   }
 
   void uniform3fv(GlUniformLocation location, Float32List value) {
-    _gl.uniform3fv(location, value);
+    _gl.uniform3fv(location, value.toJS);
   }
 
   void uniform4fv(GlUniformLocation location, Float32List value) {
-    _gl.uniform4fv(location, value);
+    _gl.uniform4fv(location, value.toJS);
   }
 
   void uniformMatrix4fv(
@@ -532,7 +627,7 @@ class ChronosGL {
     bool transpose,
     Float32List value,
   ) {
-    _gl.uniformMatrix4fv(location, transpose, value);
+    _gl.uniformMatrix4fv(location, transpose, value.toJS);
   }
 
   void uniformMatrix3fv(
@@ -540,7 +635,7 @@ class ChronosGL {
     bool transpose,
     Float32List value,
   ) {
-    _gl.uniformMatrix3fv(location, transpose, value);
+    _gl.uniformMatrix3fv(location, transpose, value.toJS);
   }
 
   void clearColor(double r, double g, double b, double a) {

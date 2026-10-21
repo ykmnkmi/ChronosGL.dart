@@ -103,3 +103,44 @@ Constant values, GLSL text, attribute/uniform names, and rendering reference
 images are unchanged. Diagnostic strings such as `"GL_RGBA"` still use the
 standard WebGL spelling. This rename applies to ChronosGL's declarations;
 constant names supplied by the Dart SDK or other dependencies are unchanged.
+
+## Core WebGL bindings
+
+The core wrapper now uses `package:web` and `dart:js_interop` instead of
+`dart:web_gl`. The `GlBuffer`, `GlTexture`, `GlProgram`, and other `Gl*` aliases
+refer to the corresponding `package:web` WebGL types. Buffer, texture, uniform,
+and pixel APIs still accept Dart typed data, including views with byte offsets.
+
+`ChronosGL` and image textures accept browser objects from both `package:web`
+and the existing SDK browser libraries. Web helpers and examples can migrate
+separately. For new core callers:
+
+```dart
+import 'package:chronosgl/chronosgl.dart';
+import 'package:web/web.dart' as web;
+
+final canvas = web.HTMLCanvasElement()
+  ..width = 640
+  ..height = 480;
+final cgl = ChronosGL(canvas);
+```
+
+`getParameter` returns Dart scalars and lists, preserving opaque WebGL handles.
+`getExtension` returns a nullable `JSObject`; use a `package:web` extension type
+to access extension methods:
+
+```dart
+final extension = cgl.getExtension('WEBGL_lose_context');
+if (extension != null) {
+  (extension as web.WEBGL_lose_context).loseContext();
+}
+```
+
+See Dart's [package:web migration guide](https://dart.dev/interop/js-interop/package-web)
+for the browser API naming and interop differences.
+
+The core-only interop tests also run with Wasm:
+
+```sh
+dart test -p golden_chrome -c dart2wasm test/core_web_interop_test.dart
+```

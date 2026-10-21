@@ -1,4 +1,4 @@
-# Layer: Core (dart:web_gl)
+# Layer: Core (package:web)
 The **core layer** contains all of the fundamental abstractions like:
 NamedEntity, Uniforms, Spacial, Illumination, Perspective,
 Camera, RenderObject, RenderProgram, ChronosGL, etc.

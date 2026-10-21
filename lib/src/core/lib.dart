@@ -1,16 +1,14 @@
 library;
 
-// This library does not depend on "dart:html"
-// It would be nice if we could also break the dependency on dart:web_gl
-// for easier testing.
 import 'dart:collection';
+import 'dart:js_interop';
 import 'dart:typed_data';
 import 'dart:math' as math;
-import 'dart:web_gl' as webgl; // only chronosgl.dart uses webgl
 
 import 'package:vector_math/vector_math.dart' as vm;
+import 'package:web/web.dart' as web;
 
-/// # Layer: Core (dart:web_gl)
+/// # Layer: Core (package:web)
 /// The **core layer** contains all of the fundamental abstractions like:
 /// NamedEntity, Uniforms, Spacial, Illumination, Perspective,
 /// Camera, RenderObject, RenderProgram, ChronosGL, etc.
@@ -44,15 +42,15 @@ part "projection.dart";
 part "geometry_builder.dart";
 part "illumination.dart";
 
-typedef GlBuffer = webgl.Buffer;
-typedef GlFramebuffer = webgl.Framebuffer;
-typedef GlVertexArrayObject = webgl.VertexArrayObject;
-typedef GlTexture = webgl.Texture;
-typedef GlTransformFeedback = webgl.TransformFeedback;
-typedef GlUniformLocation = webgl.UniformLocation;
-typedef GlProgram = webgl.Program;
-typedef GlSampler = webgl.Sampler;
-typedef GlShader = webgl.Shader;
+typedef GlBuffer = web.WebGLBuffer;
+typedef GlFramebuffer = web.WebGLFramebuffer;
+typedef GlVertexArrayObject = web.WebGLVertexArrayObject;
+typedef GlTexture = web.WebGLTexture;
+typedef GlTransformFeedback = web.WebGLTransformFeedback;
+typedef GlUniformLocation = web.WebGLUniformLocation;
+typedef GlProgram = web.WebGLProgram;
+typedef GlSampler = web.WebGLSampler;
+typedef GlShader = web.WebGLShader;
 
 int gLogLevel = 0;
 

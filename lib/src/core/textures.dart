@@ -251,8 +251,8 @@ class TypedTextureMutable extends Texture {
   }
 }
 
-// This sort of depends on dart:html but we use a dynamic type to disguise
-// it.
+// Object sources let package:web and legacy DOM elements share the WebGL
+// interop boundary.
 // TODO: We want to call  install() in the constructor but this does not
 // seem to work for video elements.
 class ImageTexture extends Texture {
