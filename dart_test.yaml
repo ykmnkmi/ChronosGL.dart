@@ -21,9 +21,11 @@ presets:
       - test/polygon.dart
       - test/geometry.dart
       - test/shader_syntax.dart
+      - test/show_extensions.dart
       - test/render_golden_test.dart
       - test/golden_comparison_test.dart
       - test/type_boundaries_test.dart
+      - test/legacy_dom_compatibility_test.dart
       - test/core_web_interop_test.dart
       - test/webhelper_interop_test.dart
     concurrency: 1

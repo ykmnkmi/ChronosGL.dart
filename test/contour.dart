@@ -1,21 +1,22 @@
-//@TestOn("dartium")
-import 'dart:html' as html;
+import 'dart:js_interop';
 
 import 'package:vector_math/vector_math.dart' as vm;
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 
 //import "package:test/test.dart";
 import 'polygon_data.dart' as data;
 
-final html.InputElement gScale =
-    html.document.querySelector('#scale') as html.InputElement;
+final web.HTMLInputElement gScale =
+    web.document.querySelector('#scale') as web.HTMLInputElement;
 
-final html.CanvasElement gCanvas =
-    html.document.querySelector('#canvas') as html.CanvasElement;
-final int gWidth = gCanvas.width!;
-final int gHeight = gCanvas.height!;
-final html.CanvasRenderingContext2D gContext = gCanvas.context2D;
+final web.HTMLCanvasElement gCanvas =
+    web.document.querySelector('#canvas') as web.HTMLCanvasElement;
+final int gWidth = gCanvas.width;
+final int gHeight = gCanvas.height;
+final web.CanvasRenderingContext2D gContext =
+    gCanvas.getContext('2d') as web.CanvasRenderingContext2D;
 
 void drawContour(List<vm.Vector2> contour, String color) {
   gContext
@@ -26,7 +27,7 @@ void drawContour(List<vm.Vector2> contour, String color) {
   }
   gContext
     ..closePath()
-    ..strokeStyle = color
+    ..strokeStyle = color.toJS
     ..lineWidth = 5
     ..stroke();
 }
@@ -50,14 +51,14 @@ void drawMovement(
   }
   gContext
     ..closePath()
-    ..strokeStyle = color
+    ..strokeStyle = color.toJS
     ..lineWidth = 5
     ..stroke();
 }
 
 void clearCanvas() {
   gContext
-    ..fillStyle = "red"
+    ..fillStyle = "red".toJS
     ..fillRect(0, 0, gWidth, gHeight);
 }
 
@@ -74,9 +75,10 @@ void main() {
     gGradients[k] = getContourGradient(gContours[k]!);
   }
 
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     clearCanvas();
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     String k = "Building";
     List<vm.Vector2> c = gContours[k]!;
     List<vm.Vector2> g = gGradients[k]!;
@@ -84,10 +86,11 @@ void main() {
     drawMovement(c, g, 50.0, "green");
     List<vm.Vector2> scaled = List.generate(c.length, (i) => vm.Vector2.zero());
     for (int i = 0; i < c.length; ++i) {
-      scaled[i] = c[i] + g[i].scaled(gScale.valueAsNumber!.toDouble());
+      scaled[i] = c[i] + g[i].scaled(gScale.valueAsNumber);
     }
     drawContour(scaled, "yellow");
   }
 
+  onFrame = animate.toJS;
   animate(0.0);
 }

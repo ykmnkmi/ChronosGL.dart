@@ -35,6 +35,22 @@ void main() {
     ]);
   });
 
+  test('PNG encoding respects RGBA typed-data view boundaries', () async {
+    final storage = Uint8ClampedList.fromList([
+      9, 8, 7, 255, // padding
+      51, 102, 153, 255,
+      204, 153, 102, 255,
+      6, 5, 4, 255, // padding
+    ]);
+    final view = Uint8ClampedList.sublistView(storage, 4, 12);
+    final image = GoldenImage(2, 1, view);
+    final decoded = await GoldenImage.decodePng(image.encodePng());
+    expect([decoded.width, decoded.height], [2, 1]);
+    expect(decoded.rgba, [51, 102, 153, 255, 204, 153, 102, 255]);
+    expect(storage.sublist(0, 4), [9, 8, 7, 255]);
+    expect(storage.sublist(12), [6, 5, 4, 255]);
+  });
+
   test(
     'comparison detects color and size changes and bounds rounding tolerance',
     () {

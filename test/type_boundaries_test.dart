@@ -1,14 +1,8 @@
 @TestOn('chrome')
 library;
 
-// These tests exercise the engine's existing browser backend.
-// ignore_for_file: deprecated_member_use
-
 import 'dart:convert';
-import 'dart:html' as html;
-import 'dart:js_interop';
 import 'dart:typed_data';
-import 'dart:web_gl' as webgl;
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:test/test.dart';
@@ -54,47 +48,6 @@ void _checkAnimatedPose(List<Bone> skeleton, SkeletalAnimation animation) {
 }
 
 void main() {
-  test('Migrated helpers accept legacy DOM elements during migration', () {
-    final canvas = html.CanvasElement(width: 32, height: 16)
-      ..style.width = '32px'
-      ..style.height = '16px';
-    html.document.body!.append(canvas);
-    addTearDown(() => canvas.remove());
-    final target = JSObject.fromInteropObject(canvas) as web.HTMLCanvasElement;
-    final keyboard = Keyboard(canvas);
-    final mouse = Mouse(canvas);
-    final orbit = OrbitCamera(10, 0, 0, canvas);
-    target.dispatchEvent(
-      web.KeyboardEvent(
-        'keydown',
-        web.KeyboardEventInit(which: Keyboard.left, keyCode: Keyboard.left),
-      ),
-    );
-    expect(keyboard.currentlyPressedKey(Keyboard.left), isTrue);
-    target.dispatchEvent(
-      web.KeyboardEvent(
-        'keyup',
-        web.KeyboardEventInit(which: Keyboard.left, keyCode: Keyboard.left),
-      ),
-    );
-    target.dispatchEvent(web.MouseEvent('mousedown'));
-    expect(mouse.currentlyPressedButton(Mouse.left), isTrue);
-    expect(orbit.mouse.currentlyPressedButton(Mouse.left), isTrue);
-    target.dispatchEvent(web.MouseEvent('mouseup'));
-    final root = html.DivElement();
-    StatsFps(root, 'blue', 'gray').updateFrameCount(1000, '<b>legacy</b>');
-    expect(root.querySelector('b')!.text, 'legacy');
-    final cgl = ChronosGL(canvas);
-    addTearDown(() {
-      (cgl.getExtension('WEBGL_lose_context') as web.WEBGL_lose_context?)
-          ?.loseContext();
-    });
-    final perspective = PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 100);
-    final phase = RenderPhaseResizeAware('legacy', cgl, canvas, perspective);
-    expect([phase.viewPortW, phase.viewPortH], [32, 16]);
-    expect(cgl.getParameter(glViewport), [0, 0, 32, 16]);
-  });
-
   test(
     'Assimp monster imports geometry, skin weights, and animation',
     () async {
@@ -139,14 +92,14 @@ void main() {
   });
 
   test('WebGL buffer readback respects the destination typed-data view', () {
-    final cgl = ChronosGL(
-      html.CanvasElement(width: 16, height: 16),
-      antialiasing: false,
-    );
+    final canvas = web.HTMLCanvasElement()
+      ..width = 16
+      ..height = 16;
+    final cgl = ChronosGL(canvas, antialiasing: false);
     final buffer = cgl.createBuffer();
     addTearDown(() {
       cgl.deleteBuffer(buffer);
-      (cgl.getExtension('WEBGL_lose_context') as webgl.LoseContext?)
+      (cgl.getExtension('WEBGL_lose_context') as web.WEBGL_lose_context?)
           ?.loseContext();
     });
     final input = Float32List.fromList([0.25, -0.5, 12.0, 42.0]);
@@ -166,12 +119,12 @@ void main() {
   });
 
   test('Typed texture uploads and partial updates preserve RGBA pixels', () {
-    final cgl = ChronosGL(
-      html.CanvasElement(width: 16, height: 16),
-      antialiasing: false,
-    );
+    final canvas = web.HTMLCanvasElement()
+      ..width = 16
+      ..height = 16;
+    final cgl = ChronosGL(canvas, antialiasing: false);
     addTearDown(() {
-      (cgl.getExtension('WEBGL_lose_context') as webgl.LoseContext?)
+      (cgl.getExtension('WEBGL_lose_context') as web.WEBGL_lose_context?)
           ?.loseContext();
     });
     final original = Uint8List.fromList([

@@ -1,27 +1,40 @@
-// This is not really a test
-@TestOn("dartium")
+@TestOn("chrome")
 library;
-
-import 'dart:html' as html;
-import 'dart:web_gl' as webgl;
 
 import 'package:chronosgl/chronosgl.dart';
 import "package:test/test.dart";
+import 'package:web/web.dart' as web;
 
 void main() {
   test("show_extensions", () {
-    html.CanvasElement canvas = html.CanvasElement(width: 200, height: 200);
+    final canvas = web.HTMLCanvasElement()
+      ..width = 200
+      ..height = 200;
     ChronosGL chronosGL = ChronosGL(canvas);
+    addTearDown(() {
+      final extension = chronosGL.getExtension('WEBGL_lose_context');
+      if (extension != null) {
+        (extension as web.WEBGL_lose_context).loseContext();
+      }
+    });
     List<String> exts = chronosGL.getSupportedExtensions();
+    expect(exts, everyElement(isA<String>()));
     for (var e in exts) {
       print(e);
     }
-    webgl.DebugRendererInfo di = chronosGL.getExtension(
-      'WEBGL_debug_renderer_info',
-    ) as webgl.DebugRendererInfo;
-    print(di);
-    print(chronosGL.getParameter(glUnmaskedVendorWebgl));
-    print(chronosGL.getParameter(glUnmaskedRendererWebgl));
+    // Browsers may withhold renderer details for privacy.
+    final debugInfo = chronosGL.getExtension('WEBGL_debug_renderer_info');
+    if (exts.contains('WEBGL_debug_renderer_info')) {
+      expect(debugInfo, isNotNull);
+      final vendor = chronosGL.getParameter(glUnmaskedVendorWebgl);
+      final renderer = chronosGL.getParameter(glUnmaskedRendererWebgl);
+      expect(vendor, isA<String>());
+      expect(renderer, isA<String>());
+      print(vendor);
+      print(renderer);
+    } else {
+      expect(debugInfo, isNull);
+    }
   });
 
   print("PASS");

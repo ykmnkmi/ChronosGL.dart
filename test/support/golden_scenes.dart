@@ -1,10 +1,8 @@
-// These bindings match the engine's current browser backend.
-// ignore_for_file: deprecated_member_use
-
-import 'dart:html' as html;
+import 'dart:js_interop';
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
+import 'package:web/web.dart' as web;
 
 import 'golden_image.dart';
 
@@ -21,7 +19,9 @@ const goldenSceneNames = [
 /// No DOM attachment, input listeners, clocks, random data, or network assets.
 class GoldenScene {
   GoldenScene(String name, {bool mutate = false}) {
-    final canvas = html.CanvasElement(width: size, height: size);
+    final canvas = web.HTMLCanvasElement()
+      ..width = size
+      ..height = size;
     cgl = ChronosGL(canvas, antialiasing: false);
     cgl.disable(glDither);
     framebuffer = Framebuffer.defaultFramebuffer(cgl, size, size);
@@ -59,7 +59,7 @@ class GoldenScene {
         ? cgl.getParameter(glRenderer).toString()
         : cgl.getParameter(glUnmaskedRendererWebgl).toString();
     return {
-      'userAgent': html.window.navigator.userAgent,
+      'userAgent': web.window.navigator.userAgent,
       'renderer': renderer,
       'webglVersion': cgl.getParameter(glVersion).toString(),
       'imageSize': [size, size],
@@ -79,8 +79,8 @@ class GoldenScene {
   }
 
   void dispose() {
-    final dynamic extension = cgl.getExtension('WEBGL_lose_context');
-    if (extension != null) extension.loseContext();
+    final extension = cgl.getExtension('WEBGL_lose_context');
+    if (extension != null) (extension as web.WEBGL_lose_context).loseContext();
   }
 
   RenderProgram _solid() => RenderProgram(
@@ -170,20 +170,22 @@ class GoldenScene {
   }
 
   ImageTexture _canvasTexture({bool black = false}) {
-    final canvas = html.CanvasElement(width: 8, height: 8);
-    final context = canvas.context2D;
+    final canvas = web.HTMLCanvasElement()
+      ..width = 8
+      ..height = 8;
+    final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
     if (black) {
       context
-        ..fillStyle = '#000000'
+        ..fillStyle = '#000000'.toJS
         ..fillRect(0, 0, 8, 8);
     } else {
       final colors = ['#ef4444', '#22c55e', '#3b82f6', '#facc15'];
       for (var y = 0; y < 8; y++) {
         for (var x = 0; x < 8; x++) {
           context
-            ..fillStyle = (x + y) % 2 == 0
-                ? colors[(y ~/ 4) * 2 + x ~/ 4]
-                : '#ffffff'
+            ..fillStyle =
+                ((x + y) % 2 == 0 ? colors[(y ~/ 4) * 2 + x ~/ 4] : '#ffffff')
+                    .toJS
             ..fillRect(x, y, 1, 1);
         }
       }

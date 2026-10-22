@@ -2,9 +2,10 @@
 
 These PNGs capture ChronosGL's current rendering before further package updates.
 The test harness uses the existing Dart `test` runner and Chrome. PNG encoding
-and decoding use browser canvas APIs. A small VM isolate reads and writes files
-through `package:test`'s hybrid-test channel. `stream_channel` is declared as a
-direct dev dependency; it was already a transitive dependency of the test runner.
+and decoding use `package:web` browser canvas APIs. A small VM isolate reads and
+writes files through `package:test`'s hybrid-test channel. `stream_channel` is
+declared as a direct dev dependency; it was already a transitive dependency of
+the test runner.
 No Node.js packages, Playwright, Docker, or external image tools are needed.
 
 ## Run
@@ -23,10 +24,24 @@ tests:
 dart test -P all
 ```
 
-The `all` preset lists the old test files explicitly because their filenames do
-not follow the default `*_test.dart` discovery pattern. The obsolete Dartium
-extension diagnostic and interactive contour demo are not part of this suite.
+The `all` preset lists the older test files explicitly because their filenames do
+not follow the default `*_test.dart` discovery pattern. The extension diagnostic
+now runs in Chrome and checks renderer information when the browser exposes it.
+The interactive contour demo remains a manual check.
 The `goldens` preset is also available directly as `dart test -P goldens`.
+
+To run the migrated browser suites with Wasm, including the same rendering goldens:
+
+```sh
+dart test -P all -p golden_chrome -c dart2wasm
+```
+
+The polygon tests retain their normal VM compiler. The JavaScript-only
+`test/legacy_dom_compatibility_test.dart` is excluded by its compiler selector.
+That file intentionally keeps the legacy `dart:html` and `dart:web_gl` imports
+to verify existing canvas, texture, and helper callers.
+All other browser tests and golden helpers use `package:web` and
+`dart:js_interop`.
 
 ## Update and review
 

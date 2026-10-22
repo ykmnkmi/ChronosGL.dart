@@ -1,9 +1,8 @@
-// The engine currently uses the legacy browser bindings too.
-// ignore_for_file: deprecated_member_use
-
-import 'dart:html' as html;
+import 'dart:js_interop';
 import 'dart:math' as math;
 import 'dart:typed_data';
+
+import 'package:web/web.dart' as web;
 
 /// RGBA pixels in PNG order: the first row is the top of the image.
 class GoldenImage {
@@ -32,20 +31,28 @@ class GoldenImage {
   final Uint8ClampedList rgba;
 
   String encodePng() {
-    final canvas = html.CanvasElement(width: width, height: height);
-    canvas.context2D.putImageData(html.ImageData(rgba, width, height), 0, 0);
-    return canvas.toDataUrl('image/png').split(',').last;
+    final canvas = web.HTMLCanvasElement()
+      ..width = width
+      ..height = height;
+    final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
+    context.putImageData(web.ImageData(rgba.toJS, width, height.toJS), 0, 0);
+    return canvas.toDataURL('image/png').split(',').last;
   }
 
   static Future<GoldenImage> decodePng(String png) async {
-    final image = html.ImageElement(src: 'data:image/png;base64,$png');
-    await image.decode();
-    final canvas = html.CanvasElement(width: image.width, height: image.height);
-    canvas.context2D.drawImage(image, 0, 0);
+    final image = web.HTMLImageElement()..src = 'data:image/png;base64,$png';
+    await image.decode().toDart;
+    final width = image.naturalWidth;
+    final height = image.naturalHeight;
+    final canvas = web.HTMLCanvasElement()
+      ..width = width
+      ..height = height;
+    final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
+    context.drawImage(image, 0, 0);
     return GoldenImage(
-      image.width!,
-      image.height!,
-      canvas.context2D.getImageData(0, 0, image.width!, image.height!).data,
+      width,
+      height,
+      context.getImageData(0, 0, width, height).data.toDart,
     );
   }
 }

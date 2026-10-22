@@ -1,15 +1,22 @@
 @TestOn("chrome")
 library;
 
-import 'dart:html' as html;
-
 import 'package:chronosgl/chronosgl.dart';
 import "package:test/test.dart";
+import 'package:web/web.dart' as web;
 
 void main() {
   test("shader_syntax", () {
-    html.CanvasElement canvas = html.CanvasElement(width: 200, height: 200);
+    final canvas = web.HTMLCanvasElement()
+      ..width = 200
+      ..height = 200;
     ChronosGL cgl = ChronosGL(canvas);
+    addTearDown(() {
+      final extension = cgl.getExtension('WEBGL_lose_context');
+      if (extension != null) {
+        (extension as web.WEBGL_lose_context).loseContext();
+      }
+    });
     RenderPhase phase = RenderPhase("test", cgl);
     RenderProgram program;
 
