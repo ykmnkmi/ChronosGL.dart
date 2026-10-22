@@ -4,15 +4,15 @@ const int _numBars = 90;
 const int _graphHeight = 30;
 const int _maxFps = 90;
 
-html.Element _makeText(String initial) {
-  html.Element text = html.Element.div();
+web.HTMLElement _makeText(String initial) {
+  final text = web.HTMLDivElement();
   text.style.fontWeight = "bold";
-  text.text = initial;
+  text.textContent = initial;
   return text;
 }
 
-html.Element _makeGraph(String fg, String bg, int bars, int height) {
-  html.Element graph = html.Element.div();
+web.HTMLElement _makeGraph(String fg, String bg, int bars, int height) {
+  final graph = web.HTMLDivElement();
   graph.style
     ..width = "${bars}px"
     ..height = "${height}px"
@@ -20,21 +20,22 @@ html.Element _makeGraph(String fg, String bg, int bars, int height) {
     ..background = fg;
 
   for (int i = 0; i < bars; i++) {
-    html.Element e = html.Element.span();
+    final e = web.HTMLSpanElement();
     e.style
       ..width = "1px"
       ..height = "${height}px"
       ..float = "left"
       ..opacity = "0.9"
       ..background = bg;
-    graph.append(e);
+    graph.appendChild(e);
   }
   return graph;
 }
 
 class Stats {
-  Stats(this._root, String fg, String bg)
-    : _graph = _makeGraph(fg, bg, _numBars, _graphHeight) {
+  Stats(Object root, String fg, String bg)
+    : _root = JSObject.fromInteropObject(root) as web.HTMLElement,
+      _graph = _makeGraph(fg, bg, _numBars, _graphHeight) {
     _root.style
       ..color = fg
       ..fontFamily = "Helvetica,Arial,sans-serif"
@@ -44,26 +45,26 @@ class Stats {
       ..textAlign = "left"
       ..background = bg;
 
-    _root.append(_text);
-    _root.append(_graph);
-    _root.append(_extra);
+    _root.appendChild(_text);
+    _root.appendChild(_graph);
+    _root.appendChild(_extra);
   }
 
-  final html.Element _root;
-  final html.Element _text = _makeText("@@@@");
-  final html.Element _extra = html.Element.div();
-  final html.Element _graph;
+  final web.HTMLElement _root;
+  final web.HTMLElement _text = _makeText("@@@@");
+  final web.HTMLElement _extra = web.HTMLDivElement();
+  final web.HTMLElement _graph;
 
   void changeExtra(String s) {
-    _extra.innerHtml = s;
+    _extra.innerHTML = s.toJS;
   }
 
   void addRawValue(int v) {
     if (v < 0) v = 0;
     if (v > _graphHeight) v = _graphHeight;
-    html.Element e = _graph.firstChild! as html.Element;
+    final e = _graph.firstChild! as web.HTMLElement;
     e.style.height = "${v}px";
-    _graph.append(e);
+    _graph.appendChild(e);
   }
 }
 
@@ -82,8 +83,8 @@ class StatsFps extends Stats {
     //print("${fps}");
     _frames = 0;
     _lastSample = now;
-    _text.text = "${fps.toStringAsFixed(2)} fps";
-    _extra.innerHtml = extra;
+    _text.textContent = "${fps.toStringAsFixed(2)} fps";
+    _extra.innerHTML = extra.toJS;
     addRawValue(_graphHeight * fps.ceil() ~/ _maxFps);
   }
 }

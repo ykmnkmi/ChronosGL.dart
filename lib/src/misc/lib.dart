@@ -1,11 +1,11 @@
 library;
 
-// This library does not depend on "dart:html"
 import 'dart:typed_data';
 import 'dart:math' as math;
-import 'dart:html' as html;
+import 'dart:js_interop';
 
 import 'package:vector_math/vector_math.dart' as vm;
+import 'package:web/web.dart' as web;
 
 import "../core/lib.dart";
 import "../shader/lib.dart";

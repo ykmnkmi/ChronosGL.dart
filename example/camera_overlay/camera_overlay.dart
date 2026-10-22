@@ -1,6 +1,7 @@
 import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:web/web.dart' as web;
 
 // This scene is responsible for filling the entire screen with a texture
 // gleaned from the camera
@@ -49,7 +50,7 @@ Scene cubeScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   return scene;
 }
 
-void main2(html.VideoElement? video) {
+void main2(web.HTMLVideoElement? video) {
   if (video == null) {
     html.window.alert(
       "Could not access camera - do you have a camera installed?",

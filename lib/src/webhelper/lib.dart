@@ -1,15 +1,16 @@
 library;
 
-import 'dart:html' as html;
 import "dart:async";
 import 'dart:convert';
+import 'dart:js_interop';
 import 'dart:math' as math;
 
 import 'package:vector_math/vector_math.dart' as vm;
+import 'package:web/web.dart' as web;
 
 import '../core/lib.dart';
 
-/// # Layer: WebHelper (uses Core Layer, dart:html)
+/// # Layer: WebHelper (uses Core Layer, package:web)
 /// adds helpers which require access to HTML features like
 /// DOM tree (elements).
 

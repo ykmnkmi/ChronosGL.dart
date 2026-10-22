@@ -3,6 +3,7 @@ import 'dart:html' as html;
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:web/web.dart' as web;
 
 html.SelectElement gEffect =
     html.document.querySelector('#effect') as html.SelectElement;
@@ -139,7 +140,7 @@ void registerEffects(ChronosGL cgl) {
   }
 }
 
-void main2(html.VideoElement? video) {
+void main2(web.HTMLVideoElement? video) {
   if (video == null) {
     html.window.alert(
       "Could not access camera - do you have a camera installed?",

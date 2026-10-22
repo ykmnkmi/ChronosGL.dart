@@ -81,7 +81,7 @@ Node dragon(ChronosGL cgl, RenderProgram prog) {
 
   // This will be populated when the model has loaded
   final Node node = Node.container("dragon");
-  var f1 = loadImage(textureFile).then((html.ImageElement img) {
+  var f1 = loadImage(textureFile).then((img) {
     mat.setUniform(uTexture, ImageTexture(cgl, textureFile, img));
   });
   gLoadables.add(f1);

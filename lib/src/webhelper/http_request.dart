@@ -1,58 +1,75 @@
 part of 'lib.dart';
 
-Future<String> loadRaw(String url) {
-  Completer<String> c = Completer();
-  html.HttpRequest hr = html.HttpRequest();
-  hr.open("GET", url);
-  hr.onLoadEnd.listen((e) {
-    c.complete(hr.responseText);
-  });
-  hr.send('');
-  return c.future;
+Future<String> loadRaw(String url) async {
+  final request = web.XMLHttpRequest()..open('GET', url);
+  final done = web.EventStreamProviders.loadEndEvent.forTarget(request).first;
+  request.send();
+  await done;
+  if (request.status < 200 || request.status >= 300) {
+    throw StateError('Failed to load $url (HTTP ${request.status})');
+  }
+  return request.responseText;
 }
 
-Future<Map<String, Object?>> loadJson(String url) {
-  Completer<Map<String, Object?>> c = Completer();
-  html.HttpRequest hr = html.HttpRequest();
-  hr.open("GET", url);
-  hr.onLoadEnd.listen((e) {
-    c.complete(json.decode(hr.responseText!) as Map<String, Object?>);
-  });
-  hr.send('');
-  return c.future;
+Future<Map<String, Object?>> loadJson(String url) async {
+  return json.decode(await loadRaw(url)) as Map<String, Object?>;
 }
 
-Future<html.ImageElement> loadImage(String url) {
-  Completer<html.ImageElement> c = Completer();
-  html.ImageElement image = html.ImageElement();
-  image.onLoad.first.then((_) => c.complete(image));
+// Remove both listeners on success or failure so failed media loads complete
+// their Future and do not retain the element through an unused listener.
+Future<void> _waitForLoadEvent(
+  web.EventTarget target,
+  String readyEvent,
+  String description,
+) {
+  final completer = Completer<void>();
+  late final JSFunction onReady;
+  late final JSFunction onError;
+  void finish([Object? error]) {
+    target.removeEventListener(readyEvent, onReady);
+    target.removeEventListener('error', onError);
+    if (error == null) {
+      completer.complete();
+    } else {
+      completer.completeError(error);
+    }
+  }
+
+  onReady = ((web.Event event) => finish()).toJS;
+  onError = ((web.Event event) {
+    finish(StateError('Failed to load $description'));
+  }).toJS;
+  target.addEventListener(readyEvent, onReady);
+  target.addEventListener('error', onError);
+  return completer.future;
+}
+
+Future<web.HTMLImageElement> loadImage(String url) async {
+  final image = web.HTMLImageElement();
+  final ready = _waitForLoadEvent(image, 'load', url);
   image.src = url;
-  return c.future;
+  await ready;
+  return image;
 }
 
-Future<html.VideoElement> loadVideo(String url) {
-  Completer<html.VideoElement> c = Completer();
-  html.VideoElement video = html.VideoElement();
-  // this is crucial since we are waiting for "onplaying"
-  video.autoplay = true;
-  video.loop = true;
-  video.onPlaying.first.then((_) => c.complete(video));
+Future<web.HTMLVideoElement> loadVideo(String url) async {
+  final video = web.HTMLVideoElement()
+    ..autoplay = true
+    ..loop = true;
+  // Textures must not use the video until it is playing.
+  final ready = _waitForLoadEvent(video, 'playing', url);
   video.src = url;
-  return c.future;
+  await ready;
+  return video;
 }
 
 final List<String> _kUrlInfix = ["nx", "px", "ny", "py", "nz", "pz"];
 
-List<Future<html.ImageElement>> loadCubeImages(
+List<Future<web.HTMLImageElement>> loadCubeImages(
   String urlPrefix,
   String urlSuffix,
 ) {
-  List<Future<html.ImageElement>> out = List.generate(_kUrlInfix.length, (i) {
-    Completer<html.ImageElement> c = Completer();
-    html.ImageElement image = html.ImageElement();
-    image.onLoad.first.then((_) => c.complete(image));
-    image.src = urlPrefix + _kUrlInfix[i] + urlSuffix;
-    return c.future;
-  });
-  return out;
+  return [
+    for (final face in _kUrlInfix) loadImage('$urlPrefix$face$urlSuffix'),
+  ];
 }

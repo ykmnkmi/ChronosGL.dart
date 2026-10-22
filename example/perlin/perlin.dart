@@ -48,7 +48,7 @@ void main() {
     )
     ..setUniform(uColor, vm.Vector3.zero());
   var future = loadImage("../gradient.jpg")
-    ..then((html.ImageElement img) {
+    ..then((img) {
       Texture gradient = ImageTexture(cgl, "../gradient.jpg", img);
       matTexture.setUniform(uTexture, gradient);
     });

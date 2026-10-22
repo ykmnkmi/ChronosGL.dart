@@ -112,8 +112,7 @@ refer to the corresponding `package:web` WebGL types. Buffer, texture, uniform,
 and pixel APIs still accept Dart typed data, including views with byte offsets.
 
 `ChronosGL` and image textures accept browser objects from both `package:web`
-and the existing SDK browser libraries. Web helpers and examples can migrate
-separately. For new core callers:
+and the existing SDK browser libraries. For new core callers:
 
 ```dart
 import 'package:chronosgl/chronosgl.dart';
@@ -143,4 +142,42 @@ The core-only interop tests also run with Wasm:
 
 ```sh
 dart test -p golden_chrome -c dart2wasm test/core_web_interop_test.dart
+```
+
+## Web and miscellaneous helpers
+
+The web helpers and miscellaneous helpers now use `package:web` and
+`dart:js_interop`. No library under `lib/` imports the legacy SDK browser
+libraries. Existing DOM elements can still be passed to `Keyboard`, `Mouse`,
+`OrbitCamera`, `Stats`, `StatsFps`, `RenderPhaseResizeAware`, and
+`PerspectiveResizeAware` while applications migrate. `Keyboard(null)` and
+`Mouse(null)` continue to listen on the document.
+
+Helpers that create elements now return the corresponding `package:web` types:
+
+| Helper | Return type |
+| --- | --- |
+| `loadImage` | `Future<web.HTMLImageElement>` |
+| `loadCubeImages` | `List<Future<web.HTMLImageElement>>` |
+| `loadVideo` | `Future<web.HTMLVideoElement>` |
+| `makeVideoElementFromCamera` | `Future<web.HTMLVideoElement?>` |
+| `makeSolidColorCanvas`, `Utils.createParticleCanvas` | `web.HTMLCanvasElement` |
+
+Update explicitly typed callbacks and variables to these types, or let Dart
+infer the callback parameter type. `ImageTexture` and `CubeTexture` accept these
+elements directly. Cube faces retain the order `nx`, `px`, `ny`, `py`, `nz`, `pz`.
+
+`loadRaw` and `loadJson` now report HTTP and network failures through their
+returned futures. Invalid JSON also completes with an error. Failed image and
+video loads complete with an error instead of leaving the future pending.
+Video helpers still wait for `playing` before returning. Camera capture uses
+`navigator.mediaDevices.getUserMedia`, returns a muted inline video, and keeps
+the nullable failure result. A stream is stopped if video initialization fails.
+
+The helper tests import the public package entry point and can run with either
+JavaScript or Wasm:
+
+```sh
+dart test -p golden_chrome test/webhelper_interop_test.dart
+dart test -p golden_chrome -c dart2wasm test/webhelper_interop_test.dart
 ```

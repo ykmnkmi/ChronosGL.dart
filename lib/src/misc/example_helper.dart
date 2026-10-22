@@ -26,11 +26,12 @@ class Utils {
     return ImageTexture(cgl, name, createParticleCanvas());
   }
 
-  static html.CanvasElement createParticleCanvas() {
+  static web.HTMLCanvasElement createParticleCanvas() {
     int d = 64;
-    html.CanvasElement canvas = html.CanvasElement(width: d, height: d);
-    html.CanvasRenderingContext2D ctx =
-        canvas.getContext('2d') as html.CanvasRenderingContext2D;
+    final canvas = web.HTMLCanvasElement()
+      ..width = d
+      ..height = d;
+    final ctx = canvas.getContext('2d') as web.CanvasRenderingContext2D;
     int x = d ~/ 2, y = d ~/ 2;
 
     var gradient = ctx.createRadialGradient(x, y, 1, x, y, 22);
@@ -241,17 +242,19 @@ class RenderPhaseResizeAware extends RenderPhase {
   RenderPhaseResizeAware(
     super.name,
     super.cgl,
-    this._canvas,
+    Object canvas,
     this._perspective,
-  ) {
+  ) : _canvas = JSObject.fromInteropObject(canvas) as web.HTMLCanvasElement {
     resolutionChange(null);
-    html.window.onResize.listen(resolutionChange);
+    web.EventStreamProviders.resizeEvent
+        .forTarget(web.window)
+        .listen(resolutionChange);
   }
 
-  final html.CanvasElement _canvas;
+  final web.HTMLCanvasElement _canvas;
   final Perspective _perspective;
 
-  void resolutionChange(html.Event? ev) {
+  void resolutionChange(Object? ev) {
     int w = _canvas.clientWidth;
     int h = _canvas.clientHeight;
     _canvas.width = w;
@@ -266,19 +269,22 @@ class RenderPhaseResizeAware extends RenderPhase {
 class PerspectiveResizeAware extends Perspective {
   PerspectiveResizeAware(
     this._cgl,
-    this._canvas,
+    Object canvas,
     Spatial camera,
     double near,
     double far,
-  ) : super(camera, near, far) {
+  ) : _canvas = JSObject.fromInteropObject(canvas) as web.HTMLCanvasElement,
+      super(camera, near, far) {
     resolutionChange(null);
-    html.window.onResize.listen(resolutionChange);
+    web.EventStreamProviders.resizeEvent
+        .forTarget(web.window)
+        .listen(resolutionChange);
   }
 
-  final html.CanvasElement _canvas;
+  final web.HTMLCanvasElement _canvas;
   final ChronosGL _cgl;
 
-  void resolutionChange(html.Event? ev) {
+  void resolutionChange(Object? ev) {
     int w = _canvas.clientWidth;
     int h = _canvas.clientHeight;
     _canvas.width = w;

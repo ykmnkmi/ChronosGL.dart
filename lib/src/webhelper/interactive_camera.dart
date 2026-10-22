@@ -6,7 +6,7 @@ class OrbitCamera extends Spatial {
   ///
   /// @param this._radius blah
   /// @param this._polar blah
-  OrbitCamera(this._radius, this.azimuth, this.polar, html.Element eventElement)
+  OrbitCamera(this._radius, this.azimuth, this.polar, Object eventElement)
     : keyboard = Keyboard(null),
       mouse = Mouse(eventElement),
       super("camera:orbit");

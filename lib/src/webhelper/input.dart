@@ -2,17 +2,19 @@ part of 'lib.dart';
 
 /// HTML keyboard handling
 class Keyboard {
-  Keyboard(dynamic elem) {
-    elem ??= html.document;
+  Keyboard(Object? elem) {
+    final target = elem == null
+        ? web.document
+        : JSObject.fromInteropObject(elem) as web.EventTarget;
 
-    elem.onKeyDown.listen((html.KeyboardEvent e) {
-      _currentlyPressedKeys.add(e.which!);
-      _justPressedKeys.add(e.which!);
+    web.EventStreamProviders.keyDownEvent.forTarget(target).listen((e) {
+      _currentlyPressedKeys.add(e.which);
+      _justPressedKeys.add(e.which);
     });
 
-    elem.onKeyUp.listen((html.KeyboardEvent e) {
-      _currentlyPressedKeys.remove(e.which!);
-      _justReleasedKeys.add(e.which!);
+    web.EventStreamProviders.keyUpEvent.forTarget(target).listen((e) {
+      _currentlyPressedKeys.remove(e.which);
+      _justReleasedKeys.add(e.which);
     });
   }
 
@@ -91,37 +93,43 @@ class Keyboard {
 
 /// HTML mouse handling
 class Mouse {
-  Mouse(dynamic elem) {
-    elem ??= html.document;
+  Mouse(Object? elem) {
+    final target = elem == null
+        ? web.document
+        : JSObject.fromInteropObject(elem) as web.EventTarget;
 
-    elem.onMouseMove.listen((html.MouseEvent e) {
+    web.EventStreamProviders.mouseMoveEvent.forTarget(target).listen((e) {
       e.preventDefault();
 
-      currentX = e.offset.x.toInt();
-      currentY = e.offset.y.toInt();
+      currentX = e.offsetX.toInt();
+      currentY = e.offsetY.toInt();
 
-      moveDeltaX = e.movement.x.toInt();
-      moveDeltaY = e.movement.y.toInt();
+      moveDeltaX = e.movementX.toInt();
+      moveDeltaY = e.movementY.toInt();
       //print ("MOVE ${moveDeltaX}x${moveDeltaY}");
     });
 
-    elem.onMouseDown.listen((html.MouseEvent e) {
+    web.EventStreamProviders.mouseDownEvent.forTarget(target).listen((e) {
       e.preventDefault();
       print("BUTTON ${e.button}");
       _currentlyPressedButtons.add(e.button);
       _justPressedButtons.add(e.button);
     });
 
-    elem.onMouseUp.listen((html.MouseEvent e) {
+    web.EventStreamProviders.mouseUpEvent.forTarget(target).listen((e) {
       e.preventDefault();
       _currentlyPressedButtons.remove(e.button);
       _justReleasedButtons.add(e.button);
     });
 
-    elem.onMouseWheel.listen((html.WheelEvent e) {
-      e.preventDefault();
-      wheelDeltaY = e.deltaY.toInt();
-    });
+    target.addEventListener(
+      'wheel',
+      ((web.WheelEvent e) {
+        e.preventDefault();
+        wheelDeltaY = e.deltaY.toInt();
+      }).toJS,
+      web.AddEventListenerOptions(passive: false),
+    );
 
     /*
   canvas.onContextMenu.listen((html.MouseEvent e) {

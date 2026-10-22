@@ -7,6 +7,7 @@ define_platforms:
         --use-gl=angle
         --use-angle=swiftshader
         --enable-unsafe-swiftshader
+        --autoplay-policy=no-user-gesture-required
 
 presets:
   goldens:
@@ -24,5 +25,6 @@ presets:
       - test/golden_comparison_test.dart
       - test/type_boundaries_test.dart
       - test/core_web_interop_test.dart
+      - test/webhelper_interop_test.dart
     concurrency: 1
     timeout: 60s

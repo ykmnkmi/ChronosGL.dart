@@ -2,8 +2,9 @@ import 'dart:html' as html;
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
+import 'package:web/web.dart' as web;
 
-void main2(html.VideoElement? video) {
+void main2(web.HTMLVideoElement? video) {
   if (video == null) {
     html.window.alert(
       "Could not access camera - do you have a camera installed?",

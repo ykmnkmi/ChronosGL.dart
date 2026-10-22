@@ -72,7 +72,7 @@ void main() {
     ..setUniform(uNormalMatrix, normalMat)
     ..setUniform(uModelMatrix, modelMat);
   var future = loadImage(textureFile)
-    ..then((html.ImageElement img) {
+    ..then((img) {
       Texture bubble = ImageTexture(cgl, textureFile, img);
       matSphere.setUniform(uTexture, bubble);
     });

@@ -34,7 +34,7 @@ Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   // textures will be set after they are loaded
   final Material matWood = Material("wood")..setUniform(uColor, colorBlack);
   var f3 = loadImage("../wood.jpg")
-    ..then((html.ImageElement img) {
+    ..then((img) {
       Texture wood = ImageTexture(cgl, "../wood.jpg", img);
       matWood.setUniform(uTexture, wood);
     });
@@ -43,7 +43,7 @@ Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   final Material matGradient = Material("gradient")
     ..setUniform(uColor, colorRed);
   var f1 = loadImage("../gradient.jpg")
-    ..then((html.ImageElement img) {
+    ..then((img) {
       Texture gradient = ImageTexture(cgl, "../gradient.jpg", img);
       matGradient.setUniform(uTexture, gradient);
     });
@@ -53,7 +53,7 @@ Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
     ..setUniform(uColor, colorGray4)
     ..forceUniform(cBlendEquation, blendEquationStandard);
   var f2 = loadImage("../transparent.png")
-    ..then((html.ImageElement img) {
+    ..then((img) {
       Texture trans = ImageTexture(cgl, "../transparent.png", img);
       matTrans.setUniform(uTexture, trans);
     });
