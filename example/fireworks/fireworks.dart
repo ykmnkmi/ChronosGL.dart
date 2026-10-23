@@ -1,7 +1,10 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
 import 'dart:math' as math;
-import 'dart:html' as html;
+
+import 'package:web/web.dart' as web;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
@@ -69,8 +72,8 @@ MeshData getRocket(RenderProgram prog) {
 }
 
 void main() {
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   // Make sure canvas is really full screen
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
@@ -105,7 +108,8 @@ void main() {
   final MeshData rocket = getRocket(progFireworks);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -115,8 +119,10 @@ void main() {
     progSprites.draw(stars, [perspective, material]);
     progFireworks.draw(rocket, [perspective, material]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

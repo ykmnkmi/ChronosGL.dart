@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -141,11 +144,11 @@ void eventDirectionChanged(String name, double value) {
   }
 }
 
-double getInputValue(html.InputElement e) {
-  return double.parse(e.value!);
+double getInputValue(web.HTMLInputElement e) {
+  return double.parse(e.value);
 }
 
-void swallowEvent(html.Event e) {
+void swallowEvent(web.Event e) {
   e.stopPropagation();
 }
 
@@ -201,12 +204,12 @@ double kFar = 50.0;
 
 void main() {
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: false);
 
   final OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -267,17 +270,19 @@ void main() {
   sceneFixed.add(Node("light", mdLight, lightSourceMat));
 
   // Event Handling
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.InputElement input = node as html.InputElement;
-    input.onChange.listen((html.Event e) {
-      html.InputElement input = e.target as html.InputElement;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLInputElement input = node as web.HTMLInputElement;
+    input.onChange.listen((web.Event e) {
+      web.HTMLInputElement input = e.target as web.HTMLInputElement;
       if (input.type == "radio") {
         eventRadioChanged(input.id);
       }
     });
 
-    input.onInput.listen((html.Event e) {
-      html.InputElement input = e.target as html.InputElement;
+    input.onInput.listen((web.Event e) {
+      web.HTMLInputElement input = e.target as web.HTMLInputElement;
       if (input.type == "range") {
         String name = input.id;
         double value = getInputValue(input);
@@ -295,14 +300,16 @@ void main() {
     input.onMouseMove.listen(swallowEvent);
   }
 
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.InputElement input = node as html.InputElement;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLInputElement input = node as web.HTMLInputElement;
     print("initialize inputs ${input.id}");
-    input.dispatchEvent(html.Event("change"));
-    input.dispatchEvent(html.Event("input"));
+    input.dispatchEvent(web.Event("change"));
+    input.dispatchEvent(web.Event("input"));
   }
 
-  void resolutionChange(html.Event? ev) {
+  void resolutionChange(web.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
@@ -317,14 +324,17 @@ void main() {
   }
 
   resolutionChange(null);
-  html.window.onResize.listen(resolutionChange);
+  web.EventStreamProviders.resizeEvent
+      .forTarget(web.window)
+      .listen(resolutionChange);
 
   double lastTimeMs = 0.0;
 
-  //html.document.getElementById("posx").onChange.listen((html.Event ev) =>
+  //web.document.getElementById("posx").onChange.listen((web.Event ev) =>
   //light.pos.x = getInputValue(ev));
 
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
@@ -340,9 +350,11 @@ void main() {
     phaseMain.draw();
     shadowMap.visualize();
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

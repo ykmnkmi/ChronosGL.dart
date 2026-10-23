@@ -1,5 +1,8 @@
+import 'dart:js_interop';
 import "dart:async";
-import 'dart:html' as html;
+
+import 'package:web/web.dart' as web;
+
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -141,12 +144,12 @@ class TheNodes {
 
 void main() {
   introduceNewShaderVar(uFadeFactor, const ShaderVarDesc("float", ""));
-  final html.DivElement infoElement =
-      html.document.getElementById("info") as html.DivElement;
-  final html.CanvasElement canvas =
-      html.document.getElementById("webgl-canvas") as html.CanvasElement;
-  final html.AudioElement musicElement =
-      html.document.getElementById("music") as html.AudioElement;
+  final web.HTMLDivElement infoElement =
+      web.document.getElementById("info") as web.HTMLDivElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.getElementById("webgl-canvas") as web.HTMLCanvasElement;
+  final web.HTMLAudioElement musicElement =
+      web.document.getElementById("music") as web.HTMLAudioElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final theNodes = TheNodes();
 
@@ -242,27 +245,36 @@ void main() {
   gLoadables.add(future);
 
   double startMs = -1.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     if (startMs < 0.0) startMs = timeMs.toDouble();
     //final double now = (timeMs - startMs) * 0.001 *  2.0 + 20;
     final double now = musicElement.currentTime.toDouble();
     if (musicElement.ended || now > 192.0) {
-      infoElement.text = about;
+      infoElement.textContent = about;
     } else {
       theNodes.advanceTimeline(now);
-      //infoElement.text = "${now}";
+      //infoElement.textContent = "${now}";
     }
 
     theNodes.material.forceUniform(uTime, timeMs / 1000.0);
     phase.draw();
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
 
-  Future.wait(gLoadables).then((list) {
-    musicElement.play();
-    infoElement.text = "";
+  onFrame = animate.toJS;
 
+  musicElement.onPlaying.listen((_) {
+    infoElement.textContent = '';
+  });
+  Future.wait(gLoadables).then((list) async {
     animate(0.0);
+    try {
+      await musicElement.play().toDart;
+      infoElement.textContent = '';
+    } catch (error) {
+      infoElement.textContent = 'Use the audio controls to start playback.';
+    }
   });
 }

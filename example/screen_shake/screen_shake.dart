@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -71,8 +74,8 @@ class CameraShaker {
 
 void main() {
   // The canvas is what we render the 3d scene into.
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
 
   gLogLevel = 1; // enable more logging
   // Create a ChronosGL object for the canvas.
@@ -80,7 +83,7 @@ void main() {
 
   // Create interactive camera, listening to 'body' element for
   // control inputs like mouse drag events.
-  final OrbitCamera orbit = OrbitCamera(5.0, 0.0, 0.0, html.document.body!);
+  final OrbitCamera orbit = OrbitCamera(5.0, 0.0, 0.0, web.document.body!);
   // Create a perspective. We use a combined view+perspective matrix,
   // which is obtained by combining te view matrix from the camera with
   // the perspective matrix.
@@ -130,7 +133,8 @@ void main() {
   const double shakeIntervalMs = 2000.0;
   const double shakeDurationMs = 500.0;
 
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     // animate the camera a little
@@ -153,8 +157,10 @@ void main() {
     prog.draw(torus, [perspective, material]);
     progSprites.draw(stars, [perspective, materialStars]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

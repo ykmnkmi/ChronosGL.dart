@@ -1,5 +1,7 @@
+import 'dart:js_interop';
 import 'dart:async';
-import 'dart:html' as html;
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
@@ -59,12 +61,12 @@ vm.Vector3 colSpecular = vm.Vector3.all(0.133);
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(0.5, 0.0, 0.0, canvas);
@@ -121,16 +123,19 @@ void main() {
   phase.add(sceneMain);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.draw();
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   Material mat = Material("mat")
     ..setUniform(uColor, colorGray4)

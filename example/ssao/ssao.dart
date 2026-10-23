@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -9,18 +12,18 @@ const String modelFile = "../ct_logo.obj";
 
 final List<Future<Object>> gLoadables = [];
 
-final html.InputElement gSSAO =
-    html.document.querySelector('#activate') as html.InputElement;
+final web.HTMLInputElement gSSAO =
+    web.document.querySelector('#activate') as web.HTMLInputElement;
 
 void main() {
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final width = canvas.clientWidth;
   final height = canvas.clientHeight;
   canvas.width = width;
@@ -70,12 +73,13 @@ void main() {
     ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    if (gSSAO.checked!) {
+    if (gSSAO.checked) {
       fb.activate(glClearAll, 0, 0, width, height);
       progSolid.draw(ctLogo, [perspective, material]);
       screen.activate(glClearAll, 0, 0, width, height);
@@ -84,9 +88,11 @@ void main() {
       progSolid.draw(ctLogo, [perspective, material]);
     }
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   Future.wait(gLoadables).then((list) {
     animate(0.0);

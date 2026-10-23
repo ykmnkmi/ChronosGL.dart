@@ -1,6 +1,8 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
@@ -8,12 +10,12 @@ import "dart:async";
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
   OrbitCamera orbit = OrbitCamera(15.0, 0.0, 0.0, canvas);
   PerspectiveResizeAware perspective = PerspectiveResizeAware(
@@ -48,7 +50,8 @@ void main() {
   final MeshData mdStars = Utils.makeStarMesh(progStars, 2000, 100.0);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -57,9 +60,11 @@ void main() {
     progCube.draw(mdSky, [mat, perspective]);
     progStars.draw(mdStars, [matStars, perspective]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   List<Future<Object>> futures = loadCubeImages("skybox_", ".png");
 

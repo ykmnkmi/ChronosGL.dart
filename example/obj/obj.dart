@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -11,12 +14,12 @@ final List<Future<Object>> gLoadables = [];
 
 void main() {
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(25.0, 0.0, 0.0, canvas);
   final PerspectiveResizeAware perspective = PerspectiveResizeAware(
@@ -47,15 +50,18 @@ void main() {
     ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     progDemo.draw(ctLogo, [perspective, material]);
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   Future.wait(gLoadables).then((list) {
     animate(0.0);

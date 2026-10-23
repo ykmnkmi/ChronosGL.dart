@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 import 'dart:math' as math;
-import 'dart:html' as html;
-import 'dart:js_interop';
 
-import 'package:web/web.dart' as js;
+import 'package:web/web.dart' as web;
+
+import 'dart:js_interop';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
@@ -170,8 +170,8 @@ void extractSpriteSizes(List<Sprite> sprites, Float32List out) {
   }
 }
 
-final html.DivElement info =
-    html.document.querySelector('#info') as html.DivElement;
+final web.HTMLDivElement info =
+    web.document.querySelector('#info') as web.HTMLDivElement;
 
 class Gamepad {
   Gamepad();
@@ -183,9 +183,10 @@ class Gamepad {
   bool justReleased = false;
 
   void poll() {
-    js.Gamepad? gp;
-    final pads = js.window.navigator.getGamepads().toDart;
-    for (var p in pads) {
+    web.Gamepad? gp;
+    final pads = web.window.navigator.getGamepads().toDart;
+    for (final p in pads) {
+      if (p == null) continue;
       gp = p;
       break;
     }
@@ -195,7 +196,9 @@ class Gamepad {
       for (final b in gp.buttons.toDart) {
         bs.add(b.pressed);
       }
-      info.innerHtml = "${gp.id}<br>axes: ${gp.axes}<br>buttons: $bs";
+      final axes = gp.axes.toDart.map((axis) => axis.toDartDouble).toList();
+      info.style.whiteSpace = 'pre-line';
+      info.textContent = "${gp.id}\naxes: $axes\nbuttons: $bs";
     }
 
     // x = _gp!.axes[0] + 0.0;
@@ -245,8 +248,8 @@ void handleUseInput(Keyboard input, Gamepad gamepad, List<Sprite> sprites) {
 
 void main() {
   final math.Random rng = math.Random();
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
   final int d = math.min(w, h);
@@ -290,7 +293,8 @@ void main() {
     ..forceUniform(cDepthWrite, false);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     for (Sprite s in sprites) {
@@ -303,8 +307,10 @@ void main() {
     mesh.changeVertexData(points);
 
     prog.draw(mesh, [mat]);
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

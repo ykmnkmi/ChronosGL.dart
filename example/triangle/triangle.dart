@@ -1,6 +1,9 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
+
 import 'dart:math' as math;
 
 Node triangle(RenderProgram program) {
@@ -51,12 +54,12 @@ Node triangle(RenderProgram program) {
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(20.0, 0.0, 0.0, canvas);
@@ -78,7 +81,7 @@ void main() {
 
   scene.add(triangle(scene.program));
 
-  void resolutionChange(html.Event? ev) {
+  void resolutionChange(web.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
@@ -90,7 +93,9 @@ void main() {
   }
 
   resolutionChange(null);
-  html.window.onResize.listen(resolutionChange);
+  web.EventStreamProviders.resizeEvent
+      .forTarget(web.window)
+      .listen(resolutionChange);
 
   // 35deg is slightly too large.
   // Need to find a math reference for actual real angle.
@@ -98,7 +103,8 @@ void main() {
   orbit.polar = 35.0 * math.pi / 180.0;
   orbit.azimuth = -45.0 * math.pi / 180.0;
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
@@ -109,9 +115,11 @@ void main() {
     double azimuth = orbit.azimuth * 180.0 / math.pi;
     phase.draw();
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs, "$polar<br>$azimuth");
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

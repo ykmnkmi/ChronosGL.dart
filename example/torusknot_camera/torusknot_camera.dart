@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -34,18 +37,18 @@ class TorusKnotCamera extends Spatial {
   }
 }
 
-void updateTorusTexture(double time, html.CanvasElement canvas) {
-  html.CanvasRenderingContext2D ctx =
-      canvas.getContext('2d') as html.CanvasRenderingContext2D;
+void updateTorusTexture(double time, web.HTMLCanvasElement canvas) {
+  web.CanvasRenderingContext2D ctx =
+      canvas.getContext('2d') as web.CanvasRenderingContext2D;
   double sint = math.sin(time);
   double n = (sint + 1) / 2;
-  ctx.rect(0, 0, canvas.width!, canvas.height!);
+  ctx.rect(0, 0, canvas.width, canvas.height);
   // Direction of gradient is diagonal
-  html.CanvasGradient grad = ctx.createLinearGradient(
+  web.CanvasGradient grad = ctx.createLinearGradient(
     0,
     0,
-    canvas.width! * n,
-    canvas.height!,
+    canvas.width * n,
+    canvas.height,
   );
   double cs1 = (360 * n).floorToDouble();
   double cs2 = (90 * n).floorToDouble();
@@ -166,7 +169,7 @@ class SceneStars extends SimpleScene {
 
 class SceneTextured extends SimpleScene {
   SceneTextured(ChronosGL cgl) {
-    canvas2d = html.document.querySelector('#texture') as html.CanvasElement;
+    canvas2d = web.document.querySelector('#texture') as web.HTMLCanvasElement;
     updateTorusTexture(0.0, canvas2d);
     generatedTexture = ImageTexture(cgl, "gen", canvas2d);
     mat = Material.transparent("torus", blendEquationMix)
@@ -189,7 +192,7 @@ class SceneTextured extends SimpleScene {
     program.draw(mesh, [perspective, mat]);
   }
 
-  late html.CanvasElement canvas2d;
+  late web.HTMLCanvasElement canvas2d;
   late ImageTexture generatedTexture;
 }
 
@@ -249,10 +252,10 @@ class SceneWireframe extends SimpleScene {
 }
 
 void main() {
-  final html.SelectElement modeInput =
-      html.document.querySelector('#mode') as html.SelectElement;
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLSelectElement modeInput =
+      web.document.querySelector('#mode') as web.HTMLSelectElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final TorusKnotCamera tkc = TorusKnotCamera();
   final Perspective perspective = PerspectiveResizeAware(
@@ -270,7 +273,8 @@ void main() {
   final SceneWireframe sceneHexagon = SceneWireframe.hexagon(cgl);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     lastTimeMs = timeMs.toDouble();
 
     tkc.animate(lastTimeMs);
@@ -293,8 +297,10 @@ void main() {
       default:
         print("unexpected mode ${modeInput.value}");
     }
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

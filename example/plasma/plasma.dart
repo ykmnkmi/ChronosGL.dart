@@ -1,4 +1,6 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 
@@ -105,12 +107,12 @@ Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(65.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -158,25 +160,28 @@ void main() {
   scenes[activeScene].add(cube);
 
   // Advance scene when an arbitrary key is pressed
-  html.document.addEventListener('keypress', (event) {
+  web.EventStreamProviders.keyPressEvent.forTarget(web.document).listen((
+    event,
+  ) {
     scenes[activeScene % 3].remove(cube);
     scenes[(activeScene + 1) % 3].add(cube);
     activeScene = (activeScene + 1) % 3;
   });
 
   // Chose a specific scene
-  html.SelectElement myselect =
-      html.document.querySelector('#myselect') as html.SelectElement;
-  myselect.onChange.listen((html.Event e) {
+  web.HTMLSelectElement myselect =
+      web.document.querySelector('#myselect') as web.HTMLSelectElement;
+  myselect.onChange.listen((web.Event e) {
     scenes[activeScene].remove(cube);
-    activeScene = myselect.selectedIndex!;
+    activeScene = myselect.selectedIndex;
     scenes[(activeScene)].add(cube);
   });
 
   phase.add(makeStarScene(cgl, perspective, 2000));
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -187,9 +192,11 @@ void main() {
     mat.forceUniform(uTime, timeMs / 1000.0);
 
     phase.draw();
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

@@ -1,6 +1,9 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
+
 import 'dart:typed_data';
 
 import 'package:vector_math/vector_math.dart' as vm;
@@ -212,32 +215,38 @@ Framebuffer makePrepareFb(ChronosGL cgl, int width, int height) {
 }
 
 Texture makeNoiseTesture(ChronosGL cgl, math.Random rand) {
-  html.CanvasElement canvas = html.CanvasElement();
+  web.HTMLCanvasElement canvas = web.HTMLCanvasElement();
   canvas.width = 512;
   canvas.height = 512;
   var context = canvas.context2D;
-  var image = context.getImageData(0, 0, canvas.width!, canvas.height!);
+  var image = context.getImageData(0, 0, canvas.width, canvas.height);
+  final pixels = image.data.toDart;
 
-  for (int i = 0; i < image.data.length; i += 4) {
+  for (int i = 0; i < pixels.length; i += 4) {
     int v = 30 + rand.nextInt(225);
-    image.data[i + 0] = v;
-    image.data[i + 1] = v;
-    image.data[i + 2] = v;
-    image.data[i + 3] = 255;
+    pixels[i + 0] = v;
+    pixels[i + 1] = v;
+    pixels[i + 2] = v;
+    pixels[i + 3] = 255;
   }
-  context.putImageData(image, 0, 0);
+  // toDart may copy the pixel array on Wasm; upload the edited Dart storage.
+  context.putImageData(
+    web.ImageData(pixels.toJS, canvas.width, canvas.height.toJS),
+    0,
+    0,
+  );
 
   return ImageTexture(cgl, "noise", canvas, texturePropertiesMipmap);
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
 
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: false)
     ..clearColor(0.5, 0.5, 0.5, 1.0);
@@ -247,9 +256,9 @@ void main() {
       DirectionalLight("dir", dirLight, colorWhite * 0.5, colorBlack, 100.0),
     );
 
-  final dynamic ext = cgl.getExtension("EXT_color_buffer_float");
+  final ext = cgl.getExtension("EXT_color_buffer_float");
   if (ext == null) {
-    html.window.alert("extension not available: EXT_color_buffer_float");
+    web.window.alert("extension not available: EXT_color_buffer_float");
   }
   OrbitCamera orbit = OrbitCamera(100.0, 0.0, 0.0, canvas);
 
@@ -320,7 +329,8 @@ void main() {
 */
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -336,9 +346,11 @@ void main() {
     verticalBlur.run(width, height);
 */
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

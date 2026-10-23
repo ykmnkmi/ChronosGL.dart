@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
@@ -84,16 +87,16 @@ void main() {
   introduceNewShaderVar(aCurrentPosition, const ShaderVarDesc(varTypeVec3, ""));
 
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
 
-  final OrbitCamera orbit = OrbitCamera(7.0, 0.0, 0.0, html.document.body!);
+  final OrbitCamera orbit = OrbitCamera(7.0, 0.0, 0.0, web.document.body!);
 
   final PerspectiveResizeAware perspective = PerspectiveResizeAware(
     cgl,
@@ -139,7 +142,8 @@ void main() {
   );
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     // animate the camera a little
@@ -159,9 +163,11 @@ void main() {
     out0 = out1;
     out1 = t;
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(timeMs + 0.0);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

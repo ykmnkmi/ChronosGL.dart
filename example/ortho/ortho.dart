@@ -1,15 +1,17 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -57,7 +59,7 @@ void main() {
   }
 
   // This sets the viewports among other things
-  void resolutionChange(html.Event? ev) {
+  void resolutionChange(web.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
@@ -74,19 +76,24 @@ void main() {
   }
 
   resolutionChange(null);
-  html.window.onResize.listen(resolutionChange);
+  web.EventStreamProviders.resizeEvent
+      .forTarget(web.window)
+      .listen(resolutionChange);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phaseOrthograhic.draw();
     phasePerspective.draw();
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

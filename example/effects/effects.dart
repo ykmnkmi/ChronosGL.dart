@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -7,11 +10,11 @@ import 'package:vector_math/vector_math.dart' as vm;
 
 const String modelFile = "../ct_logo.obj";
 
-html.SelectElement gEffect =
-    html.document.querySelector('#effect') as html.SelectElement;
+web.HTMLSelectElement gEffect =
+    web.document.querySelector('#effect') as web.HTMLSelectElement;
 
-html.SelectElement gScene =
-    html.document.querySelector('#scene') as html.SelectElement;
+web.HTMLSelectElement gScene =
+    web.document.querySelector('#scene') as web.HTMLSelectElement;
 
 double rangeOverTime(double a, double b, double interval, double t) {
   //double s = t % interval * 2.0 * math.PI;
@@ -256,19 +259,19 @@ void registerEffects(ChronosGL cgl, Texture fb) {
   );
 
   for (String o in Effect.all.keys) {
-    gEffect.appendHtml("<option>$o</option>");
+    gEffect.appendChild(web.HTMLOptionElement()..textContent = o);
   }
 }
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final width = canvas.clientWidth;
   final height = canvas.clientHeight;
   canvas.width = width;
@@ -301,7 +304,8 @@ void main() {
     ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.01;
@@ -339,9 +343,11 @@ void main() {
     screen.activate(glClearAll, 0, 0, width, height);
     active.program.draw(unitQuad, [active.uniforms]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   List<Future<Object>> futures = [loadRaw(modelFile)];
 

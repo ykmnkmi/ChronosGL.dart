@@ -1,12 +1,14 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
-final html.InputElement gLuminance =
-    html.document.querySelector('#luminance') as html.InputElement;
-final html.InputElement gIntensity =
-    html.document.querySelector('#intensity') as html.InputElement;
+final web.HTMLInputElement gLuminance =
+    web.document.querySelector('#luminance') as web.HTMLInputElement;
+final web.HTMLInputElement gIntensity =
+    web.document.querySelector('#intensity') as web.HTMLInputElement;
 
 class BloomEffect {
   BloomEffect(
@@ -113,12 +115,12 @@ class BloomEffect {
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(165.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -148,7 +150,8 @@ void main() {
   final BloomEffect bloom = BloomEffect(cgl, width, height, 6, 4, fb, screen);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.01;
@@ -158,14 +161,13 @@ void main() {
     // Draw un-bloomed object to fb
     fb.activate(glClearAll, 0, 0, width, height);
     progPerlinNoise.draw(torus, [perspective, material]);
-    bloom.draw(
-      gLuminance.valueAsNumber! * 1.0,
-      gIntensity.valueAsNumber! * 1.0,
-    );
+    bloom.draw(gLuminance.valueAsNumber * 1.0, gIntensity.valueAsNumber * 1.0);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

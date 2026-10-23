@@ -27,7 +27,18 @@ A simple WebGL2 engine written in Dart
 
 ## Examples
 
-To run examples see Makefile
+Build and serve the examples from the package root:
+
+```sh
+dart pub get --enforce-lockfile
+dart run build_runner serve example:8080
+```
+
+Open `http://localhost:8080/` to browse the examples. For a release build:
+
+```sh
+dart run build_runner build --release --output=example:build/example
+```
 
 * [Live Examples](http://chronosteam.github.io/ChronosGL/Examples/)
 * [Simple example HTML part (simple.html)](https://github.com/ChronosTeam/ChronosGL/tree/master/example/simple/simple.html)
@@ -42,12 +53,14 @@ See [MIGRATION.md](MIGRATION.md) for the previous names.
 
 
 Create a new Dart webapp project, add this as a `pubspec.yaml` dependency:
+```yaml
+dependencies:
+  chronosgl: any
+  vector_math: ^2.4.3
+  web: ^1.1.1
 ```
-    dependencies:
-        chronosgl: any
-```
-You also need the `vector_math` library which is the only library that
-ChronosGL is dependent on.
+The examples use `vector_math` for vectors and matrices and `package:web` for
+browser APIs. Declare packages you import directly in your own dependencies.
 
 As a test copy `simple.html` and `simple.dart` from above into
 your project.
@@ -55,11 +68,26 @@ your project.
 It should look like this:
 <img src="http://i.imgur.com/Zb1XyCG.png" style="width: 600px;"/>
 
-If you need to import `dart:html`, do so as follows:
+Use `package:web` with a prefix to avoid a naming conflict with ChronosGL's `Node`:
+
+```dart
+import 'package:chronosgl/chronosgl.dart';
+import 'package:web/web.dart' as web;
+
+void main() {
+  final canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
+  final cgl = ChronosGL(canvas);
+  cgl.clear(glClearAll);
+  // Create shaders, geometry, and a camera as in example/simple/simple.dart.
+}
 ```
-import 'dart:html' as html;
-```
-This will avoid a naming conflict for `Node`.
+
+Browser callbacks and promises use `dart:js_interop`: convert callbacks with
+`.toJS` and await promises with `.toDart`. The examples use
+`window.requestAnimationFrame` with a cached JavaScript callback and support
+both JavaScript and Wasm compilation. Camera examples request camera access;
+the MIDI example connects when you select **Connect MIDI**.
 
 ## Tests and rendering goldens
 

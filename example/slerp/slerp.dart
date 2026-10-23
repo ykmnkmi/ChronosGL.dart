@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:async';
 
 import 'package:chronosgl/chronosgl.dart';
@@ -63,8 +66,8 @@ const String modelFile = "../ct_logo.obj";
 final List<Future<Object>> gLoadables = [];
 
 void main() {
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, -45.0, 0.3, canvas);
   final Perspective perspective = Perspective(orbit, 1.0, 1000.0);
@@ -137,7 +140,8 @@ void main() {
   }
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -145,8 +149,10 @@ void main() {
     animateNode(elapsed);
 
     phase.draw();
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   Future.wait(gLoadables).then((list) {
     animate(0.0);

@@ -1,4 +1,6 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
@@ -37,8 +39,8 @@ void main() {
 
 void main() {
   // The canvas is what we render the 3d scene into.
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
 
   gLogLevel = 1; // enable more logging
   // Create a ChronosGL object for the canvas.
@@ -50,7 +52,7 @@ void main() {
     5.0,
     0.0,
     0.0,
-    html.document.body as html.Element,
+    web.document.body as web.HTMLElement,
   );
   // Create a perspective. We use a combined view+perspective matrix,
   // which is obtained by combining te view matrix from the camera with
@@ -95,7 +97,8 @@ void main() {
 
   // Main loop body
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     // animate the camera a little
@@ -107,8 +110,10 @@ void main() {
     prog.draw(torus, [perspective, material]);
     progSprites.draw(stars, [perspective, materialStars]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

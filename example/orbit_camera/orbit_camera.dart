@@ -1,8 +1,10 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
@@ -46,8 +48,8 @@ Node makeHead(RenderProgram program) {
 }
 
 void main() {
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
   OrbitCamera orbit = OrbitCamera(15.0, 0.0, 0.0, canvas);
   Perspective perspective = Perspective(orbit, 0.1, 1000.0);
@@ -71,15 +73,18 @@ void main() {
         ..add(makeStarScene(cgl, perspective, 2000));
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.draw();
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

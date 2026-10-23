@@ -1,4 +1,6 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
@@ -108,12 +110,12 @@ void main() {
   introduceNewShaderVar(uSpeed, const ShaderVarDesc("float", ""));
 
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
   canvas.width = w;
@@ -135,39 +137,46 @@ void main() {
     ..forceUniform(uCanvasSize, vm.Vector2(w + 0.0, h + 0.0));
 
   // Event Handling
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.Element input = node as html.Element;
-    input.onChange.listen((html.Event e) {
-      html.InputElement input = e.target as html.InputElement;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLElement input = node as web.HTMLElement;
+    input.onChange.listen((web.Event e) {
+      web.HTMLInputElement input = e.target as web.HTMLInputElement;
       if (input.type == "range") {
-        html.OutputElement output =
-            html.document.getElementById(input.name!) as html.OutputElement;
-        uniforms.forceUniform(input.name!, double.parse(input.value!));
+        web.HTMLOutputElement output =
+            web.document.getElementById(input.name) as web.HTMLOutputElement;
+        uniforms.forceUniform(input.name, double.parse(input.value));
         output.value = input.value;
       }
       if (input.type == "radio") {
-        uniforms.forceUniform(input.name!, double.parse(input.value!));
+        uniforms.forceUniform(input.name, double.parse(input.value));
       }
     });
   }
 
   // Trigger handlers
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.InputElement input = node as html.InputElement;
-    if (input.type! == "radio" && !input.checked!) continue;
-    input.dispatchEvent(html.Event("change"));
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLInputElement input = node as web.HTMLInputElement;
+    if (input.type == "radio" && !input.checked) continue;
+    input.dispatchEvent(web.Event("change"));
   }
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     lastTimeMs = timeMs + 0.0;
 
     uniforms.forceUniform(uTime, timeMs / 1000.0);
     programPerlin.draw(quad, [uniforms]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

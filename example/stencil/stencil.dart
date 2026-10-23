@@ -1,10 +1,13 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
 
-final html.InputElement gStencil =
-    html.document.querySelector('#stencil') as html.InputElement;
+final web.HTMLInputElement gStencil =
+    web.document.querySelector('#stencil') as web.HTMLInputElement;
 
 final ShaderObject stencilVertexShader = ShaderObject("stencilV")
   ..addAttributeVars([aPosition, aTexUV])
@@ -85,13 +88,13 @@ final TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(
     canvas,
     faceCulling: true,
@@ -188,7 +191,8 @@ void main() {
   }
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -196,12 +200,12 @@ void main() {
 
     matBlue.forceUniform(
       cStencilFunc,
-      gStencil.checked! ? stencilEqualZero : stencilFunctionNone,
+      gStencil.checked ? stencilEqualZero : stencilFunctionNone,
     );
 
     matRed.forceUniform(
       cStencilFunc,
-      gStencil.checked! ? stencilNotEqualZero : stencilFunctionNone,
+      gStencil.checked ? stencilNotEqualZero : stencilFunctionNone,
     );
 
     List<DrawStats> stats = [];
@@ -211,9 +215,11 @@ void main() {
       out.add(d.toString());
     }
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs, out.join("<br>"));
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

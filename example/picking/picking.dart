@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
@@ -13,17 +16,17 @@ Map<String, vm.Vector3> shapeToColor = {
 };
 
 void main() {
-  final html.DivElement info =
-      html.document.querySelector('#info') as html.DivElement;
+  final web.HTMLDivElement info =
+      web.document.querySelector('#info') as web.HTMLDivElement;
 
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
 
@@ -85,7 +88,7 @@ void main() {
     scene.add(node);
   }
 
-  void resolutionChange(html.Event? ev) {
+  void resolutionChange(web.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
@@ -97,7 +100,9 @@ void main() {
   }
 
   resolutionChange(null);
-  html.window.onResize.listen(resolutionChange);
+  web.EventStreamProviders.resizeEvent
+      .forTarget(web.window)
+      .listen(resolutionChange);
 
   final Uint8List pixelData = Uint8List(1 * 4);
 
@@ -123,7 +128,8 @@ void main() {
   }
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
 
@@ -131,14 +137,16 @@ void main() {
 
     phase.draw();
 
-    info.innerHtml = getShapeUnderCusorInfo();
+    info.innerHTML = getShapeUnderCusorInfo().toJS;
 
     // this also clears keyboard data
     orbit.animate(elapsed);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

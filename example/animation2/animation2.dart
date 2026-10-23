@@ -1,5 +1,8 @@
+import 'dart:js_interop';
 import 'dart:async';
-import 'dart:html' as html;
+
+import 'package:web/web.dart' as web;
+
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
@@ -77,12 +80,12 @@ final double kAnimTimeStep = 0.0333;
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(20.0, 0.0, 0.0, canvas);
@@ -141,32 +144,37 @@ void main() {
     "idAnimation": sceneAnim.program,
   };
 
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.Element input = node as html.Element;
-    input.onChange.listen((html.Event e) {
-      html.InputElement input = e.target as html.InputElement;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLElement input = node as web.HTMLElement;
+    input.onChange.listen((web.Event e) {
+      web.HTMLInputElement input = e.target as web.HTMLInputElement;
       print("${input.id} toggle ${input.checked}");
-      programMap[input.id]!.enabled = input.checked!;
+      programMap[input.id]!.enabled = input.checked;
     });
   }
 
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.Element input = node as html.Element;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLElement input = node as web.HTMLElement;
     print("initialize inputs ${input.id}");
-    input.dispatchEvent(html.Event("change"));
+    input.dispatchEvent(web.Event("change"));
   }
 
   double lastTimeMs = 0.0;
   mat.forceUniform(uTime, 0.0);
 
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
     phase.draw([]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
 
     int step =
@@ -175,6 +183,8 @@ void main() {
 
     boneVisualizer.update(timeMs / 1000.0);
   }
+
+  onFrame = animate.toJS;
 
   List<Future<Object>> futures = [loadJson(meshFile)];
 

@@ -1,7 +1,11 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
 import 'dart:math' as math;
-import 'dart:html' as html;
+
+import 'package:web/web.dart' as web;
+
 import 'dart:typed_data';
 
 import 'package:vector_math/vector_math.dart' as vm;
@@ -14,11 +18,11 @@ final vm.Vector3 kVecOutOfBounds = vm.Vector3.all(kMaxDistance * 100.0);
 const String uSources = "uSources";
 const String uSinks = "uSinks";
 
-final html.SelectElement gParticles =
-    html.document.querySelector('#particles') as html.SelectElement;
+final web.HTMLSelectElement gParticles =
+    web.document.querySelector('#particles') as web.HTMLSelectElement;
 
-final html.InputElement gCpuCompute =
-    html.document.querySelector('#cpucompute') as html.InputElement;
+final web.HTMLInputElement gCpuCompute =
+    web.document.querySelector('#cpucompute') as web.HTMLInputElement;
 
 final ShaderObject particleVertexShader = ShaderObject("ParticleV")
   ..addAttributeVars([aPosition])
@@ -207,15 +211,15 @@ void main() {
   );
 
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
   final math.Random rng = math.Random(0);
 
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final int width = canvas.clientWidth;
   final int height = canvas.clientHeight;
   canvas.width = width;
@@ -279,8 +283,8 @@ void main() {
   MeshData mdIn = programGPU.makeMeshData("ionsIn", glPoints)
     ..addVertices(ionsPos);
 
-  void resizeIons(html.Event? ev) {
-    int n = int.parse(gParticles.value!);
+  void resizeIons(web.Event? ev) {
+    int n = int.parse(gParticles.value);
     print("resize to $n ions");
     ions.clear();
     for (int i = 0; i < n; i++) {
@@ -313,11 +317,12 @@ void main() {
 
   resizeIons(null);
 
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     orbit.azimuth += 0.002;
     orbit.animate(0.0); // argument is not used
 
-    if (gCpuCompute.checked!) {
+    if (gCpuCompute.checked) {
       updateIonsJS(0.06);
       programJS.draw(mdJS, [perspective, matJS]);
     } else {
@@ -333,9 +338,11 @@ void main() {
         ions.length * 3 * 4,
       );
     }
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(timeMs + 0.0);
   }
+
+  onFrame = animate.toJS;
 
   gParticles.onChange.listen(resizeIons);
   animate(0.0);

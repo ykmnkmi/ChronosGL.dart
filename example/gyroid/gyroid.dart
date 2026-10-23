@@ -1,6 +1,8 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
@@ -202,8 +204,8 @@ final ShaderObject gyroidFragmentShader = ShaderObject("SphericalGyroidF")
   ..setBody([_fragmentShader]);
 
 void main() {
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   // Make sure canvas is really full screen
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
@@ -220,12 +222,15 @@ void main() {
   UniformGroup uniforms = UniformGroup("plain");
   MeshData unitQuad = shapeQuad(program, 1);
 
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     uniforms.forceUniform(uTime, timeMs / 1000.0);
     uniforms.forceUniform(uCanvasSize, vm.Vector2(0.0 + w, 0.0 + h));
     program.draw(unitQuad, [uniforms]);
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

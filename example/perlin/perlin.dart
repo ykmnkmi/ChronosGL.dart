@@ -1,19 +1,22 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
+
 import "dart:async";
 
 final List<Future<Object>> gLoadables = [];
 
 void main() {
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
 
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
   final OrbitCamera orbit = OrbitCamera(165.0, 0.0, 0.0, canvas);
@@ -72,7 +75,8 @@ void main() {
   final MeshData mdStars = Utils.makeStarMesh(progStars, 2000, 200.0);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -82,9 +86,11 @@ void main() {
     programPerlin.draw(torus, [perspective, matPerlin]);
     progStars.draw(mdStars, [matStars, perspective]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   Future.wait(gLoadables).then((list) {
     animate(0.0);

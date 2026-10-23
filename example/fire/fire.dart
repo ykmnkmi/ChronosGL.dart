@@ -1,6 +1,8 @@
+import 'dart:js_interop';
+
 import 'package:chronosgl/chronosgl.dart';
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 const String uFlameHeight = "uFlameHeight";
 const String uFlameWidth = "uFlameWidth";
@@ -85,12 +87,12 @@ void main() {
   introduceNewShaderVar(uRandomSeed, const ShaderVarDesc("float", ""));
 
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final int w = canvas.clientWidth;
   final int h = canvas.clientHeight;
   canvas.width = w;
@@ -150,28 +152,34 @@ void main() {
     ..forceUniform(uFlameThrottle, 0.248); // needs to smaller than 1/4.0
 
   // Event Handling
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.Element input = node as html.Element;
-    input.onChange.listen((html.Event e) {
-      html.InputElement input = e.target as html.InputElement;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLElement input = node as web.HTMLElement;
+    input.onChange.listen((web.Event e) {
+      web.HTMLInputElement input = e.target as web.HTMLInputElement;
       if (input.type == "range") {
-        html.OutputElement output =
-            html.document.getElementById("${input.id}2") as html.OutputElement;
-        ug.forceUniform(input.id, double.parse(input.value!));
+        web.HTMLOutputElement output = web.document.getElementById(
+          "${input.id}2",
+        ) as web.HTMLOutputElement;
+        ug.forceUniform(input.id, double.parse(input.value));
         output.value = input.value;
       }
     });
   }
 
   // Trigger handlers
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.Element input = node as html.Element;
-    input.dispatchEvent(html.Event("change"));
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLElement input = node as web.HTMLElement;
+    input.dispatchEvent(web.Event("change"));
   }
 
   double lastTimeMs = 0.0;
   int frame = 0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     lastTimeMs = timeMs + 0.0;
     frame++;
     ug.forceUniform(uRandomSeed, lastTimeMs);
@@ -192,9 +200,11 @@ void main() {
       programColor.draw(unit, [ug]);
     }
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs, "$frame");
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

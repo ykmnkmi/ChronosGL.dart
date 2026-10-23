@@ -1,24 +1,25 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
-import 'package:web/web.dart' as web;
 
 void main2(web.HTMLVideoElement? video) {
   if (video == null) {
-    html.window.alert(
+    web.window.alert(
       "Could not access camera - do you have a camera installed?",
     );
     return;
   }
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
   final OrbitCamera orbit = OrbitCamera(15.0, 10.0, 0.0, canvas);
   final PerspectiveResizeAware perspective = PerspectiveResizeAware(
@@ -51,7 +52,8 @@ void main2(web.HTMLVideoElement? video) {
     ..setUniform(uTexture, texture);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -66,14 +68,16 @@ void main2(web.HTMLVideoElement? video) {
 
     fps.updateFrameCount(lastTimeMs);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }
 
 void main() {
   makeVideoElementFromCamera().then(main2).catchError((Object error) {
-    html.window.alert("Camera error $error: - do you have a camera installed?");
+    web.window.alert("Camera error $error: - do you have a camera installed?");
   });
 }

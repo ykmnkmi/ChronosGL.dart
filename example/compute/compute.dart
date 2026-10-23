@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
@@ -54,12 +57,12 @@ String extractAndSummarizeFloat(Framebuffer fb, int w, int h) {
 }
 
 void main() {
-  final html.DivElement results =
-      html.document.querySelector('#results') as html.DivElement;
+  final web.HTMLDivElement results =
+      web.document.querySelector('#results') as web.HTMLDivElement;
 
   // The canvas is what we render the 3d scene into.
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   canvas
     ..width = kDim
     ..height = kDim;
@@ -78,21 +81,28 @@ void main() {
   {
     final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, kDim, kDim);
 
-    results.innerHtml =
-        "${results.innerHtml!}<h3>Drawing into default format FB</h3>";
+    results.insertAdjacentHTML(
+      'beforeend',
+      '<h3>Drawing into default format FB</h3>'.toJS,
+    );
     fb.activate(glClearAll, 0, 0, kDim, kDim);
     program.draw(unitQuad, []);
-    results.innerHtml =
-        "${results.innerHtml!}${extractAndSummarizeBytes(fb, kDim, kDim)}\n";
+    results.appendChild(
+      web.Text('${extractAndSummarizeBytes(fb, kDim, kDim)}\n'),
+    );
   }
 
   {
-    results.innerHtml =
-        "${results.innerHtml!}<h3>Drawing into float format FB</h3>";
+    results.insertAdjacentHTML(
+      'beforeend',
+      '<h3>Drawing into float format FB</h3>'.toJS,
+    );
     var ext = cgl.getExtension("EXT_color_buffer_float");
     if (ext == null) {
-      results.innerHtml =
-          "${results.innerHtml!}extension not available: EXT_color_buffer_float";
+      results.appendChild(
+        web.Text('extension not available: EXT_color_buffer_float'),
+      );
+      return;
     }
     TypedTexture tex = TypedTexture(
       cgl,
@@ -106,7 +116,8 @@ void main() {
     Framebuffer fb = Framebuffer(cgl, tex);
     fb.activate(glClearAll, 0, 0, kDim, kDim);
     program.draw(unitQuad, []);
-    results.innerHtml =
-        "${results.innerHtml!}${extractAndSummarizeFloat(fb, kDim, kDim)}\n";
+    results.appendChild(
+      web.Text('${extractAndSummarizeFloat(fb, kDim, kDim)}\n'),
+    );
   }
 }

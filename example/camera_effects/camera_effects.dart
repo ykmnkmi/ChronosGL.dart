@@ -1,12 +1,13 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
-import 'package:web/web.dart' as web;
 
-html.SelectElement gEffect =
-    html.document.querySelector('#effect') as html.SelectElement;
+web.HTMLSelectElement gEffect =
+    web.document.querySelector('#effect') as web.HTMLSelectElement;
 
 class Effect {
   Effect(ChronosGL cgl, ShaderObject shader, this.uniforms)
@@ -136,25 +137,25 @@ void registerEffects(ChronosGL cgl) {
   );
 
   for (String o in Effect.all.keys) {
-    gEffect.appendHtml("<option>$o</option>");
+    gEffect.appendChild(web.HTMLOptionElement()..textContent = o);
   }
 }
 
 void main2(web.HTMLVideoElement? video) {
   if (video == null) {
-    html.window.alert(
+    web.window.alert(
       "Could not access camera - do you have a camera installed?",
     );
     return;
   }
 
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   // Make sure canvas has full screen resolution
   final width = canvas.clientWidth;
   final height = canvas.clientHeight;
@@ -187,7 +188,8 @@ void main2(web.HTMLVideoElement? video) {
     Effect.all["dot"]!.program.hasDownwardCompatibleAttributesTo(progScale),
   );
 
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     try {
       // Get new image from camera and update texture with it.
       texture.update();
@@ -213,15 +215,17 @@ void main2(web.HTMLVideoElement? video) {
       active.uniforms.forceUniform(uTexture, src.colorTexture!);
       active.program.draw(unitQuad, [active.uniforms]);
     }
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(timeMs + 0.0);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }
 
 void main() {
   makeVideoElementFromCamera().then(main2).catchError((Object error) {
-    html.window.alert("Camera error $error: - do you have a camera installed?");
+    web.window.alert("Camera error $error: - do you have a camera installed?");
   });
 }

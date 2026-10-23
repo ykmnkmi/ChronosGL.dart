@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import 'dart:async';
 
 import 'package:vector_math/vector_math.dart' as vm;
@@ -7,21 +10,21 @@ import 'package:chronosgl/chronosgl.dart';
 
 const String meshFile = "../asset/dragon/dragon.obj";
 
-html.InputElement gShowNormals =
-    html.document.querySelector('#normals') as html.InputElement;
+web.HTMLInputElement gShowNormals =
+    web.document.querySelector('#normals') as web.HTMLInputElement;
 
-html.InputElement gShowWires =
-    html.document.querySelector('#wires') as html.InputElement;
+web.HTMLInputElement gShowWires =
+    web.document.querySelector('#wires') as web.HTMLInputElement;
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -51,18 +54,21 @@ void main() {
   late Node nodeNorm;
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
     orbit.animate(elapsed);
-    nodeNorm.enabled = gShowNormals.checked!;
-    nodeWire.enabled = gShowWires.checked!;
+    nodeNorm.enabled = gShowNormals.checked;
+    nodeWire.enabled = gShowWires.checked;
     phase.draw();
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   List<Future<Object>> futures = [loadRaw(meshFile)];
 

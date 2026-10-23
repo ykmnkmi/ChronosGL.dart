@@ -1,29 +1,31 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:chronosgl/chronosgl.dart';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
-final html.InputElement gWidth =
-    html.document.querySelector('#width') as html.InputElement;
-final html.InputElement gHeight =
-    html.document.querySelector('#height') as html.InputElement;
-final html.InputElement gSegments =
-    html.document.querySelector('#segments') as html.InputElement;
+final web.HTMLInputElement gWidth =
+    web.document.querySelector('#width') as web.HTMLInputElement;
+final web.HTMLInputElement gHeight =
+    web.document.querySelector('#height') as web.HTMLInputElement;
+final web.HTMLInputElement gSegments =
+    web.document.querySelector('#segments') as web.HTMLInputElement;
 
-final html.SelectElement gEasingWidth =
-    html.document.querySelector('#easingWidth') as html.SelectElement;
-final html.SelectElement gEasingHeight =
-    html.document.querySelector('#easingHeight') as html.SelectElement;
+final web.HTMLSelectElement gEasingWidth =
+    web.document.querySelector('#easingWidth') as web.HTMLSelectElement;
+final web.HTMLSelectElement gEasingHeight =
+    web.document.querySelector('#easingHeight') as web.HTMLSelectElement;
 final List<vm.Vector2> gBase = contourCircle(20, 10.0);
 final List<vm.Vector2> gGrad = getContourGradient(gBase);
 
 MeshData makeBevelMesh(RenderProgram prog) {
-  double width = gWidth.valueAsNumber! + 0.0;
-  double height = gHeight.valueAsNumber! + 0.0;
+  double width = gWidth.valueAsNumber + 0.0;
+  double height = gHeight.valueAsNumber + 0.0;
   Easing easingWidth = mapStringToEasing[gEasingWidth.value]!;
   Easing easingHeight = mapStringToEasing[gEasingHeight.value]!;
-  int segments = gSegments.valueAsNumber!.toInt();
+  int segments = gSegments.valueAsNumber.toInt();
   List<vm.Vector2> supports = bevelSupportPoints(
     width,
     height,
@@ -44,13 +46,13 @@ MeshData makeBevelMesh(RenderProgram prog) {
 
 void main() {
   StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
 
-  html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   ChronosGL cgl = ChronosGL(canvas);
 
   OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
@@ -73,7 +75,8 @@ void main() {
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     // For simplicity we create a new mesh every frame.
@@ -81,9 +84,11 @@ void main() {
     orbit.animate(elapsed);
     prog.draw(wire, [perspective, matWire]);
 
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }

@@ -1,4 +1,7 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
+
 import "dart:math" as math;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -121,12 +124,12 @@ void makeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
 
 void main() {
   final StatsFps fps = StatsFps(
-    html.document.getElementById("stats")!,
+    web.document.getElementById("stats")!,
     "blue",
     "gray",
   );
-  final html.CanvasElement canvas =
-      html.document.querySelector('#webgl-canvas') as html.CanvasElement;
+  final web.HTMLCanvasElement canvas =
+      web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
 
   final OrbitCamera orbit = OrbitCamera(50.0, 10.0, 0.0, canvas)
@@ -185,41 +188,45 @@ void main() {
   sceneGourad.add(node);
   sceneBlinnPhong.add(node);
 
-  html.SelectElement selectPhase =
-      html.document.querySelector('#phase') as html.SelectElement;
+  web.HTMLSelectElement selectPhase =
+      web.document.querySelector('#phase') as web.HTMLSelectElement;
   selectPhase.selectedIndex = 0;
 
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.Element input = node as html.Element;
-    input.onChange.listen((html.Event e) {
-      html.InputElement input = e.target as html.InputElement;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLElement input = node as web.HTMLElement;
+    input.onChange.listen((web.Event e) {
+      web.HTMLInputElement input = e.target as web.HTMLInputElement;
       final String tag = input.id;
       print("$tag toggle ${input.checked}");
       if (tag == "lightDiffuse") {
         for (Light light in gLightSources.values) {
-          double v = input.checked! ? 1.0 : 0.0;
+          double v = input.checked ? 1.0 : 0.0;
           light.colorDiffuse.setValues(v, v, v);
         }
       } else if (tag == "lightSpecular") {
         for (Light light in gLightSources.values) {
-          double v = input.checked! ? 1.0 : 0.0;
+          double v = input.checked ? 1.0 : 0.0;
           light.colorSpecular.setValues(v, v, v);
         }
       } else {
-        gLightSources[tag]!.enabled = input.checked!;
-        gLightVisualizers[tag]!.enabled = input.checked!;
+        gLightSources[tag]!.enabled = input.checked;
+        gLightVisualizers[tag]!.enabled = input.checked;
       }
     });
   }
 
   // Update default settings
-  for (html.Node node in html.document.getElementsByTagName("input")) {
-    html.Element input = node as html.Element;
+  for (web.Node node in web.JSImmutableListWrapper(
+    web.document.getElementsByTagName("input"),
+  )) {
+    web.HTMLElement input = node as web.HTMLElement;
     print("initialize inputs ${input.id}");
-    input.dispatchEvent(html.Event("change"));
+    input.dispatchEvent(web.Event("change"));
   }
 
-  void resolutionChange(html.Event? ev) {
+  void resolutionChange(web.Event? ev) {
     int w = canvas.clientWidth;
     int h = canvas.clientHeight;
     canvas.width = w;
@@ -234,10 +241,13 @@ void main() {
   }
 
   resolutionChange(null);
-  html.window.onResize.listen(resolutionChange);
+  web.EventStreamProviders.resizeEvent
+      .forTarget(web.window)
+      .listen(resolutionChange);
 
   double lastTimeMs = 0.0;
-  void animate(num timeMs) {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
     double elapsed = timeMs - lastTimeMs;
     lastTimeMs = timeMs + 0.0;
     orbit.azimuth += 0.001;
@@ -254,9 +264,11 @@ void main() {
         ? phaseBlinnPhong
         : phaseGourad;
     phase.draw();
-    html.window.animationFrame.then(animate);
+    web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
+
+  onFrame = animate.toJS;
 
   animate(0.0);
 }
