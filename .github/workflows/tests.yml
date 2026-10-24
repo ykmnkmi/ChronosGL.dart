@@ -21,6 +21,14 @@ jobs:
         id: chrome
         with:
           chrome-version: '155.0.8059.84'
+      - name: Configure Chrome sandbox access
+        shell: pwsh
+        env:
+          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          $chromeDirectory = Split-Path -Parent $env:CHROME_EXECUTABLE
+          icacls $chromeDirectory /grant '*S-1-15-2-1:(OI)(CI)(RX)' '*S-1-15-2-2:(OI)(CI)(RX)' /T /Q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Install locked dependencies
         run: dart pub get --enforce-lockfile
       - name: Build web examples and test bootstraps

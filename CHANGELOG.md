@@ -33,5 +33,6 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
   self-check using Chrome with SwiftShader.
 - Run the VM and JavaScript tests, Wasm browser tests, and regression self-check
   in the Windows CI workflow, using an available Chrome for Testing build.
+- Configure Windows sandbox access to the downloaded CI browser.
 - Enable strict analysis and recommended Dart lints, and update the example
   build and migration instructions.

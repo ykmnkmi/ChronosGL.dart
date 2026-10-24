@@ -123,6 +123,11 @@ The original desktop Chrome version, 155.0.8059.80, is not available from
 Chrome for Testing. The workflow compares against the original reference PNGs;
 changing the browser pin does not regenerate or accept new references.
 
+A setup step grants AppContainer and LPAC read/execute access to the downloaded
+Chrome directory so its Windows sandbox processes can start. See
+[Chromium's sandbox filesystem requirements](https://chromium.googlesource.com/chromium/src/+/main/docs/design/sandbox.md#lpac-file-system-permissions).
+The permissions apply only to the CI browser installation.
+
 CI runs the browser suites with JavaScript and Wasm, runs the VM tests and
 regression self-check, and uploads genuine failure images as an artifact. The
 workflow must run on GitHub to validate the hosted runner environment; local
