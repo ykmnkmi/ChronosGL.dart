@@ -22,8 +22,14 @@ A simple WebGL2 engine written in Dart
 
 ## Code
 
-* [Github](https://github.com/ChronosTeam/ChronosGL)
-* [Classes/Basic Concepts](https://github.com/ChronosTeam/ChronosGL/tree/master/class_glossary.md)
+* [Github](https://github.com/ykmnkmi/ChronosGL.dart)
+* [Classes/Basic Concepts](class_glossary.md)
+
+## Upgrading to 5.0.0
+
+Version 5.0.0 requires Dart 3.13.5 or later within Dart 3 and includes breaking
+API naming and browser type changes. Read [MIGRATION.md](MIGRATION.md) when
+upgrading from 4.x, and see [CHANGELOG.md](CHANGELOG.md) for the release notes.
 
 ## Examples
 
@@ -40,9 +46,9 @@ Open `http://localhost:8080/` to browse the examples. For a release build:
 dart run build_runner build --release --output=example:build/example
 ```
 
-* [Live Examples](http://chronosteam.github.io/ChronosGL/Examples/)
-* [Simple example HTML part (simple.html)](https://github.com/ChronosTeam/ChronosGL/tree/master/example/simple/simple.html)
-* [Simple example Dart part (simple.dart)](https://github.com/ChronosTeam/ChronosGL/tree/master/example/simple/simple.dart)
+* [Upstream Live Examples](http://chronosteam.github.io/ChronosGL/Examples/)
+* [Simple example HTML part (simple.html)](example/simple/simple.html)
+* [Simple example Dart part (simple.dart)](example/simple/simple.dart)
 
 
 ## Usage
@@ -55,7 +61,7 @@ See [MIGRATION.md](MIGRATION.md) for the previous names.
 Create a new Dart webapp project, add this as a `pubspec.yaml` dependency:
 ```yaml
 dependencies:
-  chronosgl: any
+  chronosgl: ^5.0.0
   vector_math: ^2.4.3
   web: ^1.1.1
 ```
@@ -101,6 +107,15 @@ dart test -P all
 ```sh
 dart analyze
 ```
+
+Run the migrated browser suites and the same rendering goldens with Wasm:
+
+```sh
+dart test -P all -p golden_chrome -c dart2wasm
+```
+
+The legacy DOM compatibility test runs only with JavaScript. The polygon tests
+use the VM compiler.
 
 Golden tests use Dart and Chrome with SwiftShader; no Node.js packages,
 Playwright, or Docker are required. To compare or explicitly update the PNGs:

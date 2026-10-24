@@ -117,8 +117,13 @@ Other operating systems and browser versions have not been validated against
 these references. When changing the reference environment, review the images
 explicitly rather than automatically accepting differences.
 
-The prepared GitHub Actions workflow uses Windows, pins Dart and Chrome to the
-versions above, runs the full suite and regression self-check, and uploads genuine
-failure images as an artifact. It does not regenerate references. The workflow
-must run on GitHub to validate the hosted runner environment; local checks cannot
-verify that environment.
+The GitHub Actions workflow uses Windows and pins Dart 3.13.5 and
+[Chrome for Testing 155.0.8059.84](https://googlechromelabs.github.io/chrome-for-testing/155.0.8059.84.json).
+The original desktop Chrome version, 155.0.8059.80, is not available from
+Chrome for Testing. The workflow compares against the original reference PNGs;
+changing the browser pin does not regenerate or accept new references.
+
+CI runs the browser suites with JavaScript and Wasm, runs the VM tests and
+regression self-check, and uploads genuine failure images as an artifact. The
+workflow must run on GitHub to validate the hosted runner environment; local
+checks cannot verify that environment.

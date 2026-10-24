@@ -20,15 +20,19 @@ jobs:
       - uses: browser-actions/setup-chrome@v2
         id: chrome
         with:
-          chrome-version: '155.0.8059.80'
+          chrome-version: '155.0.8059.84'
       - name: Install locked dependencies
         run: dart pub get --enforce-lockfile
       - name: Build web examples and test bootstraps
         run: dart run build_runner build --output=example:build/example
       - name: Analyze
         run: dart analyze
-      - name: Test
+      - name: Test (VM and JavaScript)
         run: dart test -P all
+        env:
+          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Test (Wasm)
+        run: dart test -P all -p golden_chrome -c dart2wasm
         env:
           CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
       - name: Verify regression detection

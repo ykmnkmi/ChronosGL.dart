@@ -1,7 +1,8 @@
 name: chronosgl
-version: 4.2.0
-description: A simple WebGL2 engine written in Dart
-homepage: https://github.com/ChronosTeam/ChronosGL
+version: 5.0.0
+description: A lightweight WebGL2 engine for Dart with procedural geometry, scene graphs, shaders, and browser helpers.
+homepage: https://github.com/ykmnkmi/ChronosGL.dart
+repository: https://github.com/ykmnkmi/ChronosGL.dart
 
 environment:
   sdk: ^3.13.5

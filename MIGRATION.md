@@ -1,4 +1,21 @@
-# API naming changes
+# Migrating to ChronosGL 5.0.0
+
+Version 5.0.0 changes API names and browser types. Use Dart 3.13.5 or later
+within Dart 3, then update the dependencies in your application:
+
+```yaml
+dependencies:
+  chronosgl: ^5.0.0
+  vector_math: ^2.4.3
+  web: ^1.1.1
+```
+
+Declare `vector_math` and `web` directly when your application imports them.
+Run `dart pub get` and `dart analyze` after updating names and imports. For Wasm,
+replace all legacy SDK browser imports in your application as well as upgrading
+ChronosGL; legacy DOM compatibility is available only for JavaScript builds.
+
+## API naming changes
 
 Functions, methods, fields, parameters, variables, and named constructors now
 use lowerCamelCase. Import prefixes use lowercase names. Classes and typedefs
@@ -50,16 +67,15 @@ is also a keyword.
 | `TexturePropertiesFramebuffer` | `texturePropertiesFramebuffer` |
 | `ColorFunctions` | `colorFunctions` |
 | `RIGHTX`, `UPY`, `POSZ` | `rightX`, `upY`, `posZ` |
-| `HTML` | `html` |
-| `WEBGL` | `webgl` |
 | `VM` | `vm` |
 | `Math`, `MATH` | `math` |
-| `JS` | `js` |
 | `DATA` | `data` |
 
-For example, `HTML.CanvasElement` becomes `html.CanvasElement` after changing
-the import to `import 'dart:html' as html;`. Names supplied by the imported
-library, such as `CanvasElement`, remain the same.
+Replace `dart:html` and `dart:web_gl` imports with
+`import 'package:web/web.dart' as web;`. For example, `HTML.CanvasElement`
+becomes `web.HTMLCanvasElement`. The `web` prefix also avoids a naming conflict
+with ChronosGL's `Node`. Import `dart:js_interop` for callback and promise
+conversions instead of using the old `dart:js` or `dart:js_util` APIs.
 
 ## Constants
 
@@ -138,7 +154,7 @@ if (extension != null) {
 See Dart's [package:web migration guide](https://dart.dev/interop/js-interop/package-web)
 for the browser API naming and interop differences.
 
-The core-only interop tests also run with Wasm:
+The core interop tests also run with Wasm:
 
 ```sh
 dart test -p golden_chrome -c dart2wasm test/core_web_interop_test.dart
@@ -181,3 +197,46 @@ JavaScript or Wasm:
 dart test -p golden_chrome test/webhelper_interop_test.dart
 dart test -p golden_chrome -c dart2wasm test/webhelper_interop_test.dart
 ```
+
+## Examples and browser callbacks
+
+The examples use `package:web` and `dart:js_interop`. Convert Dart callbacks
+with `.toJS` and browser promises with `.toDart`. Cache a JavaScript callback
+when reusing it, as in an animation loop:
+
+```dart
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
+
+void main() {
+  late final JSFunction onFrame;
+  void animate(double timeMs) {
+    // Update and draw the scene.
+    web.window.requestAnimationFrame(onFrame);
+  }
+
+  onFrame = animate.toJS;
+  web.window.requestAnimationFrame(onFrame);
+}
+```
+
+See [example/simple/simple.dart](example/simple/simple.dart) for a complete
+scene. Camera examples request camera access, and the MIDI example connects
+after the user selects **Connect MIDI**.
+
+## Validate the migration
+
+From a checkout of this repository, run the VM and JavaScript suites, then the
+Wasm browser suites with the same rendering references:
+
+```sh
+dart pub get --enforce-lockfile
+dart analyze
+dart test -P all
+dart test -P all -p golden_chrome -c dart2wasm
+dart run tool/goldens.dart --self-check
+```
+
+The legacy DOM compatibility test intentionally retains SDK browser imports
+and runs only with JavaScript. See [the golden test guide](test/goldens/README.md)
+for Chrome setup, the reference environment, and failure diagnostics.
