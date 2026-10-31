@@ -36,6 +36,9 @@ class Scene extends NamedEntity {
   }
 }
 
+/// Draws a subtree using the last uniform group as a template for transforms.
+/// The input list and its groups are borrowed; per-node transforms and material
+/// are assembled in a separate list, including when drawing throws.
 void drawRecursively(
   RenderProgram prog,
   Node node,
@@ -48,10 +51,14 @@ void drawRecursively(
   final vm.Matrix4 m = node.updateModelMatrix(parent);
   if (node.somethingToDraw()) {
     logDebug("drawing: $node");
-    node.updateTransforms(uniforms.last);
-    uniforms.add(node.material);
-    prog.draw(node.meshData, uniforms, stats);
-    uniforms.removeLast();
+    final transforms = UniformGroup(uniforms.last.name)
+      ..getUniforms().addAll(uniforms.last.getUniforms());
+    node.updateTransforms(transforms);
+    prog.draw(node.meshData, [
+      ...uniforms.take(uniforms.length - 1),
+      transforms,
+      node.material,
+    ], stats);
   }
   for (Node child in node.children) {
     drawRecursively(prog, child, m, stats, uniforms);
@@ -116,14 +123,14 @@ class RenderPhase extends NamedEntity {
       if (!scene.enabled) continue;
       if (!scene.program.enabled) continue;
 
-      List<UniformGroup> uniforms = scene.uniforms;
-      final UniformGroup transforms = UniformGroup("transforms");
-      uniforms.add(transforms);
+      final uniforms = <UniformGroup>[
+        ...scene.uniforms,
+        UniformGroup("transforms"),
+      ];
       final vm.Matrix4 modelMatrix = vm.Matrix4.identity();
       for (Node node in scene.nodes) {
         drawRecursively(scene.program, node, modelMatrix, stats, uniforms);
       }
-      uniforms.removeLast();
     }
   }
 }

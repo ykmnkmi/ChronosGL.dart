@@ -31,8 +31,10 @@ GeometryBuilder quadGeometry(num size) {
   return gb;
 }
 
-/// Checkerboard with xstrips X ystrips fields of dim xlen X ylen centered
-/// around the origin
+/// Creates a grid in the XY plane, centered at the origin, facing +Z.
+///
+/// [xstrips] and [ystrips] are the numbers of cells along each axis.
+/// [xlen] and [ylen] are the full width and height; UVs span [0, 1].
 GeometryBuilder gridGeometry(
   int xstrips,
   int ystrips,
@@ -42,7 +44,7 @@ GeometryBuilder gridGeometry(
   final double xoffset = xlen * 0.5;
   final double yoffset = ylen * 0.5;
   final double xdelta = xlen / xstrips;
-  final double ydelta = xlen / ystrips;
+  final double ydelta = ylen / ystrips;
 
   vm.Vector3 normal = vm.Vector3(0.0, 0.0, 1.0);
   List<vm.Vector3> vertices = List.generate(
@@ -59,7 +61,7 @@ GeometryBuilder gridGeometry(
   );
 
   int index(int x, int y) {
-    return x * (xstrips + 1) + y;
+    return x * (ystrips + 1) + y;
   }
 
   for (int x = 0; x <= xstrips; ++x) {

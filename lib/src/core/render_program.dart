@@ -30,14 +30,16 @@ class RenderProgram extends NamedEntity {
         _shaderObjectV.transformVars,
       ),
       _attributes = Set.from(_shaderObjectV.attributeVars) {
-    for (String v in _shaderObjectV.uniformVars) {
-      _uniformLocations[v] = _cgl.getUniformLocation(_program, v)!;
-    }
-
-    for (String v in _shaderObjectF.uniformVars) {
-      // This can happen! Example both shaders use uTime.
-      // assert(!uniformLocations.containsKey(v));
-      _uniformLocations[v] = _cgl.getUniformLocation(_program, v)!;
+    for (String v in {
+      ..._shaderObjectV.uniformVars,
+      ..._shaderObjectF.uniformVars,
+    }) {
+      final location = _cgl.getUniformLocation(_program, v);
+      // The linker can optimize out unused uniforms. Only active locations
+      // need uploads and initialization checks.
+      if (location != null) {
+        _uniformLocations[v] = location;
+      }
     }
   }
 

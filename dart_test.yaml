@@ -20,6 +20,7 @@ presets:
     paths:
       - test/polygon.dart
       - test/geometry.dart
+      - test/grid_geometry_test.dart
       - test/shader_syntax.dart
       - test/show_extensions.dart
       - test/render_golden_test.dart
@@ -27,6 +28,11 @@ presets:
       - test/type_boundaries_test.dart
       - test/legacy_dom_compatibility_test.dart
       - test/core_web_interop_test.dart
+      - test/camera_position_reproduction_test.dart
+      - test/orbit_frame_rate_reproduction_test.dart
+      - test/shared_settings_reproduction_test.dart
+      - test/render_program_uniforms_test.dart
+      - test/scene_uniforms_test.dart
       - test/webhelper_interop_test.dart
     concurrency: 1
     timeout: 60s
