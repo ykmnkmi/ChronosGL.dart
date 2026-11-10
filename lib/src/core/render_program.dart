@@ -21,32 +21,41 @@ class DrawStats {
       "[$name] $numInstances $numItems mode:$drawMode [${duration.inMicroseconds}usec]";
 }
 
-/// represents program (Fragment + Vertex Shader) running on the GPU with an API to invoke it.
+/// A GPU program with an API to invoke it. Owns the compiled program, but borrows
+/// meshes, materials and textures. Call [dispose] after use.
+/// After disposal, drawing, mesh creation and [uninitializedInputs] throw
+/// [StateError]. Shader metadata, compatibility queries and [getContext] remain
+/// available; they do not imply that the program is still usable.
 class RenderProgram extends NamedEntity {
   RenderProgram(super.name, this._cgl, this._shaderObjectV, this._shaderObjectF)
-    : _program = _cgl.compileWholeProgram(
-        _shaderObjectV.shader!,
-        _shaderObjectF.shader!,
-        _shaderObjectV.transformVars,
-      ),
-      _attributes = Set.from(_shaderObjectV.attributeVars) {
-    for (String v in {
-      ..._shaderObjectV.uniformVars,
-      ..._shaderObjectF.uniformVars,
-    }) {
-      final location = _cgl.getUniformLocation(_program, v);
-      // The linker can optimize out unused uniforms. Only active locations
-      // need uploads and initialization checks.
-      if (location != null) {
-        _uniformLocations[v] = location;
+    : _attributes = Set.from(_shaderObjectV.attributeVars) {
+    _program = _cgl.compileWholeProgram(
+      _shaderObjectV.shader!,
+      _shaderObjectF.shader!,
+      _shaderObjectV.transformVars,
+    );
+    try {
+      for (String v in {
+        ..._shaderObjectV.uniformVars,
+        ..._shaderObjectF.uniformVars,
+      }) {
+        final location = _cgl.getUniformLocation(_program!, v);
+        // The linker can optimize out unused uniforms. Only active locations
+        // need uploads and initialization checks.
+        if (location != null) {
+          _uniformLocations[v] = location;
+        }
       }
+    } catch (_) {
+      _cleanupAfterFailure([dispose]);
+      rethrow;
     }
   }
 
   final ChronosGL _cgl;
   final ShaderObject _shaderObjectV;
   final ShaderObject _shaderObjectF;
-  final GlProgram _program;
+  GlProgram? _program;
 
   final Set<String> _attributes;
   final Map<String, GlUniformLocation> _uniformLocations = {};
@@ -54,6 +63,28 @@ class RenderProgram extends NamedEntity {
   final Set<String> _attributesInitialized = <String>{};
 
   int _nextTextureUnit = 0;
+  bool _isDisposed = false;
+
+  bool get isDisposed => _isDisposed;
+
+  void _checkNotDisposed() {
+    if (_isDisposed) throw StateError('RenderProgram $name has been disposed');
+  }
+
+  /// Requests deletion of the program exactly once and clears runtime state.
+  /// WebGL defers deletion of a current program until another program is bound.
+  /// Meshes created by [makeMeshData] remain owned by the caller.
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    final program = _program!;
+    _program = null;
+    _uniformLocations.clear();
+    _uniformsInitialized.clear();
+    _attributesInitialized.clear();
+    _clearState();
+    _cgl.deleteProgram(program);
+  }
 
   ShaderObject get shaderObjectV => _shaderObjectV;
 
@@ -64,6 +95,7 @@ class RenderProgram extends NamedEntity {
   }
 
   MeshData makeMeshData(String name, int drawMode) {
+    _checkNotDisposed();
     return MeshData(
       name,
       _cgl,
@@ -248,6 +280,7 @@ class RenderProgram extends NamedEntity {
   }
 
   List<String> uninitializedInputs() {
+    _checkNotDisposed();
     if (_uniformsInitialized.length == _uniformLocations.length &&
         _attributesInitialized.length == _attributes.length) {
       return [];
@@ -289,15 +322,35 @@ class RenderProgram extends NamedEntity {
     List<UniformGroup> uniforms, [
     List<DrawStats>? stats,
   ]) {
+    _checkNotDisposed();
+    md._checkNotDisposed();
     final DateTime start = DateTime.now();
-    _cgl.useProgram(_program);
+    // Resolve each group once: getUniforms() can compute values on demand.
+    // Validate all active samplers before changing any WebGL or draw state.
+    // Optimized-out uniforms are deliberately ignored, just as during upload.
+    final inputs = [for (final group in uniforms) group.getUniforms()];
+    _checkNotDisposed();
+    md._checkNotDisposed();
+    for (final values in inputs) {
+      for (final entry in values.entries) {
+        if (!_hasUniform(entry.key)) continue;
+        final type = retrieveShaderVarDesc(entry.key).type;
+        if (type == varTypeSampler2D ||
+            type == varTypeSampler2DShadow ||
+            type == varTypeSamplerCube) {
+          (entry.value as Texture)._checkNotDisposed();
+        }
+      }
+    }
+    _cgl.useProgram(_program!);
     _clearState();
 
     // TODO: put this behind a flag
     _uniformsInitialized.clear();
     bool haveSeenMaterial = false;
-    for (UniformGroup u in uniforms) {
-      _activateUniforms(u.name, u.getUniforms());
+    for (int i = 0; i < uniforms.length; ++i) {
+      final u = uniforms[i];
+      _activateUniforms(u.name, inputs[i]);
       if (u is Material) {
         assert(
           !haveSeenMaterial,
@@ -335,7 +388,7 @@ class RenderProgram extends NamedEntity {
       md.getNumInstances(),
       hasTransforms,
     );
-    if (debug) print(_cgl.getProgramInfoLog(_program));
+    if (debug) print(_cgl.getProgramInfoLog(_program!));
     if (stats != null) {
       stats.add(
         DrawStats(

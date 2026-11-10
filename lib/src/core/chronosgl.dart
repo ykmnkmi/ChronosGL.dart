@@ -71,29 +71,27 @@ Object? _fromJSParameter(JSAny? value) {
   return value;
 }
 
-GlShader _compileShader(web.WebGL2RenderingContext gl, int type, String text) {
-  GlShader shader =
-      gl.createShader(type) ?? (throw StateError('Cannot create shader'));
-
-  gl.shaderSource(shader, text);
-  gl.compileShader(shader);
-
-  bool result =
-      (gl.getShaderParameter(shader, glCompileStatus) as JSBoolean).toDart;
-  if (!result) {
-    String error =
-        gl.getShaderInfoLog(shader) ?? 'Unknown shader compilation error';
-    logError("Compilation failed:");
-    logError(_addLineNumbers(text));
-    logError("Failure:");
-    logError(error);
-    throw error;
+// Used only while handling an existing failure. Attempt every cleanup action
+// without replacing the original exception or its stack trace.
+void _cleanupAfterFailure(Iterable<void Function()> actions) {
+  for (final action in actions) {
+    try {
+      action();
+    } catch (_) {
+      // The caller rethrows the original construction error.
+    }
   }
-  return shader;
 }
 
 /// Prepares a canvas for 3d rendering. Contains wrapper for all the
 /// WebGL2 bindings
+///
+/// Each resource returned by a `create*` method has a matching `delete*` method.
+/// These methods forward to WebGL without tracking ownership: callers must use
+/// handles from this context and finish using a resource before deleting it.
+/// Repeated deletion follows WebGL semantics, including deferred deletion of
+/// attached shaders and programs that are still in use. WebGL errors remain
+/// available through [getError].
 class ChronosGL {
   ChronosGL(
     Object canvas, {
@@ -133,35 +131,72 @@ class ChronosGL {
 
   late final web.WebGL2RenderingContext _gl;
 
+  GlShader _compileShader(int type, String text, List<GlShader> shaders) {
+    final shader = createShader(type);
+    // Register before any operation that can fail, including shaderSource.
+    shaders.add(shader);
+    _gl.shaderSource(shader, text);
+    _gl.compileShader(shader);
+    if (!(_gl.getShaderParameter(
+      shader,
+      glCompileStatus,
+    ) as JSBoolean).toDart) {
+      final error =
+          _gl.getShaderInfoLog(shader) ?? 'Unknown shader compilation error';
+      logError("Compilation failed:");
+      logError(_addLineNumbers(text));
+      logError("Failure:");
+      logError(error);
+      throw error;
+    }
+    return shader;
+  }
+
+  /// Returns an owned program, releasing temporary shaders after linking.
+  /// On failure, attempts deletion of every resource created by this call and
+  /// rethrows the original error, even if cleanup also fails.
   GlProgram compileWholeProgram(
     String vertShaderText,
     String fragShaderText,
     List<String> transformVarying,
   ) {
-    GlProgram program = createProgram();
-    GlShader vs = _compileShader(_gl, glVertexShader, vertShaderText);
-    _gl.attachShader(program, vs);
-    // delete shader vs?
+    final program = createProgram();
+    final shaders = <GlShader>[];
+    try {
+      final vs = _compileShader(glVertexShader, vertShaderText, shaders);
+      _gl.attachShader(program, vs);
+      final fs = _compileShader(glFragmentShader, fragShaderText, shaders);
+      _gl.attachShader(program, fs);
 
-    GlShader fs = _compileShader(_gl, glFragmentShader, fragShaderText);
-    _gl.attachShader(program, fs);
-    // delete shader fs?
-
-    if (transformVarying.isNotEmpty) {
-      _gl.transformFeedbackVaryings(
+      if (transformVarying.isNotEmpty) {
+        _gl.transformFeedbackVaryings(
+          program,
+          transformVarying.map((name) => name.toJS).toList().toJS,
+          glInterleavedAttribs,
+        );
+      }
+      linkProgram(program);
+      if (!(_gl.getProgramParameter(
         program,
-        transformVarying.map((name) => name.toJS).toList().toJS,
-        glInterleavedAttribs,
-      );
+        glLinkStatus,
+      ) as JSBoolean).toDart) {
+        throw _gl.getProgramInfoLog(program) ?? 'Unknown program linking error';
+      }
+
+      _gl.detachShader(program, vs);
+      _gl.detachShader(program, fs);
+      while (shaders.isNotEmpty) {
+        // Remove first so a throwing deletion is not attempted twice.
+        deleteShader(shaders.removeLast());
+      }
+      return program;
+    } catch (_) {
+      _cleanupAfterFailure([
+        () => deleteProgram(program),
+        for (final shader in shaders.reversed) () => deleteShader(shader),
+      ]);
+      rethrow;
     }
-
-    _gl.linkProgram(program);
-
-    if (!(_gl.getProgramParameter(program, glLinkStatus) as JSBoolean).toDart) {
-      throw _gl.getProgramInfoLog(program) ?? 'Unknown program linking error';
-    }
-
-    return program;
   }
 
   void changeArrayBuffer(GlBuffer buffer, List<num> data) {
@@ -212,6 +247,7 @@ class ChronosGL {
   // Why all these shims?
   // They are useful for instrumentation and may allow us some day
   // to interface with dart-gl
+  /// Requests deletion of [buffer] in this context.
   void deleteBuffer(GlBuffer buffer) {
     _gl.deleteBuffer(buffer);
   }
@@ -223,6 +259,11 @@ class ChronosGL {
   GlVertexArrayObject createVertexArray() {
     return _gl.createVertexArray() ??
         (throw StateError('Cannot create vertex array'));
+  }
+
+  /// Deletes [vao] without deleting the buffers referenced by it.
+  void deleteVertexArray(GlVertexArrayObject vao) {
+    _gl.deleteVertexArray(vao);
   }
 
   void bindVertexArray(GlVertexArrayObject vao) {
@@ -242,6 +283,11 @@ class ChronosGL {
   GlFramebuffer createFramebuffer() {
     return _gl.createFramebuffer() ??
         (throw StateError('Cannot create framebuffer'));
+  }
+
+  /// Deletes [framebuffer] without deleting its attachments.
+  void deleteFramebuffer(GlFramebuffer framebuffer) {
+    _gl.deleteFramebuffer(framebuffer);
   }
 
   void bindFramebuffer(int kind, GlFramebuffer? framebuffer) {
@@ -266,6 +312,11 @@ class ChronosGL {
     return _gl.createTexture() ?? (throw StateError('Cannot create texture'));
   }
 
+  /// Requests deletion of [texture] in this context.
+  void deleteTexture(GlTexture texture) {
+    _gl.deleteTexture(texture);
+  }
+
   void bindTexture(int kind, GlTexture? texture) {
     _gl.bindTexture(kind, texture);
   }
@@ -273,6 +324,11 @@ class ChronosGL {
   GlTransformFeedback createTransformFeedback() {
     return _gl.createTransformFeedback() ??
         (throw StateError('Cannot create transform feedback'));
+  }
+
+  /// Deletes an inactive [transform] without deleting its referenced buffers.
+  void deleteTransformFeedback(GlTransformFeedback transform) {
+    _gl.deleteTransformFeedback(transform);
   }
 
   void bindTransformFeedback(GlTransformFeedback transform) {
@@ -474,6 +530,11 @@ class ChronosGL {
     return _gl.createProgram() ?? (throw StateError('Cannot create program'));
   }
 
+  /// Marks [program] for deletion; WebGL defers deletion while it is in use.
+  void deleteProgram(GlProgram program) {
+    _gl.deleteProgram(program);
+  }
+
   void linkProgram(GlProgram obj) {
     _gl.linkProgram(obj);
   }
@@ -484,6 +545,11 @@ class ChronosGL {
 
   GlShader createShader(int kind) {
     return _gl.createShader(kind) ?? (throw StateError('Cannot create shader'));
+  }
+
+  /// Marks [shader] for deletion; WebGL defers deletion while it is attached.
+  void deleteShader(GlShader shader) {
+    _gl.deleteShader(shader);
   }
 
   GlUniformLocation? getUniformLocation(GlProgram program, String uniform) {
@@ -497,6 +563,11 @@ class ChronosGL {
 
   GlSampler createSampler() {
     return _gl.createSampler() ?? (throw StateError('Cannot create sampler'));
+  }
+
+  /// Requests deletion of [sampler] in this context.
+  void deleteSampler(GlSampler sampler) {
+    _gl.deleteSampler(sampler);
   }
 
   int getError() {

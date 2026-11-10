@@ -60,34 +60,118 @@ Float32List flattenMatrix4List(List<vm.Matrix4> v, [Float32List? data]) {
 /// RenderProgram.makeMeshData().
 /// Note, MeshData is always associated with a specific RenderProgram
 /// but it is possible to assert compatibility with multiple RenderPrograms.
+///
+/// Owns its VAO and every buffer created by its `add*` methods. Buffers passed
+/// to [changeAttributeBuffer] are borrowed unless `takeOwnership: true` is used.
+/// Call [dispose] when all consumers have finished using the mesh, or [clearData]
+/// to empty it for reuse.
+/// After disposal, only metadata ([name], [drawMode], [supportsAttribute] and
+/// [toString]) remains readable. Data access, mutation and extraction helpers
+/// throw [StateError] before accessing cleared data or allocating GPU resources.
 class MeshData extends NamedEntity {
   MeshData(String name, this._cgl, this._drawMode, this._locationMap)
     : _vao = _cgl.createVertexArray(),
       super("meshdata:$name");
 
   final ChronosGL _cgl;
-  final GlVertexArrayObject _vao;
+  GlVertexArrayObject? _vao;
   final int _drawMode;
   final Map<String, GlBuffer> _buffers = {};
+  // Ownership is independent of slots, which can alias or borrow a buffer.
+  final Set<GlBuffer> _ownedBuffers = {};
   final Map<String, int> _locationMap;
   GlBuffer? _indexBuffer;
   int _instances = 0;
   int _indexBufferType = -1;
+  bool _isDisposed = false;
 
-  late Float32List _vertices;
+  Float32List _vertices = Float32List(0);
   List<int>? _faces;
   final Map<String, List<num>> _attributes = {};
 
-  void clearData() {
-    for (String canonical in _buffers.keys) {
-      _cgl.deleteBuffer(_buffers[canonical]!);
+  bool get isDisposed => _isDisposed;
+
+  void _checkNotDisposed() {
+    if (_isDisposed) throw StateError('MeshData $name has been disposed');
+  }
+
+  void _releaseUnusedBuffer(GlBuffer? buffer) {
+    if (buffer == null ||
+        _buffers.containsValue(buffer) ||
+        _indexBuffer == buffer ||
+        !_ownedBuffers.remove(buffer)) {
+      return;
     }
-    if (_indexBuffer != null) {
-      _cgl.deleteBuffer(_indexBuffer!);
+    // Commit removal before deletion, including when the backend throws.
+    _cgl.deleteBuffer(buffer);
+  }
+
+  void _checkBufferError() {
+    final error = _cgl.getError();
+    if (error != glNoError) {
+      throw StateError('MeshData $name buffer update error: $error');
     }
   }
 
+  void _releaseData(GlVertexArrayObject vao) {
+    final buffers = _ownedBuffers.toList();
+    _ownedBuffers.clear();
+    _buffers.clear();
+    _indexBuffer = null;
+    _attributes.clear();
+    _vertices = Float32List(0);
+    _faces = null;
+    _instances = 0;
+    _indexBufferType = -1;
+
+    Object? firstError;
+    StackTrace? firstStack;
+    void release(void Function() action) {
+      try {
+        action();
+      } catch (error, stack) {
+        firstError ??= error;
+        firstStack ??= stack;
+      }
+    }
+
+    // Release the VAO's references, including borrowed buffers, first.
+    release(() => _cgl.deleteVertexArray(vao));
+    for (final buffer in buffers) {
+      release(() => _cgl.deleteBuffer(buffer));
+    }
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError!, firstStack!);
+    }
+  }
+
+  /// Releases owned buffers and CPU data, leaving an empty, reusable mesh.
+  ///
+  /// Replaces the VAO to detach all attribute/index bindings, including borrowed
+  /// buffers. If creating the replacement fails, the old mesh stays intact.
+  void clearData() {
+    _checkNotDisposed();
+    final replacement = _cgl.createVertexArray();
+    final previous = _vao!;
+    _vao = replacement;
+    _releaseData(previous);
+  }
+
+  /// Releases the VAO, owned buffers and retained CPU data exactly once.
+  ///
+  /// Borrowed buffers are not deleted. Repeated calls do nothing, including
+  /// after a cleanup error. Data access and GPU operations then throw
+  /// [StateError]; diagnostic metadata and [isDisposed] remain readable.
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    final vao = _vao!;
+    _vao = null;
+    _releaseData(vao);
+  }
+
   void changeAttributeData(String canonical, List<num> data, int width) {
+    _checkNotDisposed();
     if (debug) print("ChangeBuffer $canonical ${data.length}");
     if (canonical.codeUnitAt(0) == prefixInstancer) {
       assert(data.length ~/ width == _instances, "ChangeAttribute $_instances");
@@ -102,6 +186,7 @@ class MeshData extends NamedEntity {
   }
 
   void changeVertexData(Float32List data) {
+    _checkNotDisposed();
     final String canonical = aPosition;
     _vertices = data;
     changeAttributeData(canonical, data, 3);
@@ -113,9 +198,13 @@ class MeshData extends NamedEntity {
 
   int get drawMode => _drawMode;
 
-  int get elementArrayBufferType => _indexBufferType;
+  int get elementArrayBufferType {
+    _checkNotDisposed();
+    return _indexBufferType;
+  }
 
   int getNumItems() {
+    _checkNotDisposed();
     if (_faces != null) {
       return _faces!.length;
     }
@@ -123,51 +212,182 @@ class MeshData extends NamedEntity {
   }
 
   int getNumInstances() {
+    _checkNotDisposed();
     return _instances;
   }
 
   List<num> getAttribute(String canonical) {
+    _checkNotDisposed();
     return _attributes[canonical]!;
   }
 
+  /// Returns a borrowed handle; this does not transfer ownership to the caller.
   GlBuffer getBuffer(String canonical) {
+    _checkNotDisposed();
     return _buffers[canonical]!;
   }
 
-  void changeAttributeBuffer(String canonical, GlBuffer buffer) {
-    _buffers[canonical] = buffer;
+  /// Borrows [buffer] by default; its owner must keep it alive while in use.
+  ///
+  /// With [takeOwnership], this mesh accepts responsibility for deletion only
+  /// after binding succeeds. The caller must not transfer a buffer still owned
+  /// by another mesh. Raw handles cannot track that ownership for the caller.
+  /// Rebinding an already owned buffer never relinquishes ownership, even when
+  /// [takeOwnership] is false. The previous owned buffer is deleted after the
+  /// last slot using it is replaced. Borrowed buffers are only detached.
+  /// On a binding failure the old configuration and caller bindings survive.
+  /// A deletion error occurs after commit: the new buffer is already installed.
+  void changeAttributeBuffer(
+    String canonical,
+    GlBuffer buffer, {
+    bool takeOwnership = false,
+  }) {
+    _replaceAttributeBuffer(canonical, buffer, takeOwnership: takeOwnership);
+  }
+
+  void _replaceAttributeBuffer(
+    String canonical,
+    GlBuffer buffer, {
+    required bool takeOwnership,
+    void Function()? upload,
+    void Function()? commitData,
+  }) {
+    _checkNotDisposed();
+    final int? index = _locationMap[canonical];
+    if (index == null) {
+      throw ArgumentError.value(
+        canonical,
+        'canonical',
+        'Unsupported attribute',
+      );
+    }
     final bool instanced = canonical.codeUnitAt(0) == prefixInstancer;
     final ShaderVarDesc desc = retrieveShaderVarDesc(canonical);
-    final int index = _locationMap[canonical]!;
-    _cgl.bindVertexArray(_vao);
-    _cgl.enableVertexAttribArray(index, instanced ? 1 : 0);
-    _cgl.vertexAttribPointer(
-      buffer,
-      index,
-      desc.getSize(),
-      glFloat,
-      false,
-      0,
-      0,
-    );
-  }
-
-  void addAttribute(String canonical, List<num> data, int width) {
-    final bool instanced = canonical.codeUnitAt(0) == prefixInstancer;
-    if (instanced && _instances == 0) {
-      _instances = data.length ~/ width;
+    final previous = _buffers[canonical];
+    final previousVao =
+        _cgl.getParameter(glVertexArrayBinding) as GlVertexArrayObject?;
+    final previousArray = _cgl.getParameter(glArrayBufferBinding) as GlBuffer?;
+    bool bindingStarted = false;
+    try {
+      // Upload new storage before changing any live attribute reference.
+      upload?.call();
+      _checkBufferError();
+      _cgl.bindVertexArray(_vao!);
+      bindingStarted = true;
+      _cgl.enableVertexAttribArray(index, instanced ? 1 : 0);
+      _cgl.vertexAttribPointer(
+        buffer,
+        index,
+        desc.getSize(),
+        glFloat,
+        false,
+        0,
+        0,
+      );
+      _checkBufferError();
+    } catch (_) {
+      _cleanupAfterFailure([
+        if (bindingStarted)
+          () {
+            final gl = _cgl._gl;
+            gl.bindVertexArray(_vao);
+            gl.bindBuffer(glArrayBuffer, previous);
+            // WebGL permits a null buffer with offset zero to reset a slot.
+            gl.vertexAttribPointer(
+              index,
+              previous == null ? 4 : desc.getSize(),
+              glFloat,
+              false,
+              0,
+              0,
+            );
+            gl.vertexAttribDivisor(
+              index,
+              previous != null && instanced ? 1 : 0,
+            );
+            if (previous == null) {
+              gl.disableVertexAttribArray(index);
+            } else {
+              gl.enableVertexAttribArray(index);
+            }
+          },
+        () => _cgl._gl.bindVertexArray(previousVao),
+        () => _cgl.bindBuffer(glArrayBuffer, previousArray),
+      ]);
+      rethrow;
     }
-    changeAttributeBuffer(canonical, _cgl.createBuffer());
-    changeAttributeData(canonical, data, width);
+    _buffers[canonical] = buffer;
+    if (takeOwnership) _ownedBuffers.add(buffer);
+    commitData?.call();
+    _releaseUnusedBuffer(previous);
   }
 
+  void _addAttribute(String canonical, List<num> data, int width) {
+    _checkNotDisposed();
+    if (!_locationMap.containsKey(canonical)) {
+      throw ArgumentError.value(
+        canonical,
+        'canonical',
+        'Unsupported attribute',
+      );
+    }
+    if (width <= 0 ||
+        width != retrieveShaderVarDesc(canonical).getSize() ||
+        data.length % width != 0) {
+      throw ArgumentError('Invalid width or data length for $canonical');
+    }
+    final instanced = canonical.codeUnitAt(0) == prefixInstancer;
+    final count = data.length ~/ width;
+    if ((instanced && _instances != 0 && count != _instances) ||
+        (!instanced &&
+            canonical != aPosition &&
+            count != _vertices.length ~/ 3)) {
+      throw ArgumentError('Wrong number of items for $canonical');
+    }
+    final positions = canonical == aPosition
+        ? (data is Float32List
+              ? data
+              : Float32List.fromList([
+                  for (final value in data) value.toDouble(),
+                ]))
+        : null;
+    final buffer = _cgl.createBuffer();
+    bool committed = false;
+    try {
+      _replaceAttributeBuffer(
+        canonical,
+        buffer,
+        takeOwnership: true,
+        upload: () => _cgl.changeArrayBuffer(buffer, data),
+        commitData: () {
+          _attributes[canonical] = data;
+          if (positions != null) _vertices = positions;
+          if (instanced && _instances == 0) _instances = count;
+          committed = true;
+        },
+      );
+    } catch (_) {
+      // An old-buffer deletion failure occurs after commit; keep the new one.
+      if (!committed) {
+        _cleanupAfterFailure([() => _cgl.deleteBuffer(buffer)]);
+      }
+      rethrow;
+    }
+  }
+
+  /// Creates and uploads a replacement, then releases the old owned buffer
+  /// when no other slot needs it. Failed preparation leaves CPU/GPU data intact.
+  void addAttribute(String canonical, List<num> data, int width) {
+    _addAttribute(canonical, data, width);
+  }
+
+  /// Atomically replaces position storage; see [addAttribute].
   void addVertices(Float32List data) {
-    final String canonical = aPosition;
-    changeAttributeBuffer(canonical, _cgl.createBuffer());
-    changeVertexData(data);
+    _addAttribute(aPosition, data, 3);
   }
 
   void changeFaces(List<int> faces) {
+    _checkNotDisposed();
     if (_vertices.length < 3 * 256) {
       _faces = Uint8List.fromList(faces);
       _indexBufferType = glUnsignedByte;
@@ -179,20 +399,56 @@ class MeshData extends NamedEntity {
       _indexBufferType = glUnsignedInt;
     }
 
-    _cgl.bindVertexArray(_vao);
+    _cgl.bindVertexArray(_vao!);
     _cgl.changeElementArrayBuffer(_indexBuffer!, _faces as TypedData);
   }
 
+  /// Uploads new index storage before releasing the previous owned buffer.
   void addFaces(List<int> faces) {
-    _indexBuffer = _cgl.createBuffer();
-    changeFaces(faces);
+    _checkNotDisposed();
+    final List<int> data;
+    final int type;
+    if (_vertices.length < 3 * 256) {
+      data = Uint8List.fromList(faces);
+      type = glUnsignedByte;
+    } else if (_vertices.length < 3 * 65536) {
+      data = Uint16List.fromList(faces);
+      type = glUnsignedShort;
+    } else {
+      data = Uint32List.fromList(faces);
+      type = glUnsignedInt;
+    }
+    final previous = _indexBuffer;
+    final previousVao =
+        _cgl.getParameter(glVertexArrayBinding) as GlVertexArrayObject?;
+    final buffer = _cgl.createBuffer();
+    try {
+      _cgl.bindVertexArray(_vao!);
+      _cgl.changeElementArrayBuffer(buffer, data as TypedData);
+      _checkBufferError();
+    } catch (_) {
+      _cleanupAfterFailure([
+        () => _cgl._gl.bindVertexArray(_vao),
+        () => _cgl.bindBuffer(glElementArrayBuffer, previous),
+        () => _cgl._gl.bindVertexArray(previousVao),
+        () => _cgl.deleteBuffer(buffer),
+      ]);
+      rethrow;
+    }
+    _indexBuffer = buffer;
+    _ownedBuffers.add(buffer);
+    _faces = data;
+    _indexBufferType = type;
+    _releaseUnusedBuffer(previous);
   }
 
   void activate() {
-    _cgl.bindVertexArray(_vao);
+    _checkNotDisposed();
+    _cgl.bindVertexArray(_vao!);
   }
 
   Iterable<String> getAttributes() {
+    _checkNotDisposed();
     return _attributes.keys;
   }
 
@@ -343,14 +599,18 @@ MeshData extractWireframeNormals(
   MeshData md, [
   double scale = 1.0,
 ]) {
+  prog._checkNotDisposed();
+  md._checkNotDisposed();
   assert(md._drawMode == glTriangles, "expected GL_TRIANGLES");
-  MeshData out = prog.makeMeshData(md.name, glLines);
   final Float32List vertices = md.getAttribute(aPosition) as Float32List;
   final Float32List normals = md.getAttribute(aNormal) as Float32List;
+  MeshData out = prog.makeMeshData(md.name, glLines);
   return _extractWireframeNormals(out, vertices, normals, scale);
 }
 
 MeshData extractWireframe(RenderProgram prog, MeshData md) {
+  prog._checkNotDisposed();
+  md._checkNotDisposed();
   assert(false);
   assert(md._drawMode == glTriangles);
   MeshData out = prog.makeMeshData(md.name, glLines);
@@ -394,6 +654,7 @@ List<double> _getMeshFaceAreas(List<int> faces, Float32List verts) {
 }
 
 double getMeshFaceArea(MeshData md) {
+  md._checkNotDisposed();
   List<double> areas = _getMeshFaceAreas(md._faces!, md._vertices);
   double totalArea = 0.0;
   for (var d in areas) {
@@ -409,6 +670,8 @@ MeshData extractPointCloud(
   bool extractNormal = true,
   bool extractColor = false,
 }) {
+  prog._checkNotDisposed();
+  md._checkNotDisposed();
   assert(md._drawMode == glTriangles, "expected GL_TRIANGLES");
   if (extractNormal) {
     assert(md.supportsAttribute(aNormal), "expected support for aNormal");

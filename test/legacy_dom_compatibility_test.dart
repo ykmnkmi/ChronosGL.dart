@@ -32,6 +32,10 @@ void main() {
     final keyboard = Keyboard(canvas);
     final mouse = Mouse(canvas);
     final orbit = OrbitCamera(10, 0, 0, canvas);
+    addTearDown(keyboard.dispose);
+    addTearDown(mouse.dispose);
+    addTearDown(orbit.keyboard.dispose);
+    addTearDown(orbit.mouse.dispose);
     target.dispatchEvent(
       web.KeyboardEvent(
         'keydown',

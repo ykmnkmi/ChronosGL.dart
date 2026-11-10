@@ -28,6 +28,15 @@ presets:
       - test/type_boundaries_test.dart
       - test/legacy_dom_compatibility_test.dart
       - test/core_web_interop_test.dart
+      - test/chronosgl_resource_deletion_test.dart
+      - test/mesh_data_disposal_test.dart
+      - test/gpu_resource_disposal_test.dart
+      - test/resource_creation_failure_test.dart
+      - test/resource_ownership_test.dart
+      - test/resource_replacement_test.dart
+      - test/input_disposal_test.dart
+      - test/disposed_usage_test.dart
+      - test/scene_lifecycle_test.dart
       - test/camera_position_reproduction_test.dart
       - test/orbit_frame_rate_reproduction_test.dart
       - test/shared_settings_reproduction_test.dart

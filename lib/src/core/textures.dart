@@ -107,24 +107,77 @@ bool isCubeChildTextureType(int t) {
   }
 }
 
-/// is the base class for all textures
+/// Base class for textures. Owns its GPU handle; call [dispose] after use.
+/// Handle access, uploads, updates and installation throw [StateError] after
+/// disposal. [getTextureType], [properties] and [toString] remain available for
+/// inspection; changing properties cannot revive the released GPU handle.
 class Texture {
   Texture(this._cgl, this._textureType, this._url, this.properties)
     : _texture = _cgl.createTexture();
 
   final String _url;
-  final GlTexture _texture;
+  GlTexture? _texture;
   final int _textureType;
   final ChronosGL _cgl;
   final TextureProperties properties;
+  bool _isDisposed = false;
+  // Only framebuffer containers can currently accept an external texture.
+  // Borrowers do not register here; they must finish before the owner disposes.
+  Framebuffer? _framebufferOwner;
+
+  // Constructors must release their handle even when an upload or settings
+  // installation fails. Successful construction keeps the existing null bind.
+  void _initialize(void Function() upload) {
+    GlTexture? previousTexture;
+    bool bindingSaved = false;
+    try {
+      previousTexture = _cgl.getParameter(
+        _textureType == glTextureCubeMap
+            ? glTextureBindingCubeMap
+            : glTextureBinding2D,
+      ) as GlTexture?;
+      bindingSaved = true;
+      upload();
+      final error = _cgl.getError();
+      if (error != glNoError) {
+        throw StateError('Texture $_url initialization error: $error');
+      }
+      _cgl.bindTexture(_textureType, null);
+    } catch (_) {
+      _cleanupAfterFailure([
+        dispose,
+        if (bindingSaved) () => _cgl.bindTexture(_textureType, previousTexture),
+      ]);
+      rethrow;
+    }
+  }
+
+  bool get isDisposed => _isDisposed;
+
+  void _checkNotDisposed() {
+    if (_isDisposed) throw StateError('Texture $_url has been disposed');
+  }
+
+  /// Releases the texture handle exactly once, including after a cleanup error.
+  /// Borrowed image/video sources and texture properties are not modified.
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    final texture = _texture!;
+    _texture = null;
+    _framebufferOwner = null;
+    _cgl.deleteTexture(texture);
+  }
 
   void copyFromFramebuffer2D(int x, int y, int w, int h) {
+    _checkNotDisposed();
     _cgl.bindTexture(_textureType, _texture);
     _cgl.copyTexImage2D(_textureType, 0, glRgba, x, y, w, h);
     install();
   }
 
   void install() {
+    _checkNotDisposed();
     _cgl.bindTexture(_textureType, _texture);
     properties.installLate(_cgl, _textureType);
     int err = _cgl.getError();
@@ -134,7 +187,8 @@ class Texture {
   int getTextureType() => _textureType;
 
   GlTexture getTexture() {
-    return _texture;
+    _checkNotDisposed();
+    return _texture!;
   }
 
   @override
@@ -153,12 +207,11 @@ class TypedTexture extends Texture {
     this._internalFormat,
     TextureProperties prop,
   ) : super(cgl, glTexture2D, url, prop) {
-    _cgl.bindTexture(_textureType, _texture);
-    _cgl.texStorage2D(glTexture2D, 1, _internalFormat, _width, _height);
-    properties.installLate(_cgl, _textureType);
-    int err = _cgl.getError();
-    assert(err == glNoError, "texture error $err");
-    _cgl.bindTexture(_textureType, null);
+    _initialize(() {
+      _cgl.bindTexture(_textureType, _texture);
+      _cgl.texStorage2D(glTexture2D, 1, _internalFormat, _width, _height);
+      properties.installLate(_cgl, _textureType);
+    });
   }
 
   final int _width;
@@ -183,22 +236,21 @@ class TypedTextureMutable extends Texture {
     int datatype,
     TypedData? data,
   ) : super(cgl, glTexture2D, url, prop) {
-    _cgl.bindTexture(_textureType, _texture);
-    _cgl.texImage2D(
-      glTexture2D,
-      0,
-      _internalFormat,
-      _width,
-      _height,
-      0,
-      format,
-      datatype,
-      data,
-    );
-    properties.installLate(_cgl, _textureType);
-    int err = _cgl.getError();
-    assert(err == glNoError, "texture error $err");
-    _cgl.bindTexture(_textureType, null);
+    _initialize(() {
+      _cgl.bindTexture(_textureType, _texture);
+      _cgl.texImage2D(
+        glTexture2D,
+        0,
+        _internalFormat,
+        _width,
+        _height,
+        0,
+        format,
+        datatype,
+        data,
+      );
+      properties.installLate(_cgl, _textureType);
+    });
   }
 
   final int _width;
@@ -206,6 +258,7 @@ class TypedTextureMutable extends Texture {
   final int _internalFormat;
 
   void updateContent(TypedData data, int format, int datatype) {
+    _checkNotDisposed();
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texImage2D(
       glTexture2D,
@@ -230,6 +283,7 @@ class TypedTextureMutable extends Texture {
     int w,
     int h,
   ) {
+    _checkNotDisposed();
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texSubImage2D(
       glTexture2D,
@@ -259,29 +313,37 @@ class ImageTexture extends Texture {
   ImageTexture(
     ChronosGL cgl,
     String url,
-    this._element, [
+    Object element, [
     TextureProperties? tp,
     int textureType = glTexture2D,
-  ]) : super(cgl, textureType, url, tp ?? TextureProperties()) {
-    _cgl.bindTexture(_textureType, _texture);
+  ]) : _element = element,
+       super(cgl, textureType, url, tp ?? TextureProperties()) {
+    _initialize(() {
+      _cgl.bindTexture(_textureType, _texture);
 
-    properties.installEarly(_cgl, _textureType);
-    setImageData(_element);
-    properties.installLate(_cgl, _textureType);
-    int err = _cgl.getError();
-    assert(err == glNoError);
-    _cgl.bindTexture(_textureType, null);
+      properties.installEarly(_cgl, _textureType);
+      setImageData(element);
+      properties.installLate(_cgl, _textureType);
+    });
   }
 
-  final Object _element; // CanvasElement, ImageElement, VideoElement
+  Object? _element; // Borrowed CanvasElement, ImageElement, VideoElement
+
+  @override
+  void dispose() {
+    _element = null;
+    super.dispose();
+  }
 
   void setImageData(Object data) {
+    _checkNotDisposed();
     _cgl.bindTexture(_textureType, _texture);
     _cgl.texImage2Dweb(_textureType, 0, glRgba, glRgba, glUnsignedByte, data);
   }
 
   void update() {
-    setImageData(_element);
+    _checkNotDisposed();
+    setImageData(_element!);
     _cgl.bindTexture(_textureType, null);
   }
 }
@@ -298,26 +360,22 @@ const List<int> _kCubeModifier = [
 class CubeTexture extends Texture {
   CubeTexture(ChronosGL cgl, String url, List<Object> images)
     : super(cgl, glTextureCubeMap, url, TextureProperties()..clamp = true) {
-    assert(images.length == _kCubeModifier.length);
-    properties.installEarly(_cgl, _textureType);
+    _initialize(() {
+      assert(images.length == _kCubeModifier.length);
+      properties.installEarly(_cgl, _textureType);
 
-    _cgl.bindTexture(_textureType, _texture);
-    for (int i = 0; i < _kCubeModifier.length; ++i) {
-      _cgl.texImage2Dweb(
-        _kCubeModifier[i],
-        0,
-        glRgba,
-        glRgba,
-        glUnsignedByte,
-        images[i],
-      );
-    }
-    properties.installLate(_cgl, _textureType);
-    int err = _cgl.getError();
-    assert(err == glNoError);
-    _cgl.bindTexture(_textureType, null);
-
-    // huh?
-    properties.clamp = true;
+      _cgl.bindTexture(_textureType, _texture);
+      for (int i = 0; i < _kCubeModifier.length; ++i) {
+        _cgl.texImage2Dweb(
+          _kCubeModifier[i],
+          0,
+          glRgba,
+          glRgba,
+          glUnsignedByte,
+          images[i],
+        );
+      }
+      properties.installLate(_cgl, _textureType);
+    });
   }
 }

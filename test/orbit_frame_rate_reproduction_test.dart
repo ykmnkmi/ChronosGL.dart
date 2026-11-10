@@ -58,9 +58,10 @@ _OrbitState _simulate(OrbitCamera camera, int key, List<double> deltasMs) {
 void main() {
   late OrbitCamera camera;
   setUpAll(() {
-    // Reuse one camera: the current API cannot dispose its document listeners.
-    // The browser test environment owns their lifetime; keyup runs in finally.
+    // Reuse one camera and release its input listeners after the suite.
     camera = OrbitCamera(10, 0, 0, web.HTMLCanvasElement());
+    addTearDown(camera.keyboard.dispose);
+    addTearDown(camera.mouse.dispose);
   });
 
   for (final (key, label, horizontal, sign) in [

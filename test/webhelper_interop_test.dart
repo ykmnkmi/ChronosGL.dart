@@ -49,6 +49,7 @@ void main() {
   test('Keyboard tracks held keys and clears per-frame transitions', () {
     final target = web.HTMLDivElement();
     final keyboard = Keyboard(target);
+    addTearDown(keyboard.dispose);
     target.dispatchEvent(_key('keydown', Keyboard.a));
     expect(keyboard.currentlyPressedKey(Keyboard.a), isTrue);
     expect(keyboard.justPressedKey(Keyboard.a), isTrue);
@@ -67,6 +68,8 @@ void main() {
     () {
       final keyboard = Keyboard(null);
       final mouse = Mouse(null);
+      addTearDown(keyboard.dispose);
+      addTearDown(mouse.dispose);
       web.document.dispatchEvent(_key('keydown', Keyboard.space));
       expect(keyboard.currentlyPressedKey(Keyboard.space), isTrue);
       web.document.dispatchEvent(_key('keyup', Keyboard.space));
@@ -92,6 +95,7 @@ void main() {
       web.document.body!.appendChild(target);
       addTearDown(() => target.remove());
       final mouse = Mouse(target);
+      addTearDown(mouse.dispose);
       final move = web.MouseEvent(
         'mousemove',
         web.MouseEventInit(
@@ -128,6 +132,8 @@ void main() {
   test('OrbitCamera consumes modern canvas input and resets frame deltas', () {
     final canvas = _canvas(32, 32);
     final camera = OrbitCamera(10, 0, 0, canvas);
+    addTearDown(camera.keyboard.dispose);
+    addTearDown(camera.mouse.dispose);
     canvas.dispatchEvent(web.MouseEvent('mousedown'));
     canvas.dispatchEvent(
       web.MouseEvent(
