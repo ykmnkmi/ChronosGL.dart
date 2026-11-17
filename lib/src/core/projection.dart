@@ -1,6 +1,6 @@
 part of 'lib.dart';
 
-/// provides an Orthographic Perspective Matrix
+/// Provides orthographic P * V and world-space uEyePosition uniforms.
 class Orthographic extends UniformGroup {
   // d = "down", up is computed dynamically based on height & width
   Orthographic(this._camera, this._l, this._r, this._d, this._f, this._b)
@@ -21,6 +21,7 @@ class Orthographic extends UniformGroup {
 
   @override
   Map<String, Object> getUniforms() {
+    forceUniform(uEyePosition, _camera.getEyePosition());
     _camera.getViewMatrix(_viewMatrix);
     _projViewMatrix.setFrom(_proj);
     _projViewMatrix.multiply(_viewMatrix);
@@ -44,7 +45,8 @@ class Orthographic extends UniformGroup {
 
 /// provides the **Input** for perspective projection, i.e.
 /// the uPerspectiveViewMatrix Uniform which also requires a **Camera**
-/// for view matrix.
+/// for view matrix. uEyePosition comes from the camera's world-space eye,
+/// independently of the translation in its view matrix.
 class Perspective extends UniformGroup {
   Perspective(
     this._camera,

@@ -1,12 +1,18 @@
 part of 'lib.dart';
 
-final int rightX = 0, rightY = 4, rightZ = 8;
-final int upX = 1, upY = 5, upZ = 9;
-final int backX = 2, backY = 6, backZ = 10;
+final int rightX = 0, rightY = 1, rightZ = 2;
+final int upX = 4, upY = 5, upZ = 6;
+final int backX = 8, backY = 9, backZ = 10;
 final int posX = 12, posY = 13, posZ = 14;
 
-/// is a base class for object that need to be transformed, e.g.
-/// moved, scaled, rotated. It is also used as a Camera abstraction.
+/// Legacy base for scene objects and cameras.
+///
+/// New object transforms should use `Transform` from `package:chronosgl/core.dart`.
+/// [transform] maps local coordinates to parent coordinates (world coordinates
+/// for an unparented camera). [lookAt] preserves its position; [getViewMatrix]
+/// writes the inverse into separate storage. The matrix and scratch vectors
+/// remain mutable legacy APIs. Prefer `Camera` for a separate position/rotation
+/// model. See docs/3.6_CAMERA_POSITION.md for the legacy migration.
 class Spatial extends NamedEntity {
   Spatial(super.name);
   // position and rotation
@@ -15,6 +21,8 @@ class Spatial extends NamedEntity {
   // Might be better to use Quaternions anyways
   // regular lookAt calls could "repair" the matrix
   // (or an optimized variant of lookAt).
+  /// Live writable local-to-parent pose; edits immediately affect this object.
+  /// Unlike `Transform.matrix` and `Camera.worldMatrix`, this is not a snapshot.
   final vm.Matrix4 transform = vm.Matrix4.identity();
 
   // temp variables to avoid creating new objects:
@@ -24,14 +32,37 @@ class Spatial extends NamedEntity {
   final vm.Vector3 _up = vm.Vector3.zero();
   final vm.Vector3 _right = vm.Vector3.zero();
 
+  /// Copies the inverse world pose into [m], without changing [transform].
+  ///
+  /// Cameras must be unparented. Throws [StateError] for a singular or nonfinite
+  /// inverse, leaving [m] intact. Output storage must not overlap [transform],
+  /// even through another Matrix4 or typed-data view; that throws [ArgumentError].
   void getViewMatrix(vm.Matrix4 m) {
-    m.setFrom(transform);
+    final output = m.storage;
+    final pose = transform.storage;
+    if (output.buffer == pose.buffer &&
+        output.offsetInBytes < pose.offsetInBytes + pose.lengthInBytes &&
+        pose.offsetInBytes < output.offsetInBytes + output.lengthInBytes) {
+      throw ArgumentError('View output must not overlap the camera transform');
+    }
+    final view = vm.Matrix4.zero();
+    final determinant = view.copyInverse(transform);
+    if (determinant == 0 ||
+        !determinant.isFinite ||
+        view.storage.any((value) => !value.isFinite)) {
+      throw StateError('Camera transform has no finite inverse');
+    }
+    m.setFrom(view);
   }
 
+  /// Eye position in world space for an unparented camera, never view translation.
+  /// Returns the borrowed scratch vector from [getPos]; copy it to retain it.
   vm.Vector3 getEyePosition() {
     return getPos();
   }
 
+  /// Borrowed position scratch vector, overwritten by the next position read.
+  /// Editing it does not edit the pose; use [setPos] or [setPosFromVec].
   vm.Vector3 getPos() {
     _pos[0] = transform[posX];
     _pos[1] = transform[posY];
@@ -39,8 +70,8 @@ class Spatial extends NamedEntity {
     return _pos;
   }
 
-  // get the values from column 2. They represent the trail direction of this matrx
-  // return ReadOnly vec3
+  /// Local +Z column in parent space, returned in borrowed scratch storage.
+  /// Copy to retain it; editing this vector does not edit the pose.
   vm.Vector3 getBack() {
     _back[0] = transform[backX];
     _back[1] = transform[backY];
@@ -48,8 +79,8 @@ class Spatial extends NamedEntity {
     return _back;
   }
 
-  // get the values from column 1. They represent the up vector of this matrx
-  // return ReadOnly vec3
+  /// Local +Y column in parent space, returned in borrowed scratch storage.
+  /// Copy to retain it; editing this vector does not edit the pose.
   vm.Vector3 getUp() {
     _up[0] = transform[upX];
     _up[1] = transform[upY];
@@ -57,8 +88,8 @@ class Spatial extends NamedEntity {
     return _up;
   }
 
-  // get the values from column 0. They represent the right vector of this matrx
-  // return ReadOnly vec3
+  /// Local +X column in parent space, returned in borrowed scratch storage.
+  /// Copy to retain it; editing this vector does not edit the pose.
   vm.Vector3 getRight() {
     _right[0] = transform[rightX];
     _right[1] = transform[rightY];
@@ -157,31 +188,42 @@ class Spatial extends NamedEntity {
   }
 
   void lookUp(double amount) {
-    transform.rotate(getRight(), -amount);
+    rotX(amount);
   }
 
   void lookDown(double amount) {
-    transform.rotate(getRight(), amount);
+    rotX(-amount);
   }
 
   void rollLeft(double amount) {
-    transform.rotate(getBack(), -amount);
+    rotZ(amount);
   }
 
   void rollRight(double amount) {
-    transform.rotate(getBack(), amount);
+    rotZ(-amount);
   }
 
   void lookLeft(double amount) {
-    transform.rotate(getUp(), -amount);
+    rotY(amount);
   }
 
   void lookRight(double amount) {
-    transform.rotate(getUp(), amount);
+    rotY(-amount);
   }
 
+  /// Points local -Z toward [target], preserving position in parent space.
+  ///
+  /// For an unparented camera, target and [up] are world-space values. This
+  /// replaces the linear part with a rigid orientation (legacy scale/shear is
+  /// discarded). Invalid targets/up hints throw [ArgumentError] before mutation,
+  /// using the same rules as `Camera.lookAt`. The target is not retained.
   void lookAt(vm.Vector3 target, [vm.Vector3? up]) {
-    up ??= vm.Vector3(0.0, 1.0, 0.0);
-    vm.setViewMatrix(transform, getPos(), target, up);
+    final position = vm.Vector3.copy(getPos());
+    final rotation = normalizedRotation(
+      lookAtRotation(position, target, upHint: up),
+    );
+    transform.setFrom(
+      vm.Matrix4.compose(position, rotation, vm.Vector3.all(1)),
+    );
   }
 }

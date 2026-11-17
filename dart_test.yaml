@@ -19,6 +19,22 @@ presets:
     platforms: [vm, golden_chrome]
     paths:
       - test/polygon.dart
+      - test/transform_test.dart
+      - test/math_imports_test.dart
+      - test/transform_compatibility_test.dart
+      - test/camera_test.dart
+      - test/camera_math_test.dart
+      - test/camera_pose_test.dart
+      - test/camera_view_matrix_test.dart
+      - test/camera_look_at_test.dart
+      - test/camera_matrix_access_test.dart
+      - test/camera_matrix_access_compatibility_test.dart
+      - test/camera_compatibility_test.dart
+      - test/camera_uniforms_test.dart
+      - test/camera_uniforms_webgl_test.dart
+      - test/projection_test.dart
+      - test/projection_parameters_test.dart
+      - test/projection_compatibility_test.dart
       - test/geometry.dart
       - test/grid_geometry_test.dart
       - test/shader_syntax.dart

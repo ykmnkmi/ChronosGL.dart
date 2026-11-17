@@ -8,6 +8,12 @@ import 'dart:math' as math;
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
+import '../camera/camera.dart';
+import '../camera/projection.dart';
+import 'pose_math.dart';
+
+export 'transform.dart';
+
 /// # Layer: Core (package:web)
 /// The **core layer** contains all of the fundamental abstractions like:
 /// NamedEntity, Uniforms, Spacial, Illumination, Perspective,
@@ -39,6 +45,7 @@ part 'shader_object.dart';
 part "abstractions.dart";
 part "spatial.dart";
 part "projection.dart";
+part 'camera_uniforms.dart';
 part "geometry_builder.dart";
 part "illumination.dart";
 

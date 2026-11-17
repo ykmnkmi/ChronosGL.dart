@@ -1,5 +1,10 @@
+/// Browser-facing engine, including WebGL, scene and camera uniform adapters.
+///
+/// Use `core.dart` and `camera.dart` for browser-independent mathematics on
+/// the Dart VM.
 library;
 
+export 'camera.dart';
 export 'src/core/lib.dart';
 export 'src/shape/lib.dart';
 export 'src/polygon/lib.dart';

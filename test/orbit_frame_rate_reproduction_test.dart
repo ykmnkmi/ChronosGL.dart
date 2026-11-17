@@ -19,8 +19,8 @@ web.KeyboardEvent _key(String type, int key) =>
 _OrbitState _snapshot(OrbitCamera camera) {
   final view = vm.Matrix4.zero();
   camera.getViewMatrix(view);
-  // getPos() currently returns view translation (see reproduction 1.5).
-  // Recover the actual world-space eye from the valid view matrix instead.
+  // Independently recover the eye from the view to keep this controls
+  // reproduction sensitive to inconsistent camera pose/view changes.
   final eye = vm.Matrix4.inverted(view).getTranslation();
   return (azimuth: camera.azimuth, polar: camera.polar, eye: eye);
 }

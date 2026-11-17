@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: '3.13.5'
+          sdk: '3.14.0'
       - uses: browser-actions/setup-chrome@v2
         id: chrome
         with:
@@ -31,19 +31,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Install locked dependencies
         run: dart pub get --enforce-lockfile
-      - name: Build web examples and test bootstraps
-        run: dart run build_runner build --output=example:build/example
       - name: Analyze
         run: dart analyze
-      - name: Test (VM and JavaScript)
+      - name: Test VM and JavaScript
         run: dart test -P all
         env:
           CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
-      - name: Test (Wasm)
+      - name: Test VM and Wasm
         run: dart test -P all -p golden_chrome -c dart2wasm
         env:
           CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
-      - name: Verify regression detection
+      - name: Verify golden regression detection
         run: dart run tool/goldens.dart --self-check
         env:
           CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}

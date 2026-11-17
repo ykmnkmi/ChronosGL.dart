@@ -1,19 +1,226 @@
 # Migrating to ChronosGL 5.0.0
 
-Version 5.0.0 changes API names and browser types. Use Dart 3.13.5 or later
+Version 5.0.0 changes API names and browser types. Use Dart 3.14.0 or later
 within Dart 3, then update the dependencies in your application:
 
 ```yaml
 dependencies:
   chronosgl: ^5.0.0
-  vector_math: ^2.4.3
-  web: ^1.1.1
+  vector_math: ^2.4.4
+  web: ^1.1.2
 ```
 
 Declare `vector_math` and `web` directly when your application imports them.
 Run `dart pub get` and `dart analyze` after updating names and imports. For Wasm,
 replace all legacy SDK browser imports in your application as well as upgrading
 ChronosGL; legacy DOM compatibility is available only for JavaScript builds.
+
+## Projection parameters (refactoring step 3.8)
+
+Mathematical perspective cameras and projections use named `fovYRadians`,
+`aspectRatio`, `near`, and `far`. The full vertical angle is in radians (default
+`50 * pi / 180`); aspect is width / height (default `1`). Near and far are
+required. All values must be finite, with `0 < fovYRadians < pi`,
+`aspectRatio > 0`, and `0 < near < far`. Orthographic types require all six
+ordered bounds and permit zero or negative near/far distances.
+
+The API introduced in steps 3.2–3.3 is unchanged. `setProjection` requires all
+named parameters, including unchanged values obtained from getters. Invalid
+ranges and nonfinite/singular Float32 matrices throw `ArgumentError` while
+preserving the previous projection object, parameters, matrices, and pose.
+Legacy `Perspective.updateFov` still takes degrees. See the
+[parameter contract and update example](docs/3.8_PROJECTION_PARAMETERS.md).
+
+## Matrix access and updates (refactoring step 3.7)
+
+Mathematical `Camera`, `Transform`, and `Projection` getters return independent
+snapshots, including their typed storage. Setters take effect on the next read
+without `update()`. Existing snapshots do not refresh automatically. Use camera
+setters to edit the pose/projection, and `Transform.setMatrix(editedSnapshot)`
+to commit a matrix edit; mutating a getter result only changes that snapshot.
+
+To reuse output storage, cameras now provide `copyWorldMatrixInto(out)`,
+`copyViewMatrixInto(out)`, `copyProjectionMatrixInto(out)`, and
+`copyViewProjectionMatrixInto(out)`. They never retain the destination;
+calculation failures leave it unchanged. The existing `copyMatrixInto(out)`
+methods on transforms and projections follow the same ownership convention.
+
+Legacy `Spatial.transform` remains live mutable state. Its `getViewMatrix(out)`
+now rejects any output storage overlapping that pose, including a different
+`Matrix4` wrapping the same list or buffer. Use a separate matrix for the view.
+Legacy scratch vectors and uniform maps remain borrowed working values; copy
+them explicitly when retaining them. See [the matrix access contract](docs/3.7_MATRIX_ACCESS.md).
+
+## Transform component (refactoring step 3.1)
+
+`package:chronosgl/core.dart` now exports the browser-independent `Transform`.
+It is also available through `chronosgl.dart`. Its matrix always maps local
+coordinates to parent coordinates, composed as translation * rotation * scale.
+Inputs are copied and getters return snapshots; use setters or `setMatrix`
+to change state. `lookAt` preserves position and scale and points local -Z
+toward a target in parent space.
+
+For a legacy object node, keep a `Transform` and call
+`pose.copyMatrixInto(node.transform)` after changes and before drawing.
+Do not copy a view matrix as an object pose. Since step 3.6, legacy
+`Spatial.transform` also stores a pose; see the camera-position migration below.
+See [the Transform contract and migration table](docs/3.1_TRANSFORM.md), including
+explicit movement spaces and preservation of imported shear.
+
+## Camera contract (refactoring step 3.2)
+
+`package:chronosgl/camera.dart` exports the browser-independent `Camera`,
+`PerspectiveCamera`, and `OrthographicCamera`; the same types are available
+through `chronosgl.dart`. Both cameras own a world-space position and rotation.
+`lookAt` preserves position, `viewMatrix` is the inverse world matrix, and
+`viewProjectionMatrix` is `projectionMatrix * viewMatrix`. Getters return copies.
+
+```dart
+import 'package:chronosgl/camera.dart';
+import 'package:vector_math/vector_math.dart' as vm;
+
+final camera = PerspectiveCamera(near: 0.1, far: 1000, aspectRatio: 16 / 9)
+  ..setPosition(0, 0, 10);
+camera.lookAt(vm.Vector3.zero()); // World position remains (0, 0, 10).
+```
+
+Use `fovYRadians` for the full vertical angle; the default is 50 degrees expressed
+in radians. Orthographic cameras require all six bounds explicitly and allow
+zero or negative `near`. Use `setProjection` with all named parameters to change
+the projection atomically. Neither camera observes canvas size or handles input.
+
+These mathematical types are separate from legacy `Perspective(Spatial, ...)`
+and `Orthographic(Spatial, ...)`. Use `CameraUniforms(camera)` from
+`chronosgl.dart` to pass either new camera to rendering uniform lists. See
+[the camera contract](docs/3.2_CAMERAS.md) for parameters and ownership, and
+the adapter example below for rendering.
+
+## Reusable projections (refactoring step 3.3)
+
+`camera.dart` and `chronosgl.dart` now export `Projection`,
+`PerspectiveProjection`, and `OrthographicProjection`. These immutable values
+calculate view-to-clip matrices without a camera, uniforms, DOM, or GPU resources.
+`matrix` returns a snapshot; `copyMatrixInto(out)` writes into caller-owned storage.
+The parameters and validation match the corresponding cameras.
+
+Existing camera constructors and `setProjection(...)` calls continue to work.
+Use `PerspectiveCamera.fromProjection(projection, ...)` or
+`OrthographicCamera.fromProjection(projection, ...)` to reuse an existing value.
+The camera's `projection` getter returns that immutable value; `setProjection`
+replaces it atomically without changing other cameras that share the old value.
+
+For shadows, compose `projection.matrix..multiply(lightViewMatrix)` and pass
+the result to `ShadowMap.compute`. Directional and spot lights now use these
+projection classes internally, preserving their valid shadow matrices and cone
+padding. Invalid shadow bounds, FOV, or clipping distances now throw
+`ArgumentError` when `extractShadowProjViewMatrix()` is called. Legacy uniform
+adapters and resize helpers keep their APIs. See [the projection contract and
+shadow example](docs/3.3_PROJECTIONS.md).
+
+## Camera pose storage (refactoring step 3.4)
+
+The new cameras now store world position and normalized orientation directly.
+World and view matrices are derived snapshots; reading them never changes the
+pose. No calling-code changes are required. `lookAt` sets orientation once and
+does not retain a target: moving afterwards preserves that orientation until
+another orientation update.
+
+Invalid pose edits leave both components intact. A view calculation that throws
+`StateError` for Float32 overflow also leaves the pose readable and editable.
+The legacy camera-position correction is described in step 3.6 below. See
+[the pose storage contract](docs/3.4_CAMERA_POSE.md) for details and tests.
+
+## Camera view matrix (refactoring step 3.5)
+
+No calling-code changes are needed: the existing new-camera implementation
+already computes `viewMatrix = inverse(worldMatrix)`. For `C = T(eye) * R`,
+the view is `R^-1 * T(-eye)`, so a world point becomes `R^-1 * (point - eye)`.
+View translation is `-R^-1 * eye`; use `worldPosition` to read the eye position.
+Directions (homogeneous `w = 0`) receive only the inverse rotation.
+
+Both camera types use the same calculation, independently of their projections.
+The phase adds dedicated inverse-matrix regression coverage without changing
+legacy cameras or uniforms. See [the view matrix contract](docs/3.5_VIEW_MATRIX.md).
+
+## Preserved camera position (refactoring step 3.6)
+
+`Spatial.lookAt(target, [up])` now preserves position and stores a local-to-parent
+pose, or camera-to-world pose for an unparented camera. `getViewMatrix(out)`
+computes its inverse into separate storage. `getPos()` and `getEyePosition()`
+therefore return `(0, 0, 10)` after `setPos(0, 0, 10)` and `lookAt(Vector3.zero())`.
+Repeated aiming and subsequent movement use the preserved position.
+
+Both `Perspective` and `Orthographic` supply world-space `uEyePosition` alongside
+`uPerspectiveViewMatrix = P * V`. Custom `Spatial` subclasses overriding
+`getViewMatrix` and `getEyePosition` remain supported. The new mathematical
+cameras keep their existing API and use `CameraUniforms` for rendering (3.9).
+
+This corrects legacy behavior and may change existing scenes:
+
+- Read the view through `getViewMatrix(out)`, not `transform`. When importing a
+  precomputed view matrix, invert it before copying into `transform`.
+- Direction getters and movement now use pose columns. `lookUp/Down`,
+  `lookLeft/Right`, and `rollLeft/Right` rotate around local X, Y, and Z;
+  up/left rotations use positive angles. Orbit roll preserves its target.
+- A node's `lookAt` takes its target and up in parent space and preserves its
+  local position. As before, this legacy operation discards scale/shear;
+  use `Transform` to retain supported scale.
+- Invalid `lookAt` arguments throw `ArgumentError` before changing the pose.
+  A singular or nonfinite view inverse throws `StateError` without changing the
+  output. Passing `transform` itself as view output throws `ArgumentError`.
+
+Legacy matrices and scratch vectors remain mutable. Use copies when retaining
+them; new cameras return snapshots. Camera parenting is not supported by this
+legacy view API. See [the correction and regression tests](docs/3.6_CAMERA_POSITION.md).
+
+## Camera uniforms (refactoring step 3.9)
+
+Import `package:chronosgl/chronosgl.dart` in browser rendering code and wrap
+either mathematical camera in `CameraUniforms(camera, [name])`:
+
+```dart
+final camera = PerspectiveCamera(near: 0.1, far: 1000)
+  ..setPosition(0, 0, 10);
+camera.lookAt(vm.Vector3.zero());
+final uniforms = CameraUniforms(camera);
+program.draw(mesh, [uniforms, material, transforms]);
+// The same adapter can be passed to Scene('scene', program, [uniforms]).
+```
+
+The adapter borrows the camera and reads it on every draw; changing its pose or
+projection needs no adapter update. `getUniforms()` returns a fresh map with
+independent `uPerspectiveViewMatrix = P * V` and world-space `uEyePosition`
+snapshots. The matrix name also applies to orthographic cameras. Supply object
+transforms separately as before. Camera values override inherited uniform
+setters; additional uniforms retain existing `UniformGroup` semantics.
+
+`CameraUniforms` belongs to rendering and is not exported by `camera.dart` or
+`core.dart`. Those mathematical entry points remain usable on the Dart VM.
+Existing `Perspective`/`Orthographic` integrations can keep their APIs.
+See [the adapter contract and tests](docs/3.9_CAMERA_UNIFORMS.md).
+
+## Mathematical imports on the VM (refactoring step 3.10)
+
+For command-line tools and VM tests, import the mathematical entry points:
+
+```dart
+import 'package:chronosgl/core.dart';
+import 'package:chronosgl/camera.dart';
+```
+
+`core.dart` exports `Transform`; `camera.dart` exports the camera and projection
+contracts and both perspective/orthographic implementations. Their transitive
+dependencies contain no DOM, WebGL, or rendering adapters. The existing exports
+and mathematical behavior are unchanged.
+
+Replace the aggregate `chronosgl.dart` import in mathematical VM code with these
+imports. The aggregate remains the browser entry point and includes
+`CameraUniforms`, WebGL resources, scenes, and browser helpers. The internal
+`src/core/lib.dart` is also browser-dependent; its name does not make it the
+public mathematical core. Other CPU modules are separated in later phases.
+
+A standalone kernel compilation and execution check now protects this boundary.
+See [the import contract and VM example](docs/3.10_VM_MATH_IMPORTS.md).
 
 ## API naming changes
 

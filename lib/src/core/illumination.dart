@@ -100,9 +100,18 @@ class DirectionalLight extends Light {
     m[o + 14] = colorSpecular.z;
   }
 
+  /// Uses a symmetric orthographic volume with signed depth [-dim, dim].
+  /// Throws [ArgumentError] if the projection bounds are invalid.
   @override
   vm.Matrix4 extractShadowProjViewMatrix() {
-    vm.setOrthographicMatrix(_projViewMat, -dim, dim, -dim, dim, -dim, dim);
+    OrthographicProjection(
+      left: -dim,
+      right: dim,
+      bottom: -dim,
+      top: dim,
+      near: -dim,
+      far: dim,
+    ).copyMatrixInto(_projViewMat);
 
     vm.Vector3 up = (dir.x == 0.0 && dir.z == 0.0) ? _up2 : _up;
     vm.setViewMatrix(_tmpMat, vm.Vector3.zero(), dir, up);
@@ -170,13 +179,20 @@ class SpotLight extends Light {
     m[o + 15] = _spotFocus;
   }
 
+  /// Uses the padded full cone angle `2.1 * angle` as the vertical FOV.
+  /// Throws [ArgumentError] if the FOV or clipping distances are invalid.
   @override
   vm.Matrix4 extractShadowProjViewMatrix() {
     vm.Vector3 up = (dir.x == 0.0 && dir.z == 0.0) ? _up2 : _up;
 
     vm.setViewMatrix(_m1, pos, dir + pos, up);
     // 2.1 = 2.0 + epsilon
-    vm.setPerspectiveMatrix(_m2, 2.1 * angle, _aspect, _near, _far);
+    PerspectiveProjection(
+      fovYRadians: 2.1 * angle,
+      aspectRatio: _aspect,
+      near: _near,
+      far: _far,
+    ).copyMatrixInto(_m2);
     _m2.multiply(_m1);
     return _m2;
   }
