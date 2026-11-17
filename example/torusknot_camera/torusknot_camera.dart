@@ -7,35 +7,7 @@ import 'dart:math' as math;
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
-vm.Vector3 p1 = vm.Vector3.zero();
-
-// Camera flying through a TorusKnot like through a tunnel
-class TorusKnotCamera extends Spatial {
-  TorusKnotCamera({
-    this.radius = 20.0,
-    this.p = 2,
-    this.q = 3,
-    this.heightScale = 1.0,
-  }) : super("camera:torusknot");
-
-  final double radius;
-  final int p;
-  final int q;
-  final double heightScale;
-  final double _torusEpsilon = 0.01;
-
-  final vm.Vector3 p1 = vm.Vector3.zero();
-  final vm.Vector3 p2 = vm.Vector3.zero();
-
-  void animate(double timeMs) {
-    double u = timeMs / 3000;
-    torusKnotGetPos(u, q, p, radius, heightScale, p1);
-    torusKnotGetPos(u + _torusEpsilon, q, p, radius, heightScale, p2);
-
-    setPosFromVec(p1);
-    lookAt(p2, p1);
-  }
-}
+import 'torus_knot_controls.dart';
 
 void updateTorusTexture(double time, web.HTMLCanvasElement canvas) {
   web.CanvasRenderingContext2D ctx =
@@ -144,7 +116,7 @@ void addHexagonalWireframeCenters(GeometryBuilder gb) {
 }
 
 class SimpleScene {
-  void draw(ChronosGL cgl, double timeMs, Perspective perspective) {
+  void draw(ChronosGL cgl, double timeMs, CameraUniforms perspective) {
     program.draw(mesh, [perspective, mat]);
   }
 
@@ -186,7 +158,7 @@ class SceneTextured extends SimpleScene {
   }
 
   @override
-  void draw(ChronosGL cgl, double timeMs, Perspective perspective) {
+  void draw(ChronosGL cgl, double timeMs, CameraUniforms perspective) {
     updateTorusTexture(timeMs / 1000, canvas2d);
     generatedTexture.setImageData(canvas2d);
     program.draw(mesh, [perspective, mat]);
@@ -257,14 +229,18 @@ void main() {
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
   final ChronosGL cgl = ChronosGL(canvas);
-  final TorusKnotCamera tkc = TorusKnotCamera();
-  final Perspective perspective = PerspectiveResizeAware(
-    cgl,
-    canvas,
-    tkc,
-    0.1,
-    1000.0,
-  )..updateFov(100.0);
+  final camera = PerspectiveCamera(
+    fovYRadians: 100 * math.pi / 180,
+    near: 0.1,
+    far: 1000,
+  );
+  final controls = TorusKnotControls(
+    camera,
+    positionAt: (parameter, out) =>
+        torusKnotGetPos(parameter, 3, 2, 20, 1, out),
+  );
+  final perspective = CameraUniforms(camera);
+  final viewport = CanvasViewport(cgl, canvas, camera);
 
   final SceneStars sceneStars = SceneStars(cgl, 2000, 1000);
   final SceneTextured sceneTextures = SceneTextured(cgl);
@@ -272,35 +248,39 @@ void main() {
   final SceneWireframe sceneTriangle = SceneWireframe.triangle(cgl);
   final SceneWireframe sceneHexagon = SceneWireframe.hexagon(cgl);
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    lastTimeMs = timeMs.toDouble();
+    final previousTimeMs = lastTimeMs;
+    lastTimeMs = timeMs;
+    controls.update(
+      previousTimeMs == null ? 0 : (timeMs - previousTimeMs) / 1000,
+    );
 
-    tkc.animate(lastTimeMs);
+    if (viewport.update()) {
+      sceneStars.draw(cgl, timeMs, perspective);
 
-    sceneStars.draw(cgl, lastTimeMs, perspective);
-
-    switch (modeInput.value) {
-      case "texture":
-        sceneTextures.draw(cgl, lastTimeMs, perspective);
-        break;
-      case "rectangles":
-        sceneQuad.draw(cgl, lastTimeMs, perspective);
-        break;
-      case "triangles":
-        sceneTriangle.draw(cgl, lastTimeMs, perspective);
-        break;
-      case "hexagons":
-        sceneHexagon.draw(cgl, lastTimeMs, perspective);
-        break;
-      default:
-        print("unexpected mode ${modeInput.value}");
+      switch (modeInput.value) {
+        case "texture":
+          sceneTextures.draw(cgl, timeMs, perspective);
+          break;
+        case "rectangles":
+          sceneQuad.draw(cgl, timeMs, perspective);
+          break;
+        case "triangles":
+          sceneTriangle.draw(cgl, timeMs, perspective);
+          break;
+        case "hexagons":
+          sceneHexagon.draw(cgl, timeMs, perspective);
+          break;
+        default:
+          print("unexpected mode ${modeInput.value}");
+      }
     }
     web.window.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  web.window.requestAnimationFrame(onFrame);
 }

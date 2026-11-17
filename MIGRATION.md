@@ -367,6 +367,40 @@ The core interop tests also run with Wasm:
 dart test -p golden_chrome -c dart2wasm test/core_web_interop_test.dart
 ```
 
+## Camera controls and canvas sizing (refactoring phase 4)
+
+Use `OrbitControls(camera, eventTarget)` with a mathematical `PerspectiveCamera`
+or `OrthographicCamera` instead of combining pose and input in `OrbitCamera`.
+Both components are exported by `package:chronosgl/chronosgl.dart`. Render with
+`CameraUniforms(camera)` and call `controls.update(deltaSeconds)`, converting
+RAF timestamp differences to seconds at the application boundary. The first
+real callback has a zero delta. Automatic orbit motion in examples must also
+scale by elapsed seconds.
+
+Keyboard events now come from the explicit target. For a canvas, set
+`canvas.tabIndex = 0` and focus it before typing. Disable detaches listeners and
+clears held keys and pending deltas; enable attaches fresh listeners. Dispose
+with `await controls.dispose()`. The borrowed camera remains usable afterward.
+Drag sensitivity is radians per CSS pixel; wheel input is normalized from
+pixel, line and page modes, and neither delta is multiplied by elapsed time.
+
+Replace `PerspectiveResizeAware` and `RenderPhaseResizeAware` with one
+`CanvasViewport(cgl, canvas, camera, renderPhase: phase)`. Set the canvas CSS
+size explicitly and call `if (viewport.update()) phase.draw()` before drawing.
+The component observes element size and pixel density; `pixelRatio:` overrides
+device DPR. It uses actual drawing-buffer dimensions and preserves explicit
+orthographic bounds. `setViewport` accepts physical pixel coordinates for a
+partial screen viewport. Offscreen framebuffer attachments retain their own
+size and lifecycle. Call `viewport.dispose()` when finished.
+
+A hidden or zero-size canvas preserves the last valid projection and reports
+not ready until restored. `RenderPhase.draw()` skips an empty viewport.
+Legacy orbit and resize classes remain available with their previous behavior;
+migrate each camera and render phase together. See the
+[controls](docs/4.1_ORBIT_CONTROLS.md),
+[viewport](docs/4.5_CANVAS_VIEWPORT.md), and
+[example trajectory](docs/4.9_EXAMPLE_CONTROLLERS.md) contracts.
+
 ## Web and miscellaneous helpers
 
 The web helpers and miscellaneous helpers now use `package:web` and

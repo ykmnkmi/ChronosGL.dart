@@ -55,6 +55,10 @@ presets:
       - test/scene_lifecycle_test.dart
       - test/camera_position_reproduction_test.dart
       - test/orbit_frame_rate_reproduction_test.dart
+      - test/orbit_controls_test.dart
+      - test/canvas_viewport_test.dart
+      - test/camera_controls_integration_test.dart
+      - test/torus_knot_controls_test.dart
       - test/shared_settings_reproduction_test.dart
       - test/render_program_uniforms_test.dart
       - test/scene_uniforms_test.dart

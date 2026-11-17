@@ -8,60 +8,73 @@ import 'package:test/test.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
-// Characterize the known frame-rate bug, not the desired controls contract.
-// In phase 4 (4.3, 4.10), compare equal results for equal simulated durations
-// using update(deltaSeconds). See docs/1.9_SHARED_SETTINGS_AND_FRAME_RATE_REPRODUCTIONS.md.
-typedef _OrbitState = ({double azimuth, double polar, vm.Vector3 eye});
+// Phase 1.9 reproductions are now regressions for Phase 4's seconds-based API.
+typedef _OrbitState = ({
+  double azimuth,
+  double polar,
+  double radius,
+  vm.Vector3 eye,
+});
 
 web.KeyboardEvent _key(String type, int key) =>
     web.KeyboardEvent(type, web.KeyboardEventInit(which: key, keyCode: key));
 
-_OrbitState _snapshot(OrbitCamera camera) {
-  final view = vm.Matrix4.zero();
-  camera.getViewMatrix(view);
-  // Independently recover the eye from the view to keep this controls
-  // reproduction sensitive to inconsistent camera pose/view changes.
-  final eye = vm.Matrix4.inverted(view).getTranslation();
-  return (azimuth: camera.azimuth, polar: camera.polar, eye: eye);
+_OrbitState _snapshot(OrbitControls controls) {
+  final eye = vm.Matrix4.inverted(controls.camera.viewMatrix).getTranslation();
+  return (
+    azimuth: controls.azimuth,
+    polar: controls.polar,
+    radius: controls.radius,
+    eye: eye,
+  );
 }
 
-_OrbitState _simulate(OrbitCamera camera, int key, List<double> deltasMs) {
-  camera
+_OrbitState _simulate(
+  OrbitControls controls,
+  web.EventTarget target,
+  int key,
+  List<double> deltas,
+) {
+  controls
     ..azimuth = 0
     ..polar = 0
-    ..setRadius(10)
-    ..animate(0);
-  expect(camera.keyboard.currentlyPressedKey(key), isFalse);
-  web.document.dispatchEvent(_key('keydown', key));
+    ..radius = 10
+    ..update(0);
+  target.dispatchEvent(_key('keydown', key));
   late final _OrbitState result;
   try {
-    expect(camera.keyboard.currentlyPressedKey(key), isTrue);
-    for (final deltaMs in deltasMs) {
-      camera.animate(deltaMs);
+    for (final delta in deltas) {
+      controls.update(delta);
     }
-    expect(camera.keyboard.currentlyPressedKey(key), isTrue);
-    result = _snapshot(camera);
+    result = _snapshot(controls);
   } finally {
-    web.document.dispatchEvent(_key('keyup', key));
-    camera.keyboard.afterFrameCleanup();
+    target.dispatchEvent(_key('keyup', key));
   }
-  // Releasing the key stops movement, independently of the reproduced bug.
-  camera.animate(1000 / 60);
-  final released = _snapshot(camera);
-  expect(camera.keyboard.currentlyPressedKey(key), isFalse);
+  controls.update(1 / 60);
+  final released = _snapshot(controls);
   expect(released.azimuth, result.azimuth);
   expect(released.polar, result.polar);
+  expect(released.radius, result.radius);
   expect(released.eye.distanceTo(result.eye), lessThan(1e-5));
   return result;
 }
 
 void main() {
-  late OrbitCamera camera;
-  setUpAll(() {
-    // Reuse one camera and release its input listeners after the suite.
-    camera = OrbitCamera(10, 0, 0, web.HTMLCanvasElement());
-    addTearDown(camera.keyboard.dispose);
-    addTearDown(camera.mouse.dispose);
+  late OrbitControls controls;
+  late web.HTMLDivElement target;
+  setUp(() {
+    target = web.HTMLDivElement()
+      ..style.width = '320px'
+      ..style.height = '240px';
+    web.document.body!.appendChild(target);
+    addTearDown(() => target.remove());
+    controls = OrbitControls(
+      PerspectiveCamera(near: 0.1, far: 100),
+      target,
+      rotationSpeed: 1.8,
+      zoomSpeed: 0.6,
+    );
+    addTearDown(controls.dispose);
   });
 
   for (final (key, label, horizontal, sign) in [
@@ -71,19 +84,23 @@ void main() {
     (Keyboard.down, 'down', false, -1),
   ]) {
     test(
-      'Known bug: $label rotation depends on frames over the same 200 ms',
+      '$label rotation matches for equal time at 30, 60, 120 and irregular FPS',
       () {
-        final angles = <double>[];
-        for (final fps in [30, 60, 120]) {
-          final deltas = List<double>.filled(fps ~/ 5, 1000 / fps);
-          expect(deltas.reduce((a, b) => a + b), closeTo(200, 1e-8));
-          final state = _simulate(camera, key, deltas);
-          final angle = horizontal ? state.azimuth : state.polar;
-          angles.add(angle);
-          expect(angle, closeTo(sign * 0.03 * deltas.length, 1e-8));
+        final schedules = [
+          for (final fps in [30, 60, 120])
+            List<double>.filled(fps ~/ 5, 1 / fps),
+          [0.001, 0.019, 0.07, 0.0, 0.11],
+        ];
+        vm.Vector3? firstEye;
+        for (final deltas in schedules) {
+          expect(deltas.reduce((a, b) => a + b), closeTo(0.2, 1e-12));
+          final state = _simulate(controls, target, key, deltas);
+          expect(
+            horizontal ? state.azimuth : state.polar,
+            closeTo(sign * 0.36, 1e-12),
+          );
           expect(horizontal ? state.polar : state.azimuth, 0);
           expect(state.eye.length, closeTo(10, 1e-5));
-          // Keep the polar angle below its clamp, so saturation cannot mask drift.
           expect(state.polar.abs(), lessThan(math.pi / 2 - 0.1));
           final expectedEye = vm.Vector3(
             10 * math.cos(state.polar) * math.cos(state.azimuth),
@@ -91,44 +108,53 @@ void main() {
             10 * math.cos(state.polar) * math.sin(state.azimuth),
           );
           expect(state.eye.distanceTo(expectedEye), lessThan(1e-5));
+          firstEye ??= state.eye;
+          expect(state.eye.distanceTo(firstEye), lessThan(1e-5));
         }
-        expect(angles[1], closeTo(angles[0] * 2, 1e-8));
-        expect(angles[2], closeTo(angles[0] * 4, 1e-8));
       },
     );
   }
 
-  for (final (key, label, factor) in [
-    (Keyboard.pageUp, 'PageUp', 0.99),
-    (Keyboard.pageDown, 'PageDown', 1.01),
+  for (final (key, label, sign) in [
+    (Keyboard.pageUp, 'PageUp', -1),
+    (Keyboard.pageDown, 'PageDown', 1),
   ]) {
-    test('Known bug: $label zoom depends on frames over the same second', () {
-      final radii = <double>[];
-      for (final fps in [30, 60, 120]) {
-        final deltas = List<double>.filled(fps, 1000 / fps);
-        expect(deltas.reduce((a, b) => a + b), closeTo(1000, 1e-8));
-        final state = _simulate(camera, key, deltas);
-        expect(state.azimuth, 0);
-        expect(state.polar, 0);
-        final radius = state.eye.length;
-        radii.add(radius);
-        expect(radius, closeTo(10 * math.pow(factor, fps), 1e-5));
-      }
-      expect((radii[0] - radii[1]).abs(), greaterThan(1));
-      expect((radii[1] - radii[2]).abs(), greaterThan(1));
-    });
+    test(
+      '$label zoom matches for equal time at 30, 60, 120 and irregular FPS',
+      () {
+        final schedules = [
+          for (final fps in [30, 60, 120]) List<double>.filled(fps, 1 / fps),
+          [0.13, 0.0, 0.02, 0.35, 0.5],
+        ];
+        for (final deltas in schedules) {
+          expect(deltas.reduce((a, b) => a + b), closeTo(1, 1e-12));
+          final state = _simulate(controls, target, key, deltas);
+          expect(state.azimuth, 0);
+          expect(state.polar, 0);
+          expect(state.radius, closeTo(10 * math.exp(sign * 0.6), 1e-10));
+          expect(state.eye.length, closeTo(state.radius, 1e-5));
+        }
+      },
+    );
   }
 
-  test(
-    'Known bug: held key rotates the camera even with zero elapsed time',
-    () {
+  test('held rotation and zoom keys do not move with zero elapsed time', () {
+    for (final key in [
+      Keyboard.left,
+      Keyboard.up,
+      Keyboard.pageUp,
+      Keyboard.pageDown,
+    ]) {
       final state = _simulate(
-        camera,
-        Keyboard.left,
+        controls,
+        target,
+        key,
         List<double>.filled(10, 0),
       );
-      expect(state.azimuth, closeTo(0.3, 1e-8));
-      expect(state.eye.distanceTo(vm.Vector3(10, 0, 0)), greaterThan(1));
-    },
-  );
+      expect(state.azimuth, 0);
+      expect(state.polar, 0);
+      expect(state.radius, 10);
+      expect(state.eye.distanceTo(vm.Vector3(10, 0, 0)), lessThan(1e-5));
+    }
+  });
 }

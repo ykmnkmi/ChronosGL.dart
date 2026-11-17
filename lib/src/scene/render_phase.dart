@@ -111,6 +111,10 @@ class RenderPhase extends NamedEntity {
 
   // Draw all scenes in order of registration
   void draw([List<DrawStats>? stats]) {
+    if (viewPortW < 0 || viewPortH < 0) {
+      throw ArgumentError('Viewport width and height must be nonnegative');
+    }
+    if (viewPortW == 0 || viewPortH == 0) return;
     _framebuffer.activate(
       _clearMode,
       viewPortX,

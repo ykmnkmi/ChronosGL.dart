@@ -50,9 +50,12 @@ Node makeHead(RenderProgram program) {
 void main() {
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
+  canvas.tabIndex = 0;
+  canvas.focus();
   ChronosGL cgl = ChronosGL(canvas);
-  OrbitCamera orbit = OrbitCamera(15.0, 0.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  final camera = PerspectiveCamera(near: 0.1, far: 1000);
+  final controls = OrbitControls(camera, canvas, radius: 15);
+  final perspective = CameraUniforms(camera);
 
   final Scene scene = Scene(
     "objects",
@@ -67,24 +70,26 @@ void main() {
 
   scene.add(makeHead(scene.program));
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective)
-        ..add(scene)
-        ..add(makeStarScene(cgl, perspective, 2000));
+  final phase = RenderPhase("main", cgl)
+    ..add(scene)
+    ..add(makeStarScene(cgl, perspective, 2000));
+  final viewport = CanvasViewport(cgl, canvas, camera, renderPhase: phase);
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
-    lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
-    phase.draw();
+    final deltaSeconds = lastTimeMs == null
+        ? 0.0
+        : (timeMs - lastTimeMs!) / 1000;
+    lastTimeMs = timeMs;
+    controls.azimuth += 0.06 * deltaSeconds;
+    controls.update(deltaSeconds);
+    if (viewport.update()) phase.draw();
 
     web.window.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  web.window.requestAnimationFrame(onFrame);
 }

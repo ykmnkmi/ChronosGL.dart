@@ -10,6 +10,9 @@ import 'package:web/web.dart' as web;
 
 import '../core/lib.dart';
 
+export 'canvas_viewport.dart';
+export 'orbit_controls.dart';
+
 /// # Layer: WebHelper (uses Core Layer, package:web)
 /// adds helpers which require access to HTML features like
 /// DOM tree (elements).

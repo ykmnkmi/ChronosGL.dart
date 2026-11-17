@@ -103,6 +103,43 @@ world-space `uEyePosition`. Reads return independent camera snapshots; no
 explicit adapter update is needed after changing pose or projection. Object
 transforms remain separate. See the [adapter contract](docs/3.9_CAMERA_UNIFORMS.md).
 
+Browser camera input and sizing use separate components from the same aggregate
+import:
+
+```dart
+final camera = PerspectiveCamera(near: 0.1, far: 1000);
+canvas.tabIndex = 0;
+canvas.focus(); // Receive keyboard input on this explicit target.
+final controls = OrbitControls(camera, canvas, radius: 15);
+final phase = RenderPhase('main', cgl);
+final viewport = CanvasViewport(cgl, canvas, camera, renderPhase: phase);
+// Add scenes with CameraUniforms(camera) to phase.
+
+// In requestAnimationFrame, convert timestamp differences from ms to seconds.
+controls.update(deltaSeconds);
+if (viewport.update()) phase.draw();
+```
+
+`OrbitControls` listens on the supplied event target. Keyboard movement uses
+seconds; mouse drag and wheel events accumulate until the next update and are
+consumed once. `disable()` detaches input and clears pending state; `enable()`
+attaches fresh listeners. Call `await controls.dispose()` when finished.
+
+`CanvasViewport` observes the canvas content size and device pixel ratio,
+updates the drawing buffer, viewport and perspective aspect together, and keeps
+explicit orthographic bounds. Give the canvas a CSS width and height. Its
+`update()` returns false while disabled or hidden, preserving the last valid
+projection; call `dispose()` to disconnect observers. Partial viewports use
+physical buffer pixels through `setViewport`. See the
+[controls contract](docs/4.1_ORBIT_CONTROLS.md) and
+[viewport contract](docs/4.5_CANVAS_VIEWPORT.md).
+
+The [orbit camera example](example/orbit_camera/orbit_camera.dart) combines
+these components. The [torus-knot example](example/torusknot_camera/torusknot_camera.dart)
+keeps its trajectory in an example controller that drives a supplied camera.
+Legacy `OrbitCamera` and resize helpers remain available during migration;
+their existing frame-based input and resize behavior is unchanged.
+
 
 Create a new Dart webapp project, add this as a `pubspec.yaml` dependency:
 ```yaml
@@ -171,6 +208,11 @@ It reads the uploaded matrix and world eye back from WebGL after camera edits,
 scene draws, and adapter switches. See the
 [browser uniform checks](docs/3.12_CAMERA_UNIFORMS_WEBGL.md) for the selected
 JavaScript and Wasm commands.
+
+Phase 4 checks are selected in the
+[controls and viewport coverage map](docs/4.10_CONTROLS_AND_VIEWPORT_TESTS.md),
+including equal-time keyboard movement, input detachment, element resize,
+pixel density, hidden-canvas recovery and a combined WebGL scene.
 
 Add `-c dart2wasm` when the changes affect Wasm. Set `CHROME_EXECUTABLE` if Dart
 cannot discover Chrome/Chromium. Local development does not require full test

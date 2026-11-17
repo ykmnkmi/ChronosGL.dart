@@ -127,6 +127,18 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 
 ### Browser support and fixes
 
+- Add `OrbitControls` for a supplied mathematical camera and explicit browser
+  event target, with frame-independent `update(deltaSeconds)`, accumulated drag
+  and wheel input, enable/disable, and idempotent disposal.
+- Add `CanvasViewport` to coordinate element content size, pixel density,
+  drawing buffer, viewport and perspective aspect. Support partial viewports,
+  hidden-element recovery and observer cleanup; preserve orthographic bounds.
+- Skip empty `RenderPhase` viewports without drawing or clearing the target.
+- Migrate the orbit and torus-knot camera examples to separate cameras and
+  controllers; keep the torus-knot trajectory controller in its example.
+- Replace phase 1.9 frame-rate reproductions with equal-time regression checks.
+  Legacy orbit and resize helper behavior remains available during migration.
+
 - Migrate the engine, browser helpers, examples, and browser test harness to
   `package:web` and `dart:js_interop` for JavaScript and Wasm compilation.
 - Keep legacy DOM inputs working for JavaScript callers during migration.
