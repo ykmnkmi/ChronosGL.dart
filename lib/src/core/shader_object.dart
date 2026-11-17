@@ -1,4 +1,5 @@
-part of 'lib.dart';
+/// CPU-only shader interface descriptions and canonical variable metadata.
+library;
 
 const int kMaxLights = 4;
 const int kMaxBones = 128;
@@ -320,7 +321,12 @@ void introduceNewShaderVar(String canonical, ShaderVarDesc desc) {
 }
 
 ShaderVarDesc retrieveShaderVarDesc(String canonical) {
-  return _varsDb[canonical]!;
+  return _varsDb[canonical] ??
+      (throw ArgumentError.value(
+        canonical,
+        'canonical',
+        'Unknown shader variable',
+      ));
 }
 
 // Describes a shader (either fragment or vertex) and its

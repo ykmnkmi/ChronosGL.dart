@@ -28,7 +28,10 @@ class DrawStats {
 /// available; they do not imply that the program is still usable.
 class RenderProgram extends NamedEntity {
   RenderProgram(super.name, this._cgl, this._shaderObjectV, this._shaderObjectF)
-    : _attributes = Set.from(_shaderObjectV.attributeVars) {
+    : _attributes = Set.from(_shaderObjectV.attributeVars),
+      attributeLayout = MeshAttributeLayout(
+        _shaderObjectV.getAttributeLayoutMap(),
+      ) {
     _program = _cgl.compileWholeProgram(
       _shaderObjectV.shader!,
       _shaderObjectF.shader!,
@@ -58,6 +61,7 @@ class RenderProgram extends NamedEntity {
   GlProgram? _program;
 
   final Set<String> _attributes;
+  final MeshAttributeLayout attributeLayout;
   final Map<String, GlUniformLocation> _uniformLocations = {};
   final Map<String, String> _uniformsInitialized = {};
   final Set<String> _attributesInitialized = <String>{};
@@ -94,40 +98,30 @@ class RenderProgram extends NamedEntity {
     return _shaderObjectV.getTransformBindingIndex(canonical);
   }
 
-  MeshData makeMeshData(String name, int drawMode) {
+  /// Creates an empty owned mesh with this program's immutable layout.
+  GpuMesh makeGpuMesh(String name, int drawMode) {
     _checkNotDisposed();
-    return MeshData(
-      name,
-      _cgl,
-      drawMode,
-      _shaderObjectV.getAttributeLayoutMap(),
-    );
+    return GpuMesh._withLayout(name, _cgl, drawMode, attributeLayout);
   }
+
+  /// Compatibility wrapper for [makeGpuMesh].
+  MeshData makeMeshData(String name, int drawMode) =>
+      makeGpuMesh(name, drawMode);
 
   /// If you want to re-use meshes across programs you can use
   /// this predicate to assert that two programs are compatible.
   bool hasCompatibleAttributesTo(RenderProgram other) {
-    var a = _shaderObjectV.getAttributeLayoutMap();
-    var b = other._shaderObjectV.getAttributeLayoutMap();
-    if (a.length != b.length) return false;
-    for (String key in a.keys) {
-      if (a[key] != b[key]) return false;
-    }
-    return true;
+    return identical(_cgl, other._cgl) &&
+        attributeLayout.supplies(other.attributeLayout) &&
+        other.attributeLayout.supplies(attributeLayout);
   }
 
   /// If you want to re-use meshes across programs you can use
   /// this predicate to assert that any mesh for `other` will work
   /// for `this`.
   bool hasDownwardCompatibleAttributesTo(RenderProgram other) {
-    var a = _shaderObjectV.getAttributeLayoutMap();
-    var b = other._shaderObjectV.getAttributeLayoutMap();
-    for (String key in a.keys) {
-      if (a[key] != b[key]) {
-        return false;
-      }
-    }
-    return true;
+    return identical(_cgl, other._cgl) &&
+        other.attributeLayout.supplies(attributeLayout);
   }
 
   void _clearState() {
@@ -317,13 +311,14 @@ class RenderProgram extends NamedEntity {
     logDebug("setting $count var in $delta");
   }
 
-  void draw(
-    MeshData md,
-    List<UniformGroup> uniforms, [
-    List<DrawStats>? stats,
-  ]) {
+  void draw(GpuMesh md, List<UniformGroup> uniforms, [List<DrawStats>? stats]) {
     _checkNotDisposed();
     md._checkNotDisposed();
+    if (!md.isCompatibleWith(this)) {
+      throw ArgumentError(
+        'GpuMesh ${md.name} has an incompatible context or attribute layout for $name',
+      );
+    }
     final DateTime start = DateTime.now();
     // Resolve each group once: getUniforms() can compute values on demand.
     // Validate all active samplers before changing any WebGL or draw state.

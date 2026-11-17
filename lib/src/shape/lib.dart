@@ -12,7 +12,8 @@ import 'dart:typed_data';
 /// Higher layers contain wrappers that generate the corresponding
 /// MeshData objects from them.
 
-import '../core/lib.dart';
+import '../core/geometry_builder.dart';
+import '../core/shader_object.dart';
 
 part "plane.dart";
 part "cylinder.dart";

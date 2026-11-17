@@ -1,4 +1,11 @@
-part of 'lib.dart';
+/// Mutable CPU geometry with no browser or GPU dependencies.
+library;
+
+import 'dart:collection';
+
+import 'package:vector_math/vector_math.dart' as vm;
+
+import 'shader_object.dart';
 
 class Face1 {
   Face1(this.a);
@@ -76,10 +83,11 @@ class Edge3 {
   int get hashCode => hashVector3(v1) ^ hashVector3(v2);
 }
 
-/// Helper for Shader independent Mesh creation.
-/// Supports Faces with 3 and 4 Nodes or point clouds.
-/// Use  geometryBuilderToMeshData() to create the Mesh
-/// for a specific Shader.
+/// Mutable CPU geometry containing triangles, quads, or a point cloud.
+///
+/// Ordinary add methods copy vectors; methods named `TakeOwnership` retain
+/// vector references. Call [validate] before uploading through `uploadGeometry`
+/// in the browser-facing engine. Geometry creation needs no WebGL context.
 class GeometryBuilder {
   GeometryBuilder([this.pointsOnly = false]);
 
@@ -91,31 +99,33 @@ class GeometryBuilder {
   final Map<String, List<Object>> attributes = {};
 
   void enableAttribute(String canonical) {
-    assert(
-      !attributes.containsKey(canonical),
-      "attribute $canonical already exists",
-    );
-    assert(canonical.startsWith("a"), "$canonical is not an attribute");
-    ShaderVarDesc desc = retrieveShaderVarDesc(canonical);
-    switch (desc.type) {
-      case varTypeVec2:
-        attributes[canonical] = <vm.Vector2>[];
-        break;
-      case varTypeVec3:
-        attributes[canonical] = <vm.Vector3>[];
-        break;
-      case varTypeVec4:
-        attributes[canonical] = <vm.Vector4>[];
-        break;
-      case varTypeFloat:
-        attributes[canonical] = <double>[];
-        break;
-      case varTypeUvec4:
-        attributes[canonical] = <List<int>>[];
-        break;
-      default:
-        assert(false, "unknown type for $canonical");
+    if (attributes.containsKey(canonical)) {
+      throw ArgumentError.value(
+        canonical,
+        'canonical',
+        'Attribute already exists',
+      );
     }
+    if (!canonical.startsWith('a')) {
+      throw ArgumentError.value(
+        canonical,
+        'canonical',
+        'Not a vertex attribute',
+      );
+    }
+    final desc = retrieveShaderVarDesc(canonical);
+    attributes[canonical] = switch (desc.type) {
+      varTypeVec2 => <vm.Vector2>[],
+      varTypeVec3 => <vm.Vector3>[],
+      varTypeVec4 => <vm.Vector4>[],
+      varTypeFloat => <double>[],
+      varTypeUvec4 => <List<int>>[],
+      _ => throw ArgumentError.value(
+        canonical,
+        'canonical',
+        'Unsupported attribute type ${desc.type}',
+      ),
+    };
   }
 
   bool isEmpty() {
@@ -155,15 +165,26 @@ class GeometryBuilder {
     }
   }
 
+  void _checkMergeCompatibility(GeometryBuilder other) {
+    if (identical(this, other)) {
+      throw ArgumentError('Cannot merge a geometry builder with itself');
+    }
+    if (other.vertices.isEmpty) return;
+    if (pointsOnly != other.pointsOnly) {
+      throw ArgumentError('Cannot merge points and surface geometry');
+    }
+    if (attributes.keys.any((key) => !other.attributes.containsKey(key)) ||
+        (!isEmpty() &&
+            other.attributes.keys.any((key) => !attributes.containsKey(key)))) {
+      throw ArgumentError('Cannot merge geometry with different attributes');
+    }
+  }
+
   // Simple means the vertex coordinated in other are not changed
   void mergeAndTakeOwnershipSimple(GeometryBuilder other) {
+    _checkMergeCompatibility(other);
     if (other.vertices.isEmpty) return;
     final int offset = vertices.length;
-
-    assert(pointsOnly == other.pointsOnly);
-    for (String a in attributes.keys) {
-      assert(other.attributes.containsKey(a));
-    }
 
     if (isEmpty()) {
       for (String a in other.attributes.keys) {
@@ -198,45 +219,101 @@ class GeometryBuilder {
     other.faces4.clear();
   }
 
-  void sanityCheck() {
-    if (pointsOnly) {
-      assert(faces3.isEmpty);
-      assert(faces4.isEmpty);
-      return;
+  /// Checks CPU geometry invariants without a browser or GPU allocation.
+  ///
+  /// Throws [StateError] for non-finite coordinates, invalid face indices,
+  /// faces on a point cloud, or malformed attributes. Empty geometry is valid.
+  void validate() {
+    if (pointsOnly && (faces3.isNotEmpty || faces4.isNotEmpty)) {
+      throw StateError('Point geometry must not contain faces');
     }
-    int maxIndexFace3 = -1;
-    for (Face3 f in faces3) {
-      if (f.a > maxIndexFace3) maxIndexFace3 = f.a;
-      if (f.b > maxIndexFace3) maxIndexFace3 = f.b;
-      if (f.c > maxIndexFace3) maxIndexFace3 = f.c;
+    for (var i = 0; i < vertices.length; i++) {
+      if (!vertices[i].storage.every((value) => value.isFinite)) {
+        throw StateError('Vertex $i contains non-finite coordinates');
+      }
+    }
+    void checkIndex(int index) {
+      if (index < 0 || index >= vertices.length) {
+        throw StateError(
+          'Face index $index outside ${vertices.length} vertices',
+        );
+      }
     }
 
-    int maxIndexFace4 = -1;
-    for (Face4 f in faces4) {
-      if (f.a > maxIndexFace4) maxIndexFace4 = f.a;
-      if (f.b > maxIndexFace4) maxIndexFace4 = f.b;
-      if (f.c > maxIndexFace4) maxIndexFace4 = f.c;
-      if (f.d > maxIndexFace4) maxIndexFace4 = f.d;
+    for (final face in faces3) {
+      checkIndex(face.a);
+      checkIndex(face.b);
+      checkIndex(face.c);
     }
-
-    final int n = vertices.length;
-    assert(n >= 0);
-    assert(maxIndexFace3 < n, "$maxIndexFace3 vs $n");
-    assert(maxIndexFace4 < n, "$maxIndexFace4 vs $n");
-
-    for (String canonical in attributes.keys) {
-      assert(
-        attributes[canonical]!.length == vertices.length,
-        "bad attribute $canonical",
-      );
+    for (final face in faces4) {
+      checkIndex(face.a);
+      checkIndex(face.b);
+      checkIndex(face.c);
+      checkIndex(face.d);
+    }
+    for (final entry in attributes.entries) {
+      final canonical = entry.key;
+      if (!canonical.startsWith('a')) {
+        throw StateError('$canonical is not a vertex attribute');
+      }
+      if (entry.value.length != vertices.length) {
+        throw StateError('Attribute $canonical must have one value per vertex');
+      }
+      final ShaderVarDesc desc;
+      try {
+        desc = retrieveShaderVarDesc(canonical);
+      } on ArgumentError {
+        throw StateError('Unknown vertex attribute $canonical');
+      }
+      if (!const {
+        varTypeFloat,
+        varTypeVec2,
+        varTypeVec3,
+        varTypeVec4,
+        varTypeUvec4,
+      }.contains(desc.type)) {
+        throw StateError(
+          'Attribute $canonical has unsupported type ${desc.type}',
+        );
+      }
+      for (final value in entry.value) {
+        final bool valid = switch (desc.type) {
+          varTypeFloat => value is double && value.isFinite,
+          varTypeVec2 =>
+            value is vm.Vector2 &&
+                value.storage.every((component) => component.isFinite),
+          varTypeVec3 =>
+            value is vm.Vector3 &&
+                value.storage.every((component) => component.isFinite),
+          varTypeVec4 =>
+            value is vm.Vector4 &&
+                value.storage.every((component) => component.isFinite),
+          varTypeUvec4 =>
+            value is List<int> &&
+                value.length == 4 &&
+                value.every(
+                  (component) => component >= 0 && component <= 0xffffffff,
+                ),
+          _ => false,
+        };
+        if (!valid) {
+          throw StateError(
+            'Attribute $canonical has an invalid ${desc.type} value',
+          );
+        }
+      }
     }
   }
+
+  /// Compatibility name for [validate].
+  void sanityCheck() => validate();
 
   void mergeAndTakeOwnership(
     GeometryBuilder other, [
     vm.Matrix4? mat,
     vm.Matrix3? matNormal,
   ]) {
+    _checkMergeCompatibility(other);
     other.applyTransform(mat, matNormal);
     mergeAndTakeOwnershipSimple(other);
   }
@@ -246,6 +323,7 @@ class GeometryBuilder {
     vm.Quaternion rot,
     vm.Vector3 translation,
   ) {
+    _checkMergeCompatibility(other);
     other.applyTransform2(rot, translation);
     mergeAndTakeOwnershipSimple(other);
   }
@@ -677,7 +755,7 @@ class GeometryBuilder {
 
       final Object f = incidenceE.putIfAbsent(edge, () => face);
       if (f != face) {
-        logWarn("unexpected duplicate edge:  $edge");
+        print("W:unexpected duplicate edge:  $edge");
         return true;
       } else {
         return false;
@@ -712,7 +790,7 @@ class GeometryBuilder {
     for (Edge3 e in incidenceE.keys) {
       Edge3 f = Edge3(e.v2, e.v1);
       if (!incidenceE.containsKey(f)) {
-        logWarn("unpaired edge ${e.v1}->${e.v2}");
+        print("W:unpaired edge ${e.v1}->${e.v2}");
         return false;
       }
     }
@@ -749,7 +827,7 @@ class GeometryBuilder {
     //print ("check loops");
     for (List<vm.Vector3> lst in incidenceV.values) {
       if (!formsLoop(lst)) {
-        logWarn("fan issues for $lst");
+        print("W:fan issues for $lst");
         return false;
       }
     }

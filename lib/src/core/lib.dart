@@ -1,6 +1,5 @@
 library;
 
-import 'dart:collection';
 import 'dart:js_interop';
 import 'dart:typed_data';
 import 'dart:math' as math;
@@ -11,8 +10,12 @@ import 'package:web/web.dart' as web;
 import '../camera/camera.dart';
 import '../camera/projection.dart';
 import 'pose_math.dart';
+import 'geometry_builder.dart';
+import 'shader_object.dart';
 
 export 'transform.dart';
+export 'geometry_builder.dart';
+export 'shader_object.dart';
 
 /// # Layer: Core (package:web)
 /// The **core layer** contains all of the fundamental abstractions like:
@@ -41,12 +44,10 @@ part "material.dart";
 part "framebuffer.dart";
 part "chronosgl.dart";
 part "constants.dart";
-part 'shader_object.dart';
 part "abstractions.dart";
 part "spatial.dart";
 part "projection.dart";
 part 'camera_uniforms.dart';
-part "geometry_builder.dart";
 part "illumination.dart";
 
 typedef GlBuffer = web.WebGLBuffer;

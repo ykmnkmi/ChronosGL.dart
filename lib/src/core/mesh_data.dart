@@ -52,14 +52,94 @@ Float32List flattenMatrix4List(List<vm.Matrix4> v, [Float32List? data]) {
   return data;
 }
 
-/// represent the raw data for mesh.
-/// Internally this is wrapper around a Vertex Array Object (VAO).
-/// MeshData objects can be populated directly but often they
-/// will derived from **GeometryBuilder** objects.
-/// The other common way to create a MeshData object is via
-/// RenderProgram.makeMeshData().
-/// Note, MeshData is always associated with a specific RenderProgram
-/// but it is possible to assert compatibility with multiple RenderPrograms.
+/// One immutable attribute binding in a GPU vertex layout.
+class VertexAttributeLayout {
+  const VertexAttributeLayout({
+    required this.location,
+    required this.type,
+    required this.width,
+    required this.divisor,
+  });
+
+  final int location;
+  final String type;
+  final int width;
+  final int divisor;
+
+  bool get isInteger =>
+      type == varTypeInt ||
+      type == varTypeUvec2 ||
+      type == varTypeUvec3 ||
+      type == varTypeUvec4;
+
+  bool _matches(VertexAttributeLayout other) =>
+      location == other.location &&
+      type == other.type &&
+      width == other.width &&
+      divisor == other.divisor;
+}
+
+/// A snapshot of canonical attribute names, shader types and VAO bindings.
+///
+/// Later edits to shader builders, their location maps or the canonical shader
+/// registry cannot change an existing program or mesh layout.
+class MeshAttributeLayout {
+  MeshAttributeLayout(Map<String, int> locations)
+    : attributes = Map.unmodifiable({
+        for (final entry in locations.entries)
+          entry.key: _describe(entry.key, entry.value),
+      }) {
+    final used = <int>{};
+    for (final attribute in attributes.values) {
+      if (attribute.location < 0 || !used.add(attribute.location)) {
+        throw ArgumentError(
+          'Attribute locations must be distinct and nonnegative',
+        );
+      }
+    }
+  }
+
+  final Map<String, VertexAttributeLayout> attributes;
+
+  static VertexAttributeLayout _describe(String canonical, int location) {
+    final desc = retrieveShaderVarDesc(canonical);
+    final width = switch (desc.type) {
+      varTypeFloat || varTypeInt => 1,
+      varTypeVec2 || varTypeUvec2 => 2,
+      varTypeVec3 || varTypeUvec3 => 3,
+      varTypeVec4 || varTypeUvec4 => 4,
+      _ => throw ArgumentError(
+        'Unsupported vertex attribute type: ${desc.type}',
+      ),
+    };
+    if (desc.arraySize != 0) {
+      throw ArgumentError(
+        'Array vertex attributes are unsupported: $canonical',
+      );
+    }
+    return VertexAttributeLayout(
+      location: location,
+      type: desc.type,
+      width: width,
+      divisor: canonical.codeUnitAt(0) == prefixInstancer ? 1 : 0,
+    );
+  }
+
+  /// Whether this layout supplies every binding required by [requiredLayout].
+  bool supplies(MeshAttributeLayout requiredLayout) {
+    for (final entry in requiredLayout.attributes.entries) {
+      final supplied = attributes[entry.key];
+      if (supplied == null || !supplied._matches(entry.value)) return false;
+    }
+    return true;
+  }
+}
+
+/// Represents the GPU storage for a mesh.
+/// Wraps a Vertex Array Object (VAO), its buffers and an immutable attribute
+/// layout. Populate it directly with [RenderProgram.makeGpuMesh], or upload a
+/// CPU [GeometryBuilder] with [uploadGeometry]. A mesh can be shared by programs
+/// in the same context whose required bindings match [attributeLayout].
 ///
 /// Owns its VAO and every buffer created by its `add*` methods. Buffers passed
 /// to [changeAttributeBuffer] are borrowed unless `takeOwnership: true` is used.
@@ -68,9 +148,16 @@ Float32List flattenMatrix4List(List<vm.Matrix4> v, [Float32List? data]) {
 /// After disposal, only metadata ([name], [drawMode], [supportsAttribute] and
 /// [toString]) remains readable. Data access, mutation and extraction helpers
 /// throw [StateError] before accessing cleared data or allocating GPU resources.
-class MeshData extends NamedEntity {
-  MeshData(String name, this._cgl, this._drawMode, this._locationMap)
-    : _vao = _cgl.createVertexArray(),
+class GpuMesh extends NamedEntity {
+  GpuMesh(String name, ChronosGL cgl, int drawMode, Map<String, int> locations)
+    : this._withLayout(name, cgl, drawMode, MeshAttributeLayout(locations));
+
+  GpuMesh._withLayout(
+    String name,
+    this._cgl,
+    this._drawMode,
+    this.attributeLayout,
+  ) : _vao = _cgl.createVertexArray(),
       super("meshdata:$name");
 
   final ChronosGL _cgl;
@@ -79,7 +166,7 @@ class MeshData extends NamedEntity {
   final Map<String, GlBuffer> _buffers = {};
   // Ownership is independent of slots, which can alias or borrow a buffer.
   final Set<GlBuffer> _ownedBuffers = {};
-  final Map<String, int> _locationMap;
+  final MeshAttributeLayout attributeLayout;
   GlBuffer? _indexBuffer;
   int _instances = 0;
   int _indexBufferType = -1;
@@ -172,6 +259,12 @@ class MeshData extends NamedEntity {
 
   void changeAttributeData(String canonical, List<num> data, int width) {
     _checkNotDisposed();
+    final attribute = attributeLayout.attributes[canonical];
+    if (attribute == null ||
+        width != attribute.width ||
+        data.length % width != 0) {
+      throw ArgumentError('Invalid attribute or data width: $canonical');
+    }
     if (debug) print("ChangeBuffer $canonical ${data.length}");
     if (canonical.codeUnitAt(0) == prefixInstancer) {
       assert(data.length ~/ width == _instances, "ChangeAttribute $_instances");
@@ -181,8 +274,9 @@ class MeshData extends NamedEntity {
         "wrong size for attribute: $canonical expected: ${_vertices.length ~/ 3} got: ${data.length ~/ width}",
       );
     }
+    final uploadData = _uploadData(attribute, data);
     _attributes[canonical] = data;
-    _cgl.changeArrayBuffer(_buffers[canonical]!, data);
+    _cgl.changeArrayBuffer(_buffers[canonical]!, uploadData);
   }
 
   void changeVertexData(Float32List data) {
@@ -193,8 +287,13 @@ class MeshData extends NamedEntity {
   }
 
   bool supportsAttribute(String canonical) {
-    return _locationMap.containsKey(canonical);
+    return attributeLayout.attributes.containsKey(canonical);
   }
+
+  /// Layout and context compatibility, independent of populated buffers.
+  bool isCompatibleWith(RenderProgram program) =>
+      identical(_cgl, program.getContext()) &&
+      attributeLayout.supplies(program.attributeLayout);
 
   int get drawMode => _drawMode;
 
@@ -253,16 +352,16 @@ class MeshData extends NamedEntity {
     void Function()? commitData,
   }) {
     _checkNotDisposed();
-    final int? index = _locationMap[canonical];
-    if (index == null) {
+    final attribute = attributeLayout.attributes[canonical];
+    if (attribute == null) {
       throw ArgumentError.value(
         canonical,
         'canonical',
         'Unsupported attribute',
       );
     }
-    final bool instanced = canonical.codeUnitAt(0) == prefixInstancer;
-    final ShaderVarDesc desc = retrieveShaderVarDesc(canonical);
+    final int index = attribute.location;
+    final bool instanced = attribute.divisor != 0;
     final previous = _buffers[canonical];
     final previousVao =
         _cgl.getParameter(glVertexArrayBinding) as GlVertexArrayObject?;
@@ -275,15 +374,26 @@ class MeshData extends NamedEntity {
       _cgl.bindVertexArray(_vao!);
       bindingStarted = true;
       _cgl.enableVertexAttribArray(index, instanced ? 1 : 0);
-      _cgl.vertexAttribPointer(
-        buffer,
-        index,
-        desc.getSize(),
-        glFloat,
-        false,
-        0,
-        0,
-      );
+      if (attribute.isInteger) {
+        _cgl.bindBuffer(glArrayBuffer, buffer);
+        _cgl._gl.vertexAttribIPointer(
+          index,
+          attribute.width,
+          attribute.type == varTypeInt ? glInt : glUnsignedInt,
+          0,
+          0,
+        );
+      } else {
+        _cgl.vertexAttribPointer(
+          buffer,
+          index,
+          attribute.width,
+          glFloat,
+          false,
+          0,
+          0,
+        );
+      }
       _checkBufferError();
     } catch (_) {
       _cleanupAfterFailure([
@@ -293,14 +403,24 @@ class MeshData extends NamedEntity {
             gl.bindVertexArray(_vao);
             gl.bindBuffer(glArrayBuffer, previous);
             // WebGL permits a null buffer with offset zero to reset a slot.
-            gl.vertexAttribPointer(
-              index,
-              previous == null ? 4 : desc.getSize(),
-              glFloat,
-              false,
-              0,
-              0,
-            );
+            if (previous != null && attribute.isInteger) {
+              gl.vertexAttribIPointer(
+                index,
+                attribute.width,
+                attribute.type == varTypeInt ? glInt : glUnsignedInt,
+                0,
+                0,
+              );
+            } else {
+              gl.vertexAttribPointer(
+                index,
+                previous == null ? 4 : attribute.width,
+                glFloat,
+                false,
+                0,
+                0,
+              );
+            }
             gl.vertexAttribDivisor(
               index,
               previous != null && instanced ? 1 : 0,
@@ -324,19 +444,19 @@ class MeshData extends NamedEntity {
 
   void _addAttribute(String canonical, List<num> data, int width) {
     _checkNotDisposed();
-    if (!_locationMap.containsKey(canonical)) {
+    final attribute = attributeLayout.attributes[canonical];
+    if (attribute == null) {
       throw ArgumentError.value(
         canonical,
         'canonical',
         'Unsupported attribute',
       );
     }
-    if (width <= 0 ||
-        width != retrieveShaderVarDesc(canonical).getSize() ||
-        data.length % width != 0) {
+    if (width <= 0 || width != attribute.width || data.length % width != 0) {
       throw ArgumentError('Invalid width or data length for $canonical');
     }
-    final instanced = canonical.codeUnitAt(0) == prefixInstancer;
+    final instanced = attribute.divisor != 0;
+    final uploadData = _uploadData(attribute, data);
     final count = data.length ~/ width;
     if ((instanced && _instances != 0 && count != _instances) ||
         (!instanced &&
@@ -358,7 +478,7 @@ class MeshData extends NamedEntity {
         canonical,
         buffer,
         takeOwnership: true,
-        upload: () => _cgl.changeArrayBuffer(buffer, data),
+        upload: () => _cgl.changeArrayBuffer(buffer, uploadData),
         commitData: () {
           _attributes[canonical] = data;
           if (positions != null) _vertices = positions;
@@ -373,6 +493,28 @@ class MeshData extends NamedEntity {
       }
       rethrow;
     }
+  }
+
+  List<num> _uploadData(VertexAttributeLayout attribute, List<num> data) {
+    if (!attribute.isInteger) {
+      return data is Float32List
+          ? data
+          : Float32List.fromList([for (final value in data) value.toDouble()]);
+    }
+    final signed = attribute.type == varTypeInt;
+    for (final value in data) {
+      if (value is! int ||
+          value < (signed ? -0x80000000 : 0) ||
+          value > (signed ? 0x7fffffff : 0xffffffff)) {
+        throw ArgumentError(
+          'Integer attribute values must fit their 32-bit type',
+        );
+      }
+    }
+    if (signed) {
+      return data is Int32List ? data : Int32List.fromList(data.cast<int>());
+    }
+    return data is Uint32List ? data : Uint32List.fromList(data.cast<int>());
   }
 
   /// Creates and uploads a replacement, then releases the old owned buffer
@@ -464,6 +606,9 @@ class MeshData extends NamedEntity {
   }
 }
 
+/// Compatibility spelling for [GpuMesh].
+typedef MeshData = GpuMesh;
+
 void _geometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
   for (String canonical in gb.attributes.keys) {
     if (!md.supportsAttribute(canonical)) {
@@ -471,10 +616,10 @@ void _geometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
       continue;
     }
     List<Object> lst = gb.attributes[canonical]!;
-    ShaderVarDesc desc = retrieveShaderVarDesc(canonical);
+    final type = md.attributeLayout.attributes[canonical]!.type;
 
     //print("${md.name} ${canonical} ${lst}");
-    switch (desc.type) {
+    switch (type) {
       case varTypeVec2:
         md.addAttribute(
           canonical,
@@ -507,28 +652,39 @@ void _geometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
         md.addAttribute(canonical, flattenUvec4List(lst as List<List<int>>), 4);
         break;
       default:
-        assert(
-          false,
-          "unknown type for $canonical [${lst[0].runtimeType}] [${lst.runtimeType}] $lst",
-        );
+        throw ArgumentError('Unsupported geometry attribute $canonical: $type');
     }
   }
 }
 
-MeshData geometryBuilderToMeshData(
-  String name,
-  RenderProgram prog,
-  GeometryBuilder gb,
-) {
+/// Validates CPU geometry, uploads independent storage and returns an owned mesh.
+///
+/// The caller must dispose the result. Failed uploads release partial GPU
+/// storage without changing the builder or replacing the original exception.
+GpuMesh uploadGeometry(String name, RenderProgram prog, GeometryBuilder gb) {
+  prog._checkNotDisposed();
+  gb.validate();
   final DateTime start = DateTime.now();
-  MeshData md = prog.makeMeshData(name, gb.pointsOnly ? glPoints : glTriangles);
-  md.addVertices(flattenVector3List(gb.vertices));
-  if (!gb.pointsOnly) md.addFaces(gb.generateFaceIndices());
-  _geometryBuilderAttributesToMeshData(gb, md);
+  final md = prog.makeGpuMesh(name, gb.pointsOnly ? glPoints : glTriangles);
+  try {
+    md.addVertices(flattenVector3List(gb.vertices));
+    if (!gb.pointsOnly) md.addFaces(gb.generateFaceIndices());
+    _geometryBuilderAttributesToMeshData(gb, md);
+  } catch (_) {
+    _cleanupAfterFailure([md.dispose]);
+    rethrow;
+  }
   final Duration delta = DateTime.now().difference(start);
   logInfo("GeometryBuilderToMeshData took ($delta) $md");
   return md;
 }
+
+/// Compatibility wrapper for [uploadGeometry].
+MeshData geometryBuilderToMeshData(
+  String name,
+  RenderProgram prog,
+  GeometryBuilder gb,
+) => uploadGeometry(name, prog, gb);
 
 MeshData _extractWireframeNormals(
   MeshData out,
@@ -569,18 +725,32 @@ MeshData geometryBuilderToWireframeNormals(
   );
 }
 
-//Extract Wireframe MeshData
-MeshData geometryBuilderToMeshDataWireframe(
+/// Uploads CPU geometry edges as an owned GPU mesh of lines.
+GpuMesh uploadWireframeGeometry(
   String name,
   RenderProgram prog,
   GeometryBuilder gb,
 ) {
-  MeshData md = prog.makeMeshData(name, glLines);
-  md.addVertices(flattenVector3List(gb.vertices));
-  md.addFaces(gb.generateLineIndices());
-  _geometryBuilderAttributesToMeshData(gb, md);
+  prog._checkNotDisposed();
+  gb.validate();
+  final md = prog.makeGpuMesh(name, glLines);
+  try {
+    md.addVertices(flattenVector3List(gb.vertices));
+    md.addFaces(gb.generateLineIndices());
+    _geometryBuilderAttributesToMeshData(gb, md);
+  } catch (_) {
+    _cleanupAfterFailure([md.dispose]);
+    rethrow;
+  }
   return md;
 }
+
+/// Compatibility wrapper for [uploadWireframeGeometry].
+MeshData geometryBuilderToMeshDataWireframe(
+  String name,
+  RenderProgram prog,
+  GeometryBuilder gb,
+) => uploadWireframeGeometry(name, prog, gb);
 
 MeshData lineEndPointsToMeshData(
   String name,

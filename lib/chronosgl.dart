@@ -5,6 +5,7 @@
 library;
 
 export 'camera.dart';
+export 'geometry.dart';
 export 'src/core/lib.dart';
 export 'src/shape/lib.dart';
 export 'src/polygon/lib.dart';

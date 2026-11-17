@@ -365,7 +365,7 @@ void main() {
       final green = _texture(cgl, _green);
       final red = _texture(cgl, _red);
       final material = Material.empty('shared')..setUniform(uTexture, green);
-      final node = Node('shared', mesh, material);
+      final node = MeshNode('shared', mesh, material);
       final first = Scene('first', program);
       final second = Scene('second', program);
       final branch = Node.container('first branch', node);

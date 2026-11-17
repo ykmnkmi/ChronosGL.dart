@@ -1,7 +1,5 @@
 library;
 
-// This library does not depend on "dart:html"
-// for easier testing.
 import 'package:vector_math/vector_math.dart' as vm;
 
 import "../core/lib.dart";

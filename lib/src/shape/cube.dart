@@ -212,7 +212,7 @@ GeometryBuilder wedgeGeometry({
 
   GeometryBuilder gb = GeometryBuilder();
   gb.enableAttribute(aTexUV);
-  gb.enableAttribute(aNormal);
+  if (computeNormals) gb.enableAttribute(aNormal);
 
   gb.addFaces3(2);
   gb.addVertices(vertices3);

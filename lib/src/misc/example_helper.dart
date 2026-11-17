@@ -205,9 +205,9 @@ MeshData shapeGrid(
 
 final Material emptyMaterial = Material("empty-mat");
 
-Node unitNode(RenderProgram prog) {
+MeshNode unitNode(RenderProgram prog) {
   final MeshData unitQuad = shapeQuad(prog, 1);
-  return Node("unit-mesh", unitQuad, emptyMaterial);
+  return MeshNode("unit-mesh", unitQuad, emptyMaterial);
 }
 
 final vm.Vector3 colorWhite = vm.Vector3(1.0, 1.0, 1.0);

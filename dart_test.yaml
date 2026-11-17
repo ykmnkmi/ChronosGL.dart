@@ -37,6 +37,9 @@ presets:
       - test/projection_compatibility_test.dart
       - test/geometry.dart
       - test/grid_geometry_test.dart
+      - test/geometry_vm_test.dart
+      - test/scene_model_test.dart
+      - test/mesh_layout_test.dart
       - test/shader_syntax.dart
       - test/show_extensions.dart
       - test/render_golden_test.dart

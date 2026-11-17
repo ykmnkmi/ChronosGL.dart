@@ -1,17 +1,12 @@
 part of 'lib.dart';
 
-///  represents a simple scene graph.
-///  Each scene is rendered by multiple invocation of a single RenderProgram
-///  and contains additional UniformGroups to be passed to
-///  that program at draw time.
-class Scene extends NamedEntity {
-  /// Scene initializes a scene
-  ///
-  /// @param name
-  /// @param this.program
-  /// @param unis
-  Scene(super.name, this.program, [List<UniformGroup>? unis])
-    : uniforms = unis ?? <UniformGroup>[];
+/// Ordered scene roots drawn by one [program].
+///
+/// The supplied list of uniforms is copied; its groups, the program and nodes
+/// remain borrowed. Editing links does not dispose their GPU resources.
+class RenderBatch extends NamedEntity {
+  RenderBatch(super.name, this.program, [List<UniformGroup>? uniforms])
+    : uniforms = List<UniformGroup>.of(uniforms ?? const []);
 
   final RenderProgram program;
   final List<UniformGroup> uniforms;
@@ -22,13 +17,11 @@ class Scene extends NamedEntity {
   }
 
   void addAll(List<Node> nodes) {
-    for (Node node in nodes) {
-      add(node);
-    }
+    this.nodes.addAll(nodes);
   }
 
-  void remove(Node n) {
-    nodes.remove(n);
+  void remove(Node node) {
+    nodes.remove(node);
   }
 
   void removeAll() {
@@ -36,9 +29,15 @@ class Scene extends NamedEntity {
   }
 }
 
-/// Draws a subtree using the last uniform group as a template for transforms.
-/// The input list and its groups are borrowed; per-node transforms and material
-/// are assembled in a separate list, including when drawing throws.
+@Deprecated('Use RenderBatch instead.')
+typedef Scene = RenderBatch;
+
+/// Draws a subtree in depth-first, parent-before-child insertion order.
+///
+/// The last uniform group, when present, is a template for per-node transforms.
+/// Input lists, groups and matrices are borrowed and unchanged, even on errors.
+/// Shared nodes are visited for each path; a cycle on the current path throws
+/// [StateError]. No traversal state survives an invocation or a failed draw.
 void drawRecursively(
   RenderProgram prog,
   Node node,
@@ -46,32 +45,58 @@ void drawRecursively(
   List<DrawStats>? stats,
   List<UniformGroup> uniforms,
 ) {
+  _drawNode(prog, node, parent, stats, uniforms, Set<Node>.identity());
+}
+
+void _drawNode(
+  RenderProgram program,
+  Node node,
+  vm.Matrix4 parent,
+  List<DrawStats>? stats,
+  List<UniformGroup> uniforms,
+  Set<Node> path,
+) {
   if (!node.enabled) return;
-  // m is read-only!
-  final vm.Matrix4 m = node.updateModelMatrix(parent);
-  if (node.somethingToDraw()) {
-    logDebug("drawing: $node");
-    final transforms = UniformGroup(uniforms.last.name)
-      ..getUniforms().addAll(uniforms.last.getUniforms());
-    node.updateTransforms(transforms);
-    prog.draw(node.meshData, [
-      ...uniforms.take(uniforms.length - 1),
-      transforms,
-      node.material,
-    ], stats);
+  if (!path.add(node)) {
+    throw StateError('Scene graph cycle at node ${node.name}');
   }
-  for (Node child in node.children) {
-    drawRecursively(prog, child, m, stats, uniforms);
+  try {
+    final model = node.updateModelMatrix(parent);
+    if (node is MeshNode) {
+      final template = uniforms.isEmpty ? null : uniforms.last;
+      final transforms = UniformGroup(template?.name ?? 'transforms');
+      if (template != null) {
+        transforms.getUniforms().addAll(template.getUniforms());
+      }
+      node.updateTransforms(transforms, model);
+      program.draw(node.mesh, [
+        if (uniforms.isNotEmpty) ...uniforms.take(uniforms.length - 1),
+        transforms,
+        node.material,
+      ], stats);
+    }
+    for (final child in node.children) {
+      _drawNode(program, child, model, stats, uniforms, path);
+    }
+  } finally {
+    path.remove(node);
   }
 }
 
-/// represents a sequence of Scenes.
-class RenderPhase extends NamedEntity {
-  RenderPhase(super.name, ChronosGL cgl, [Framebuffer? framebuffer])
+/// An ordered sequence of batches targeting one framebuffer and viewport.
+///
+/// Each enabled pass with a nonempty viewport activates and clears its
+/// framebuffer exactly once, before any batch is drawn. Clear flags select the
+/// buffers to clear; disable them to preserve earlier pass output. Invoke passes
+/// in the desired order. Batches, programs, nodes and externally supplied
+/// framebuffers are borrowed. A disabled pass or empty viewport performs no
+/// framebuffer work.
+class RenderPass extends NamedEntity {
+  RenderPass(super.name, ChronosGL cgl, [Framebuffer? framebuffer])
     : _framebuffer = framebuffer ?? Framebuffer.screen(cgl);
 
-  late final Framebuffer _framebuffer;
-  final List<Scene> _scenes = <Scene>[];
+  final Framebuffer _framebuffer;
+  final List<RenderBatch> _batches = [];
   int _clearMode = glClearAll;
 
   int viewPortX = 0;
@@ -80,6 +105,9 @@ class RenderPhase extends NamedEntity {
   int viewPortH = 0;
 
   Framebuffer get framebuffer => _framebuffer;
+
+  /// A snapshot of the registered batch links, in draw order.
+  List<RenderBatch> get batches => List<RenderBatch>.unmodifiable(_batches);
 
   set clearColorBuffer(bool clear) {
     if (clear) {
@@ -105,12 +133,20 @@ class RenderPhase extends NamedEntity {
     }
   }
 
-  void add(Scene s) {
-    _scenes.add(s);
+  void add(RenderBatch batch) {
+    _batches.add(batch);
   }
 
-  // Draw all scenes in order of registration
+  void remove(RenderBatch batch) {
+    _batches.remove(batch);
+  }
+
+  void removeAll() {
+    _batches.clear();
+  }
+
   void draw([List<DrawStats>? stats]) {
+    if (!enabled) return;
     if (viewPortW < 0 || viewPortH < 0) {
       throw ArgumentError('Viewport width and height must be nonnegative');
     }
@@ -123,18 +159,24 @@ class RenderPhase extends NamedEntity {
       viewPortH,
     );
 
-    for (Scene scene in _scenes) {
-      if (!scene.enabled) continue;
-      if (!scene.program.enabled) continue;
-
+    for (final batch in _batches) {
+      if (!batch.enabled || !batch.program.enabled) continue;
       final uniforms = <UniformGroup>[
-        ...scene.uniforms,
-        UniformGroup("transforms"),
+        ...batch.uniforms,
+        UniformGroup('transforms'),
       ];
-      final vm.Matrix4 modelMatrix = vm.Matrix4.identity();
-      for (Node node in scene.nodes) {
-        drawRecursively(scene.program, node, modelMatrix, stats, uniforms);
+      for (final node in batch.nodes) {
+        drawRecursively(
+          batch.program,
+          node,
+          vm.Matrix4.identity(),
+          stats,
+          uniforms,
+        );
       }
     }
   }
 }
+
+@Deprecated('Use RenderPass instead.')
+typedef RenderPhase = RenderPass;

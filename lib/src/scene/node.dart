@@ -1,60 +1,78 @@
 part of 'lib.dart';
 
-/// represents a hierarchy of objects that well be rendered
-/// by rendered RenderProgram.
-/// Typically that hierarchy is a tree but DAGs are supported.
-/// Only leaf Nodes will cause draw calls by providing
-/// MeshData and Material.
-/// Non leaf Nodes are just containers for other Nodes
-/// Each Node is a Spatial so it be re-oriented with respect to its parent
-class Node extends Spatial {
-  Node.container(super.name, [Node? child]) {
-    if (child != null) children.add(child);
-  }
+/// A local transform and ordered child links in a scene graph.
+///
+/// A node may be shared by multiple parents. Its world transform belongs to a
+/// traversal path, rather than to the node. Only [MeshNode] provides drawable
+/// resources; [GroupNode] is a container without mesh or material properties.
+abstract class Node extends Spatial {
+  Node._(super.name);
 
-  Node(super.name, this._meshData, this._material) {
-    //if (!meshData.isOptimized) meshData.optimize();
-  }
+  @Deprecated('Use GroupNode instead.')
+  factory Node.container(String name, [Node? child]) = GroupNode;
 
-  Material? _material;
-  MeshData? _meshData;
+  @Deprecated('Use MeshNode instead.')
+  factory Node(String name, GpuMesh mesh, Material material) = MeshNode;
 
-  // children inherent the parent matrix for its rotation and position
+  /// Owned child links in insertion order. Nodes and their resources are borrowed.
+  /// Change links between draws, rather than during traversal.
   final List<Node> children = [];
-  final vm.Matrix3 _normMatrix = vm.Matrix3.zero();
   final vm.Matrix4 _modelMatrix = vm.Matrix4.identity();
-
-  Material get material => _material!;
-
-  MeshData get meshData => _meshData!;
-
-  set meshData(MeshData md) {
-    _meshData = md;
-  }
 
   void add(Node node) {
     children.add(node);
   }
 
-  void updateTransforms(UniformGroup transforms) {
-    // TODO: computing the normal matrix like this is wrong
-    _normMatrix.copyNormalMatrix(_modelMatrix);
-    transforms.forceUniform(uTransformationMatrix, transform);
-    transforms.forceUniform(uModelMatrix, _modelMatrix);
-    transforms.forceUniform(uNormalMatrix, _normMatrix);
+  /// Writes independent local, world and inverse-transpose normal matrices.
+  ///
+  /// Without [modelMatrix], uses the last explicit [updateModelMatrix] result.
+  /// Traversal supplies its own path-specific world matrix.
+  void updateTransforms(UniformGroup transforms, [vm.Matrix4? modelMatrix]) {
+    final model = vm.Matrix4.copy(modelMatrix ?? _modelMatrix);
+    final normal = vm.Matrix3.zero()..copyNormalMatrix(model);
+    transforms.forceUniform(uTransformationMatrix, vm.Matrix4.copy(transform));
+    transforms.forceUniform(uModelMatrix, model);
+    transforms.forceUniform(uNormalMatrix, normal);
   }
 
+  /// Computes `parent * local`, without changing [parent].
+  ///
+  /// The returned matrix is an independent value. The node remembers a copy
+  /// for legacy [updateTransforms] calls, but traversal never relies on it.
   vm.Matrix4 updateModelMatrix(vm.Matrix4 parent) {
-    // copy the mvMatrix, so we don't change the original
-    _modelMatrix.setFrom(parent);
-    _modelMatrix.multiply(transform);
-    return _modelMatrix;
+    final model = vm.Matrix4.copy(parent)..multiply(transform);
+    _modelMatrix.setFrom(model);
+    return model;
   }
 
-  bool somethingToDraw() {
-    return _material != null && _meshData != null;
-  }
+  bool somethingToDraw() => this is MeshNode;
 
   @override
-  String toString() => "NODE[$name]";
+  String toString() => "$runtimeType[$name]";
+}
+
+/// A transform and child links, with no drawable resources.
+class GroupNode extends Node {
+  GroupNode(super.name, [Node? child]) : super._() {
+    if (child != null) children.add(child);
+  }
+}
+
+/// A drawable node with required, borrowed GPU mesh and material.
+///
+/// Removing this node or replacing a resource does not dispose that resource.
+/// Mesh nodes may also have children, drawn after the node itself.
+class MeshNode extends Node {
+  MeshNode(super.name, this.mesh, this.material) : super._();
+
+  GpuMesh mesh;
+  Material material;
+
+  @Deprecated('Use mesh instead.')
+  GpuMesh get meshData => mesh;
+
+  @Deprecated('Use mesh instead.')
+  set meshData(GpuMesh value) {
+    mesh = value;
+  }
 }

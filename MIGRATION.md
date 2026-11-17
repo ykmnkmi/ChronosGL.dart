@@ -15,6 +15,67 @@ Run `dart pub get` and `dart analyze` after updating names and imports. For Wasm
 replace all legacy SDK browser imports in your application as well as upgrading
 ChronosGL; legacy DOM compatibility is available only for JavaScript builds.
 
+## Scene graph and geometry (refactoring phase 5)
+
+Use these names through `package:chronosgl/chronosgl.dart`:
+
+| Previous API | Current API |
+| --- | --- |
+| `Node.container(name, child)` | `GroupNode(name, child)` |
+| `Node(name, mesh, material)` | `MeshNode(name, mesh, material)` |
+| `node.meshData` | `meshNode.mesh` |
+| `Scene` | `RenderBatch` |
+| `RenderPhase` | `RenderPass` |
+| `MeshData` | `GpuMesh` |
+| `program.makeMeshData(name, mode)` | `program.makeGpuMesh(name, mode)` |
+| `geometryBuilderToMeshData(name, program, geometry)` | `uploadGeometry(name, program, geometry)` |
+| `geometryBuilderToMeshDataWireframe(name, program, geometry)` | `uploadWireframeGeometry(name, program, geometry)` |
+
+Legacy constructors redirect to the concrete node types. `Node` is now an
+abstract common type for transforms and child links, without `meshData` or
+`material`. Change declarations that access drawable resources to `MeshNode`,
+or narrow a general node using `if (node is MeshNode)`. `MeshNode.meshData`
+remains a deprecated alias for `mesh`. Mesh and material references are required;
+removing a node or changing its resource does not dispose either resource.
+Custom node subclasses should extend `GroupNode` or `MeshNode`; `Node` now
+provides factory constructors rather than a public generative constructor.
+The previous batch, pass and mesh type names remain aliases, and the previous
+upload methods remain wrappers.
+
+Traversal remains depth-first in insertion order, drawing a parent before its
+children. World matrices are `parentWorld * local` for each path, so a shared
+node draws separately in each branch. Cycles throw `StateError`. Change graph
+links between draws. Transform values supplied to individual draws are
+independent; subsequent paths and errors do not corrupt earlier values.
+
+`RenderBatch` copies the supplied uniform list. To add or remove groups after
+construction, edit `batch.uniforms`; editing the original list no longer changes
+the batch. Contained groups remain shared. Drawing leaves supplied groups and
+lists unchanged, including on failure. An enabled `RenderPass` with a nonempty
+viewport clears selected framebuffer buffers once before drawing its batches.
+Invoke passes in the desired order and disable clear flags on later passes
+when preserving earlier output. A disabled pass performs no framebuffer work.
+
+Import `package:chronosgl/geometry.dart` for CPU builders, shape factories,
+polygon algorithms, and attribute metadata on the Dart VM. Existing browser
+imports export the same declarations and shader attribute registry. Call
+`geometry.validate()` to check edited geometry: invalid indices, nonfinite
+coordinates, faces on point clouds, and malformed attributes throw `StateError`.
+Uploads validate before allocating GPU storage and release partial uploads on
+failure. CPU builders and the uploaded mesh hold independent numeric data.
+`wedgeGeometry(computeNormals: false)` now omits the normal attribute entirely,
+so geometry created without normals passes validation.
+
+GPU meshes and programs expose immutable `attributeLayout` snapshots. Use
+`mesh.isCompatibleWith(program)` before sharing across programs: the WebGL
+context, required attribute names, locations, types, widths, and instancing
+divisors must agree. Extra mesh bindings are allowed. An incompatible draw
+throws `ArgumentError` before changing WebGL state; compatibility does not
+replace populating the buffers or keeping resources alive. See the
+[scene graph contract](docs/5.1_SCENE_GRAPH.md),
+[CPU boundary](docs/5.7_CPU_GEOMETRY.md), and
+[GPU layout contract](docs/5.8_MESH_LAYOUT.md).
+
 ## Projection parameters (refactoring step 3.8)
 
 Mathematical perspective cameras and projections use named `fovYRadians`,

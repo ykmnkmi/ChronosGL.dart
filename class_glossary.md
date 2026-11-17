@@ -22,21 +22,19 @@ See lib/src/base/shader_object.dart for a list.
 is a base class for object that need to be transformed, e.g.
 moved, scaled, rotated. It is also used as a Camera abstraction.
 
-## class MeshData extends NamedEntity 
-represent the raw data for mesh.
-Internally this is wrapper around a Vertex Array Object (VAO).
-MeshData objects can be populated directly but often they
-will derived from **GeometryBuilder** objects.
-The other common way to create a MeshData object is via
-RenderProgram.makeMeshData().
-Note, MeshData is always associated with a specific RenderProgram
-but it is possible to assert compatibility with multiple RenderPrograms.
+## class GpuMesh extends NamedEntity
 
-## class GeometryBuilder 
-Helper for Shader independent Mesh creation.
-Supports Faces with 3 and 4 Nodes or point clouds.
-Use  geometryBuilderToMeshData() to create the Mesh
-for a specific Shader.
+Owns a Vertex Array Object (VAO), uploaded buffers and an immutable attribute
+layout. Create one through `RenderProgram.makeGpuMesh()` or `uploadGeometry()`.
+`isCompatibleWith(program)` checks the context and required attribute bindings
+before sharing a mesh across programs. Call `dispose()` after all consumers
+finish using it. `MeshData` remains a compatibility alias.
+
+## class GeometryBuilder
+
+Mutable CPU geometry for triangles, quads and point clouds, available without
+browser dependencies through `geometry.dart`. Call `validate()` to check edited
+data, then `uploadGeometry()` in browser code to create an independent GPU mesh.
 
 ## class TextureProperties 
 properties like clamping and mip-mapping.
@@ -105,32 +103,39 @@ The **scene layer** adds abstractions to the *core layer**
 related to scene graphs.
 
 
-## class Scene extends NamedEntity 
- represents a simple scene graph.
- Each scene is rendered by multiple invocation of a single RenderProgram
- and contains additional UniformGroups to be passed to
- that program at draw time.
+## class RenderBatch extends NamedEntity
 
-## class RenderPhase extends NamedEntity 
-represents a sequence of Scenes.
+Draws ordered roots with one `RenderProgram` and additional `UniformGroup`s.
+Copies the input list while borrowing its groups. `Scene` remains an alias.
 
-## class Node extends Spatial 
-represents a hierarchy of objects that well be rendered
-by rendered RenderProgram.
-Typically that hierarchy is a tree but DAGs are supported.
-Only leaf Nodes will cause draw calls by providing
-MeshData and Material.
-Non leaf Nodes are just containers for other Nodes
-Each Node is a Spatial so it be re-oriented with respect to its parent
+## class RenderPass extends NamedEntity
+
+Draws batches in insertion order into one framebuffer and viewport. Clears the
+selected buffers once before its batches; a disabled pass or empty viewport
+performs no framebuffer work. `RenderPhase` remains an alias.
+
+## abstract class Node extends Spatial
+
+Stores a local transform and ordered child links. Traversal computes
+`parentWorld * local` for each path, supporting shared nodes in a DAG.
+
+## class GroupNode extends Node
+
+A container without mesh or material properties.
+
+## class MeshNode extends Node
+
+Requires borrowed `GpuMesh mesh` and `Material material`. Draws before its
+children. Removing links does not dispose resources. The deprecated `Node(...)`
+and `Node.container(...)` factories create `MeshNode` and `GroupNode` respectively.
 
 # Layer: Shader (uses Core Layer)
 provides many standard Vertex and Fragment shaders.
 
-# Layer: Shape (uses Core Layer)
-contains helpers for creating **GeometryBuilder**
-objects for basic shapes like cubes and cylinders.
-Higher layers contain wrappers that generate the corresponding
-MeshData objects from them.
+# Layer: Shape (uses CPU geometry)
+
+Creates **GeometryBuilder** objects for shapes such as cubes and cylinders,
+without browser or GPU dependencies. Browser helpers upload them to **GpuMesh**.
 
 ## class TorusKnotCamera extends Spatial 
 Camera flying through a TorusKnot like through a tunnel

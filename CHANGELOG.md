@@ -16,6 +16,28 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 - Require Dart 3.14.0 or later within Dart 3, with `vector_math: ^2.4.4` and
   `web: ^1.1.2`.
 
+### Scene graph and geometry boundaries
+
+- Split the common `Node` contract into `GroupNode` containers and `MeshNode`
+  drawables with required, borrowed `mesh` and `material`. Keep the legacy node
+  constructors as factories; access drawable resources through `MeshNode`.
+- Introduce `RenderBatch` and `RenderPass`, retaining `Scene` and `RenderPhase`
+  as aliases. Preserve insertion order and compute world transforms per DAG
+  path; detect cycles and recover traversal state after exceptions.
+- Copy supplied batch uniform lists and preserve caller lists, groups and
+  transform matrices while drawing. Clear selected framebuffer buffers once
+  per nonempty enabled pass; disabled passes perform no framebuffer work.
+- Add browser-independent `geometry.dart` for CPU builders, shape generators,
+  and polygon algorithms, with explicit `GeometryBuilder.validate()` checks.
+- Omit the normal attribute from `wedgeGeometry(computeNormals: false)` so
+  the no-normal result validates and uploads correctly.
+- Introduce `GpuMesh`, immutable attribute layouts, `makeGpuMesh`,
+  `uploadGeometry`, and `uploadWireframeGeometry`. Preserve `MeshData` and the
+  existing upload helpers. Reject context/layout mismatches before drawing;
+  validate CPU data before allocation and release partial failed uploads.
+- Bind integer vertex attributes with integer pointers and preserve typed
+  integer uploads in both JavaScript and Wasm.
+
 ### Transform component
 
 - Add browser-independent `Transform` through `core.dart` and `chronosgl.dart`,

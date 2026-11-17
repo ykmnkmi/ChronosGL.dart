@@ -53,12 +53,15 @@ Constants, functions, methods, and variables use lowerCamelCase, for example
 `glArrayBuffer`, `geometryBuilderToMeshData`, and `Keyboard.pageUp`.
 See [MIGRATION.md](MIGRATION.md) for the previous names.
 
-Mathematics is available on the Dart VM through two public imports:
+Mathematics and CPU geometry are available on the Dart VM through these imports:
 
 - `package:chronosgl/core.dart` exports `Transform`.
 - `package:chronosgl/camera.dart` exports `Camera`, `PerspectiveCamera`,
   `OrthographicCamera`, `Projection`, `PerspectiveProjection`, and
   `OrthographicProjection`.
+- `package:chronosgl/geometry.dart` exports `GeometryBuilder`, shape factories,
+  polygon algorithms, and vertex attribute names. Call `geometry.validate()`
+  before using or uploading edited CPU data.
 
 These imports can be used together without DOM, WebGL, or rendering adapters.
 For example:
@@ -95,13 +98,53 @@ camera in `CameraUniforms`:
 ```dart
 final cameraUniforms = CameraUniforms(camera);
 program.draw(mesh, [cameraUniforms, material, transforms]);
-// Or pass [cameraUniforms] as the Scene constructor's uniform list.
+// Or pass [cameraUniforms] as the RenderBatch constructor's uniform list.
 ```
 
 Each draw reads the current `uPerspectiveViewMatrix = projection * view` and
 world-space `uEyePosition`. Reads return independent camera snapshots; no
 explicit adapter update is needed after changing pose or projection. Object
 transforms remain separate. See the [adapter contract](docs/3.9_CAMERA_UNIFORMS.md).
+
+Create a `GroupNode` for a container and a `MeshNode` for a drawable object.
+Only mesh nodes expose `mesh` and `material`; both resources are required and
+borrowed. `RenderBatch` draws ordered roots with one program. `RenderPass`
+draws ordered batches into its framebuffer, clearing selected buffers once
+before drawing. Set its viewport dimensions before drawing; an empty viewport
+or disabled pass performs no framebuffer work.
+
+```dart
+final geometry = cubeGeometry()..validate();
+final mesh = uploadGeometry('cube', program, geometry);
+final root = GroupNode('root', MeshNode('cube', mesh, material));
+final batch = RenderBatch('objects', program, [CameraUniforms(camera)])
+  ..add(root);
+final pass = RenderPass('main', cgl)
+  ..viewPortW = canvas.width
+  ..viewPortH = canvas.height
+  ..add(batch);
+pass.draw();
+// Dispose mesh when every consumer has finished using it.
+mesh.dispose();
+```
+
+Traversal uses `parentWorld * local`, in parent-before-child insertion order.
+A node shared by several branches draws with each branch's world transform;
+cycles throw `StateError`. Drawing preserves supplied uniform lists and groups,
+including after an exception. A batch copies its input list while borrowing
+the contained groups.
+
+`GpuMesh` owns uploaded GPU buffers and a VAO. Its immutable `attributeLayout`
+records attribute names, locations, types, widths, and instancing divisors.
+`mesh.isCompatibleWith(program)` checks the context and required bindings;
+drawing with an incompatible program throws `ArgumentError` before GPU state
+changes. Compatible programs can share a mesh. CPU builders remain independent
+after upload. `Node(...)`, `Node.container(...)`, `Scene`, `RenderPhase`,
+`MeshData`, and the previous upload helpers remain migration entry points;
+resource access on a statically typed `Node` must move to `MeshNode`.
+See the [scene contract](docs/5.1_SCENE_GRAPH.md),
+[CPU geometry boundary](docs/5.7_CPU_GEOMETRY.md), and
+[GPU layout contract](docs/5.8_MESH_LAYOUT.md).
 
 Browser camera input and sizing use separate components from the same aggregate
 import:
