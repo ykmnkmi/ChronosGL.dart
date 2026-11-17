@@ -47,7 +47,7 @@ void main2(web.HTMLVideoElement? video) {
   );
 
   final Material mat = Material("cube")
-    ..setUniform(uColor, colorBlack)
+    ..setUniform(uColor, colorBlack.toVector3())
     ..setUniform(uModelMatrix, vm.Matrix4.identity())
     ..setUniform(uTexture, texture);
 

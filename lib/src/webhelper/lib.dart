@@ -9,6 +9,7 @@ import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
 import '../core/lib.dart';
+import '../scene/lib.dart';
 
 export 'canvas_viewport.dart';
 export 'orbit_controls.dart';
@@ -22,3 +23,4 @@ part "webtexture.dart";
 part "input.dart";
 part "interactive_camera.dart";
 part "midi_input.dart";
+part 'resize_aware.dart';

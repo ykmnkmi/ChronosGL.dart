@@ -15,6 +15,33 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
   Update explicitly typed variables and callbacks in consuming applications.
 - Require Dart 3.14.0 or later within Dart 3, with `vector_math: ^2.4.4` and
   `web: ^1.1.2`.
+- Replace mutable palette vectors with immutable `Color` values. Convert with
+  `toVector3()` at vector API boundaries. Make texture, blend and stencil
+  settings immutable; replace field assignments and texture setter cascades
+  with constructors, `copyWith()`, `withFilterNearest()` or `withMipmapLinear()`.
+- Move demo particle/star factories and demo shaders to `example/shared/` and
+  remove the shared `emptyMaterial`. Replace shadow map visualization methods
+  with a separate `ShadowMapVisualizer`.
+
+### Helpers, shadows and diagnostics
+
+- Add documented `mesh.dart` GPU factories and forward all geometry options,
+  including the previously ignored `shapeCube.computeNormals`. Keep CPU
+  geometry imports independent of browser modules.
+- Add `FullscreenPass` with an owned quad, independent default material,
+  optional program ownership, failure cleanup and idempotent disposal.
+  Keep `unitNode` as a deprecated helper with independent materials.
+- Add `shadows.dart` for shadow computation and `debug.dart` for optional
+  diagnostics. `ShadowMap` owns and disposes its framebuffer, attachments and
+  compute program without creating debug assets.
+- Create shadow, light and skeleton visualizer assets lazily and dispose their
+  owned meshes, programs and samplers. Shadow visualization uses a separate
+  sampler and restores texture bindings on errors; subsequent shadow computes
+  clear depth correctly after a fullscreen draw.
+- Add `StatsPanel` and `FpsPanel`, retaining `Stats` and `StatsFps` aliases.
+  Panels dispose their own DOM wrapper; FPS uses the actual sampling interval.
+- Move legacy resize adapters into browser integration and add `dispose()`
+  to stop their owned window subscriptions.
 
 ### Scene graph and geometry boundaries
 

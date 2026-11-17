@@ -63,6 +63,11 @@ presets:
       - test/camera_controls_integration_test.dart
       - test/torus_knot_controls_test.dart
       - test/shared_settings_reproduction_test.dart
+      - test/mesh_factories_test.dart
+      - test/fullscreen_pass_test.dart
+      - test/shadow_diagnostics_test.dart
+      - test/phase6_boundaries_test.dart
+      - test/resize_aware_disposal_test.dart
       - test/render_program_uniforms_test.dart
       - test/scene_uniforms_test.dart
       - test/webhelper_interop_test.dart

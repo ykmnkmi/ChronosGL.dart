@@ -9,6 +9,8 @@ import 'package:test/test.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
+import '../example/shared/particles.dart';
+
 web.HTMLCanvasElement _canvas(int width, int height) => web.HTMLCanvasElement()
   ..width = width
   ..height = height;
@@ -154,8 +156,11 @@ void main() {
   test('Stats updates DOM markup and rotates a fixed, clamped graph', () {
     final root = web.HTMLDivElement();
     final stats = Stats(root, 'blue', 'gray');
-    expect(root.children.length, 3);
-    final graph = root.children.item(1)! as web.HTMLElement;
+    addTearDown(stats.dispose);
+    expect(root.children.length, 1);
+    final panel = root.firstElementChild!;
+    expect(panel.children.length, 3);
+    final graph = panel.children.item(1)! as web.HTMLElement;
     expect(graph.children.length, 90);
     final first = graph.firstChild!;
     stats.addRawValue(100);
@@ -173,12 +178,14 @@ void main() {
     () {
       final root = web.HTMLDivElement();
       final fps = StatsFps(root, 'blue', 'gray');
+      addTearDown(fps.dispose);
       for (var frame = 1; frame <= 60; frame++) {
         fps.updateFrameCount(frame * 1000 / 60, '<b>60 frames</b>');
       }
-      expect(root.firstChild!.textContent, '60.00 fps');
+      final panel = root.firstElementChild!;
+      expect(panel.firstChild!.textContent, '60.00 fps');
       expect(root.querySelector('b')!.textContent, '60 frames');
-      final graph = root.children.item(1)!;
+      final graph = panel.children.item(1)!;
       expect((graph.lastChild! as web.HTMLElement).style.height, '20px');
     },
   );
@@ -192,7 +199,9 @@ void main() {
     final cgl = _context(canvas);
     final camera = Spatial('camera');
     final perspective = PerspectiveResizeAware(cgl, canvas, camera, 0.1, 100);
+    addTearDown(perspective.dispose);
     final phase = RenderPhaseResizeAware('phase', cgl, canvas, perspective);
+    addTearDown(phase.dispose);
     expect([canvas.width, canvas.height], [80, 40]);
     expect(cgl.getParameter(glViewport), [0, 0, 80, 40]);
     final initial =
@@ -215,7 +224,7 @@ void main() {
     expect([canvas.width, canvas.height], [2, 2]);
     final paint = canvas.getContext('2d') as web.CanvasRenderingContext2D;
     expect(paint.getImageData(0, 0, 1, 1).data.toDart, [51, 102, 153, 255]);
-    final particle = Utils.createParticleCanvas();
+    final particle = createParticleCanvas();
     expect([particle.width, particle.height], [64, 64]);
     final gradient = particle.getContext('2d') as web.CanvasRenderingContext2D;
     final center = gradient.getImageData(32, 32, 1, 1).data.toDart;

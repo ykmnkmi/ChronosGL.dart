@@ -29,17 +29,23 @@ final Map<String, Light> gLightSources = {
   idDirectional: DirectionalLight(
     "dir",
     dirLight,
-    colorBlack,
-    colorWhite,
+    colorBlack.toVector3(),
+    colorWhite.toVector3(),
     40.0,
   ),
-  idPoint: PointLight("point", posLight, colorLiteBlue, colorWhite, range),
+  idPoint: PointLight(
+    "point",
+    posLight,
+    colorLiteBlue.toVector3(),
+    colorWhite.toVector3(),
+    range,
+  ),
   idSpot: SpotLight(
     "spot",
     posLight,
     spotDirLight,
-    colorLiteGreen,
-    colorWhite,
+    colorLiteGreen.toVector3(),
+    colorWhite.toVector3(),
     range,
     angle,
     2.0,
@@ -64,7 +70,8 @@ Scene lightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
     uniforms,
   );
 
-  Material lightSourceMat = Material("light")..setUniform(uColor, colorYellow);
+  Material lightSourceMat = Material("light")
+    ..setUniform(uColor, colorYellow.toVector3());
   for (String k in gLightSources.keys) {
     gLightVisualizers[k] = Node(
       k,

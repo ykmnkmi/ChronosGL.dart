@@ -14,6 +14,7 @@ import 'geometry_builder.dart';
 import 'shader_object.dart';
 
 export 'transform.dart';
+export 'colors.dart';
 export 'geometry_builder.dart';
 export 'shader_object.dart';
 

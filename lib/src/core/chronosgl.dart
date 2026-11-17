@@ -565,6 +565,16 @@ class ChronosGL {
     return _gl.createSampler() ?? (throw StateError('Cannot create sampler'));
   }
 
+  /// Binds a sampler to the zero-based texture [unit], or unbinds it with null.
+  void bindSampler(int unit, GlSampler? sampler) {
+    _gl.bindSampler(unit, sampler);
+  }
+
+  /// Sets an integer parameter on a sampler without changing a texture.
+  void samplerParameteri(GlSampler sampler, int parameter, int value) {
+    _gl.samplerParameteri(sampler, parameter, value);
+  }
+
   /// Requests deletion of [sampler] in this context.
   void deleteSampler(GlSampler sampler) {
     _gl.deleteSampler(sampler);

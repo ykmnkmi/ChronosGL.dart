@@ -123,9 +123,8 @@ void main() {
 
   Future.wait(futures).then((list) {
     // Setup Bumpmap
-    final TextureProperties tp = TextureProperties()
-      ..setMipmapLinear()
-      ..clamp = true;
+    final TextureProperties tp = const TextureProperties(clamp: true)
+        .withMipmapLinear();
     final Texture bumpmap = ImageTexture(cgl, bumpmapFile, list[1], tp);
     final Material mat = Material("mat")
       ..setUniform(uColor, colSkin)

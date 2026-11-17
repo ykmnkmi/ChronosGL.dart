@@ -81,20 +81,32 @@ final String idSpot = "idSpot";
 final String idDirectional = "idDirectional";
 
 final Map<String, Light> lightSources = {
-  idDirectional: DirectionalLight("dir", dirLight, colorBlue, colorBlack, 40.0),
+  idDirectional: DirectionalLight(
+    "dir",
+    dirLight,
+    colorBlue.toVector3(),
+    colorBlack.toVector3(),
+    40.0,
+  ),
   idSpot: SpotLight(
     "spot",
     posLight,
     dirLight,
-    colorBlue,
-    colorBlack,
+    colorBlue.toVector3(),
+    colorBlack.toVector3(),
     range,
     angle,
     0.5,
     0.5,
     range * 1.1,
   ),
-  idPoint: PointLight("point", posLight, colorLiteBlue, colorBlue, range),
+  idPoint: PointLight(
+    "point",
+    posLight,
+    colorLiteBlue.toVector3(),
+    colorBlue.toVector3(),
+    range,
+  ),
 };
 
 late Light gActiveLight;
@@ -153,19 +165,19 @@ void swallowEvent(web.Event e) {
 }
 
 final Material matGray = Material("matGray")
-  ..setUniform(uColor, colorGray4)
+  ..setUniform(uColor, colorGray4.toVector3())
   ..setUniform(uShininess, glossiness);
 
 final Material matObjects = Material("objects")
-  ..setUniform(uColor, colorGray2)
+  ..setUniform(uColor, colorGray2.toVector3())
   ..setUniform(uShininess, glossiness);
 
 final Material matNormals = Material("normals")
-  ..setUniform(uColor, colorRed)
+  ..setUniform(uColor, colorRed.toVector3())
   ..setUniform(uShininess, glossiness);
 
 final Material lightSourceMat = Material("light")
-  ..setUniform(uColor, colorYellow);
+  ..setUniform(uColor, colorYellow.toVector3());
 
 void addShapesToScene(Scene scene) {
   scene.add(
@@ -225,6 +237,12 @@ void main() {
   }
 
   final ShadowMap shadowMap = ShadowMap(cgl, 512, 512, 0.5, 20.0);
+  final ShadowMapVisualizer shadowVisualizer = ShadowMapVisualizer(shadowMap);
+  web.EventStreamProviders.beforeUnloadEvent.forTarget(web.window).listen((_) {
+    shadowVisualizer.dispose();
+    shadowMap.dispose();
+    fps.dispose();
+  });
 
   final UniformGroup uniforms = UniformGroup("plain")
     ..setUniform(uShadowMap, shadowMap.getMapTexture())
@@ -320,7 +338,7 @@ void main() {
     phaseMain.viewPortW = w;
     phaseMain.viewPortH = h;
     // display shadowmap on right part of screen.
-    shadowMap.setVisualizationViewPort(phaseMain.viewPortW, 0, w, h);
+    shadowVisualizer.setViewport(phaseMain.viewPortW, 0, w, h);
   }
 
   resolutionChange(null);
@@ -348,7 +366,7 @@ void main() {
     uniforms.forceUniform(uLightPerspectiveViewMatrix, lm);
     // render scene utilizing shadow map
     phaseMain.draw();
-    shadowMap.visualize();
+    shadowVisualizer.draw();
 
     web.window.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);

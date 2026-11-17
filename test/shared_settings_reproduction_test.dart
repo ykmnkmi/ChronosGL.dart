@@ -8,9 +8,7 @@ import 'package:test/test.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
-// Characterize current bugs; these are not the desired ownership contracts.
-// Replace shared-mutation expectations in phase 6 (6.4, 6.9, 6.11).
-// See docs/1.9_SHARED_SETTINGS_AND_FRAME_RATE_REPRODUCTIONS.md.
+// Regressions for the Phase 1.9 shared-setting reproductions.
 ChronosGL _context(web.HTMLCanvasElement canvas) {
   final cgl = ChronosGL(canvas, antialiasing: false);
   addTearDown(() {
@@ -21,160 +19,167 @@ ChronosGL _context(web.HTMLCanvasElement canvas) {
 }
 
 void main() {
-  test('Known bug: editing one material color changes the shared palette', () {
-    final original = vm.Vector3.copy(colorWhite);
-    addTearDown(() => colorWhite.setFrom(original));
-    expect(original.storage, [1, 1, 1]);
-    final first = Material('first')..setUniform(uColor, colorWhite);
-    final second = Material('second')..setUniform(uColor, colorWhite);
-    final independent = Material('independent')
-      ..setUniform(uColor, vm.Vector3.copy(colorWhite));
+  test('Palette adapters isolate material colors and later consumers', () {
+    final first = Material('first')..setUniform(uColor, colorWhite.toVector3());
+    final second = Material('second')
+      ..setUniform(uColor, colorWhite.toVector3());
 
     (first.getUniforms()[uColor]! as vm.Vector3).setValues(0, 1, 0);
 
-    expect((second.getUniforms()[uColor]! as vm.Vector3).storage, [0, 1, 0]);
-    expect(colorWhite.storage, [0, 1, 0]);
-    final later = Material('later')..setUniform(uColor, colorWhite);
-    expect((later.getUniforms()[uColor]! as vm.Vector3).storage, [0, 1, 0]);
-    expect((independent.getUniforms()[uColor]! as vm.Vector3).storage, [
-      1,
-      1,
-      1,
-    ]);
+    expect((second.getUniforms()[uColor]! as vm.Vector3).storage, [1, 1, 1]);
+    expect(colorWhite, const Color(1, 1, 1));
+    final later = Material('later')..setUniform(uColor, colorWhite.toVector3());
+    expect((later.getUniforms()[uColor]! as vm.Vector3).storage, [1, 1, 1]);
+    expect(colorWhite.copyWith(r: 0, b: 0), colorGreen);
+    expect(colorWhite.toVector3().storage, [1, 1, 1]);
   });
 
   for (final transparent in [false, true]) {
-    test(
-      'Known bug: materials share blend settings (transparent=$transparent)',
-      () {
-        final preset = transparent ? blendEquationStandard : blendEquationNone;
-        final original = (preset.equation, preset.srcFactor, preset.dstFactor);
-        addTearDown(() {
-          preset.equation = original.$1;
-          preset.srcFactor = original.$2;
-          preset.dstFactor = original.$3;
-        });
-        Material material(String name) => transparent
-            ? Material.transparent(name, blendEquationStandard)
-            : Material(name);
-        final first = material('first');
-        final second = material('second');
-        final independent = Material.transparent(
-          'independent',
-          TheBlendEquation(original.$1, original.$2, original.$3),
-        );
-        final edited = first.getUniforms()[cBlendEquation]! as TheBlendEquation;
-        edited
-          ..equation = glFuncAdd
-          ..srcFactor = glOne
-          ..dstFactor = glOne;
+    test('Blend variants isolate materials (transparent=$transparent)', () {
+      final preset = transparent ? blendEquationStandard : blendEquationNone;
+      final original = (preset.equation, preset.srcFactor, preset.dstFactor);
+      Material material(String name) => transparent
+          ? Material.transparent(name, blendEquationStandard)
+          : Material(name);
+      final first = material('first');
+      final second = material('second');
 
-        for (final consumer in [second, material('later')]) {
-          final blend =
-              consumer.getUniforms()[cBlendEquation]! as TheBlendEquation;
-          expect(blend, same(preset));
-          expect(
-            (blend.equation, blend.srcFactor, blend.dstFactor),
-            (glFuncAdd, glOne, glOne),
-          );
-        }
-        final copy =
-            independent.getUniforms()[cBlendEquation]! as TheBlendEquation;
-        expect((copy.equation, copy.srcFactor, copy.dstFactor), original);
-        expect(original, isNot((glFuncAdd, glOne, glOne)));
-      },
-    );
+      first.forceUniform(
+        cBlendEquation,
+        preset.copyWith(
+          equation: glFuncAdd,
+          srcFactor: glOne,
+          dstFactor: glOne,
+        ),
+      );
+
+      for (final consumer in [second, material('later')]) {
+        final blend =
+            consumer.getUniforms()[cBlendEquation]! as TheBlendEquation;
+        expect(blend, same(preset));
+        expect((blend.equation, blend.srcFactor, blend.dstFactor), original);
+      }
+      final edited = first.getUniforms()[cBlendEquation]! as TheBlendEquation;
+      expect(
+        (edited.equation, edited.srcFactor, edited.dstFactor),
+        (glFuncAdd, glOne, glOne),
+      );
+      expect(
+        () => (preset as dynamic).srcFactor = glOne,
+        throwsNoSuchMethodError,
+      );
+    });
   }
 
-  test('Known bug: materials share the stencil function preset', () {
-    final original = stencilFunctionAlways.func;
-    addTearDown(() => stencilFunctionAlways.func = original);
-    expect(original, glAlways);
+  test('Stencil variants preserve shared functions and operations', () {
     final first = Material('first')
       ..setUniform(cStencilFunc, stencilFunctionAlways);
     final second = Material('second')
       ..setUniform(cStencilFunc, stencilFunctionAlways);
+    const originalOp = TheStencilOp(glKeep, glKeep, glKeep);
+    first.setUniform(cStencilOp, originalOp);
+    second.setUniform(cStencilOp, originalOp);
 
-    (first.getUniforms()[cStencilFunc]! as TheStencilFunction).func = glNever;
+    first
+      ..forceUniform(
+        cStencilFunc,
+        stencilFunctionAlways.copyWith(func: glNever),
+      )
+      ..forceUniform(cStencilOp, originalOp.copyWith(zpass: glReplace));
 
     expect(
-      (second.getUniforms()[cStencilFunc]! as TheStencilFunction).func,
+      (first.getUniforms()[cStencilFunc]! as TheStencilFunction).func,
       glNever,
     );
-    expect(stencilFunctionAlways.func, glNever);
-    final later = Material('later')
-      ..setUniform(cStencilFunc, stencilFunctionAlways);
     expect(
-      (later.getUniforms()[cStencilFunc]! as TheStencilFunction).func,
-      glNever,
+      (second.getUniforms()[cStencilFunc]! as TheStencilFunction).func,
+      glAlways,
+    );
+    expect(stencilFunctionAlways.func, glAlways);
+    expect((first.getUniforms()[cStencilOp]! as TheStencilOp).zpass, glReplace);
+    expect(second.getUniforms()[cStencilOp], same(originalOp));
+    expect(originalOp.zpass, glKeep);
+    expect(
+      () => (stencilFunctionAlways as dynamic).func = glNever,
+      throwsNoSuchMethodError,
+    );
+    expect(
+      () => (originalOp as dynamic).zpass = glReplace,
+      throwsNoSuchMethodError,
     );
   });
 
-  test(
-    'Known bug: texture preset mutation affects other textures on install',
-    () {
-      final preset = texturePropertiesFramebuffer;
-      final original = (preset.minFilter, preset.magFilter);
-      addTearDown(() {
-        preset.minFilter = original.$1;
-        preset.magFilter = original.$2;
-      });
-      expect(original, (glNearest, glNearest));
-      final canvas = web.HTMLCanvasElement()
-        ..width = 2
-        ..height = 2;
-      final cgl = _context(canvas);
-      final gl = canvas.getContext('webgl2') as web.WebGL2RenderingContext;
-      TypedTexture texture(String name, TextureProperties properties) =>
-          TypedTexture(cgl, name, 1, 1, glRgba8, properties);
-      final first = texture('first', preset);
-      final second = texture('second', preset);
-      final independent = texture(
-        'independent',
-        TextureProperties()..setFilterNearest(),
-      );
-      void expectFilters(Texture texture, int filter) {
-        cgl.bindTexture(glTexture2D, texture.getTexture());
-        expect(
-          gl.getTexParameter(glTexture2D, glTextureMinFilter).dartify(),
-          filter,
-        );
-        expect(
-          gl.getTexParameter(glTexture2D, glTextureMagFilter).dartify(),
-          filter,
-        );
-      }
+  test('Texture variants preserve other consumers on install', () {
+    const preset = texturePropertiesFramebuffer;
+    final variant = preset.copyWith(minFilter: glLinear, magFilter: glLinear);
+    final canvas = web.HTMLCanvasElement()
+      ..width = 2
+      ..height = 2;
+    final cgl = _context(canvas);
+    final gl = canvas.getContext('webgl2') as web.WebGL2RenderingContext;
+    TypedTexture texture(String name, TextureProperties properties) {
+      final result = TypedTexture(cgl, name, 1, 1, glRgba8, properties);
+      addTearDown(result.dispose);
+      return result;
+    }
 
-      expectFilters(first, glNearest);
-      expectFilters(second, glNearest);
-      first.properties
-        ..minFilter = glLinear
-        ..magFilter = glLinear;
-
-      expect(second.properties, same(preset));
+    final first = texture('first', variant);
+    final second = texture('second', preset);
+    void expectFilters(Texture texture, int filter) {
+      cgl.bindTexture(glTexture2D, texture.getTexture());
       expect(
-        (second.properties.minFilter, second.properties.magFilter),
-        (glLinear, glLinear),
+        gl.getTexParameter(glTexture2D, glTextureMinFilter).dartify(),
+        filter,
       );
-      // CPU settings change immediately; existing GPU state changes on install.
-      expectFilters(second, glNearest);
-      second.install();
-      expectFilters(second, glLinear);
-      expectFilters(texture('later', preset), glLinear);
-      independent.install();
-      expectFilters(independent, glNearest);
-      expect(cgl.getError(), glNoError);
-    },
-  );
+      expect(
+        gl.getTexParameter(glTexture2D, glTextureMagFilter).dartify(),
+        filter,
+      );
+    }
 
-  test('Known bug: unitNode shares a mutable material with other nodes', () {
-    final original = Map<String, Object>.of(emptyMaterial.getUniforms());
-    addTearDown(() {
-      emptyMaterial.getUniforms()
-        ..clear()
-        ..addAll(original);
-    });
-    expect(original[cDepthWrite], isTrue);
+    expectFilters(first, glLinear);
+    expect(second.properties, same(preset));
+    second.install();
+    expectFilters(second, glNearest);
+    expectFilters(texture('later', preset), glNearest);
+    expect((preset.minFilter, preset.magFilter), (glNearest, glNearest));
+    expect(
+      (variant.clamp, variant.flipY, variant.shadow),
+      (true, false, false),
+    );
+    expect(
+      () => (first.properties as dynamic).minFilter = glNearest,
+      throwsNoSuchMethodError,
+    );
+    expect(cgl.getError(), glNoError);
+  });
+
+  test('Texture sampling variants retain unrelated settings', () {
+    const original = TextureProperties(
+      clamp: true,
+      shadow: true,
+      flipY: false,
+      anisotropicFilterLevel: 4,
+    );
+    final mipmapped = original.withMipmapLinear();
+    final nearest = mipmapped.withFilterNearest();
+    expect(mipmapped.mipmap, isTrue);
+    expect(mipmapped.minFilter, glLinearMipmapLinear);
+    expect(mipmapped.magFilter, glLinear);
+    expect((nearest.minFilter, nearest.magFilter), (glNearest, glNearest));
+    expect(nearest.mipmap, isTrue);
+    expect(nearest.clamp, isTrue);
+    expect(nearest.shadow, isTrue);
+    expect(nearest.flipY, isFalse);
+    expect(nearest.anisotropicFilterLevel, 4);
+    expect(original.mipmap, isFalse);
+    expect(original.minFilter, glLinear);
+    expect(nearest.copyWith(mipmap: false, clamp: false).clamp, isFalse);
+    expect(texturePropertiesShadowMap.shadow, isTrue);
+    expect(texturePropertiesFramebufferWrapped.clamp, isFalse);
+  });
+
+  test('unitNode creates independent materials for every consumer', () {
     final canvas = web.HTMLCanvasElement()
       ..width = 2
       ..height = 2;
@@ -185,16 +190,22 @@ void main() {
     final fragment = ShaderObject('unit-f')
       ..setBodyWithMain(['$oFragColor = vec4(1.0);']);
     final program = RenderProgram('unit', cgl, vertex, fragment);
-    final first = unitNode(program);
-    final second = unitNode(program);
+    addTearDown(program.dispose);
+    MeshNode node() {
+      final result = unitNode(program);
+      addTearDown(result.meshData.dispose);
+      return result;
+    }
+
+    final first = node();
+    final second = node();
     expect(first.meshData, isNot(same(second.meshData)));
+    expect(first.material, isNot(same(second.material)));
 
     first.material.forceUniform(cDepthWrite, false);
 
-    expect(second.material, same(emptyMaterial));
-    expect(second.material.getUniforms()[cDepthWrite], isFalse);
-    expect(unitNode(program).material.getUniforms()[cDepthWrite], isFalse);
-    expect(Material('independent').getUniforms()[cDepthWrite], isTrue);
+    expect(second.material.getUniforms()[cDepthWrite], isTrue);
+    expect(node().material.getUniforms()[cDepthWrite], isTrue);
     expect(cgl.getError(), glNoError);
   });
 }

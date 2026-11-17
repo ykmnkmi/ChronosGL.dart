@@ -29,27 +29,27 @@ void main() {
 }
 """,
   ]);
-final TheStencilFunction stencilAlways = TheStencilFunction(glAlways, 1, 0xff);
+const TheStencilFunction stencilAlways = TheStencilFunction(glAlways, 1, 0xff);
 
-final TheStencilFunction stencilEqualZero = TheStencilFunction(
+const TheStencilFunction stencilEqualZero = TheStencilFunction(
   glEqual,
   0,
   0xff,
 );
 
-final TheStencilFunction stencilNotEqualZero = TheStencilFunction(
+const TheStencilFunction stencilNotEqualZero = TheStencilFunction(
   glNotequal,
   0,
   0xff,
 );
 
-final TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
+const TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
   glKeep,
   glKeep,
   glReplace,
 );
 
-final TheStencilOp stencilWriteNever = TheStencilOp(glKeep, glKeep, glKeep);
+const TheStencilOp stencilWriteNever = TheStencilOp(glKeep, glKeep, glKeep);
 
 void main() {
   StatsFps fps = StatsFps(
@@ -94,7 +94,7 @@ void main() {
   }
 
   final Material matOnStencil = Material("onstencil")
-    ..setUniform(uColor, colorRed)
+    ..setUniform(uColor, colorRed.toVector3())
     ..forceUniform(cStencilFunc, stencilNotEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
     ..forceUniform(cStencilWrite, 0x0) // only write color/depth
@@ -103,7 +103,7 @@ void main() {
     ..forceUniform(cDepthTest, true);
 
   final Material matOffStencil = Material("offstencil")
-    ..setUniform(uColor, colorBlue)
+    ..setUniform(uColor, colorBlue.toVector3())
     ..forceUniform(cStencilFunc, stencilEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
     ..forceUniform(cStencilWrite, 0x0) // only write color/depth

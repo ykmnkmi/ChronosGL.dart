@@ -1,28 +1,57 @@
 part of 'lib.dart';
 
-/// properties like clamping and mip-mapping.
+/// Immutable texture upload and sampling settings.
+///
+/// Presets can be shared. Create a variant with [copyWith],
+/// [withFilterNearest] or [withMipmapLinear].
 class TextureProperties {
-  TextureProperties();
+  const TextureProperties({
+    this.mipmap = false,
+    this.clamp = false,
+    this.shadow = false,
+    this.flipY = true,
+    this.anisotropicFilterLevel = kNoAnisotropicFilterLevel,
+    this.minFilter = glLinear,
+    this.magFilter = glLinear,
+  });
 
-  bool mipmap = false;
-  bool clamp = false;
-  bool shadow = false;
-  bool flipY = true;
-  int anisotropicFilterLevel = kNoAnisotropicFilterLevel;
-  int minFilter = glLinear;
-  int magFilter = glLinear;
+  final bool mipmap;
+  final bool clamp;
+  final bool shadow;
+  final bool flipY;
+  final int anisotropicFilterLevel;
+  final int minFilter;
+  final int magFilter;
 
-  void setFilterNearest() {
-    minFilter = glNearest;
-    magFilter = glNearest;
-  }
+  TextureProperties copyWith({
+    bool? mipmap,
+    bool? clamp,
+    bool? shadow,
+    bool? flipY,
+    int? anisotropicFilterLevel,
+    int? minFilter,
+    int? magFilter,
+  }) => TextureProperties(
+    mipmap: mipmap ?? this.mipmap,
+    clamp: clamp ?? this.clamp,
+    shadow: shadow ?? this.shadow,
+    flipY: flipY ?? this.flipY,
+    anisotropicFilterLevel:
+        anisotropicFilterLevel ?? this.anisotropicFilterLevel,
+    minFilter: minFilter ?? this.minFilter,
+    magFilter: magFilter ?? this.magFilter,
+  );
 
-  // Very good but also a bit slow
-  void setMipmapLinear() {
-    mipmap = true;
-    minFilter = glLinearMipmapLinear;
-    magFilter = glLinear; // is this the best?
-  }
+  /// Returns nearest filtering without changing other upload settings.
+  TextureProperties withFilterNearest() =>
+      copyWith(minFilter: glNearest, magFilter: glNearest);
+
+  /// Returns trilinear minification with mipmap generation enabled.
+  TextureProperties withMipmapLinear() => copyWith(
+    mipmap: true,
+    minFilter: glLinearMipmapLinear,
+    magFilter: glLinear,
+  );
 
   // This assumes a texture is already bound
   void installEarly(ChronosGL cgl, int type) {
@@ -66,32 +95,31 @@ class TextureProperties {
   }
 }
 
-final TextureProperties texturePropertiesFramebuffer = TextureProperties()
-  ..flipY = false
-  ..clamp = true
-  ..mipmap = false
-  ..setFilterNearest();
+const TextureProperties texturePropertiesFramebuffer = TextureProperties(
+  flipY: false,
+  clamp: true,
+  minFilter: glNearest,
+  magFilter: glNearest,
+);
 
-final TextureProperties texturePropertiesFramebufferWrapped =
-    TextureProperties()
-      ..flipY = false
-      ..clamp = false
-      ..mipmap = false
-      ..setFilterNearest();
+const TextureProperties texturePropertiesFramebufferWrapped = TextureProperties(
+  flipY: false,
+  minFilter: glNearest,
+  magFilter: glNearest,
+);
 
-final TextureProperties texturePropertiesVideo = TextureProperties()
-  ..clamp = true;
+const TextureProperties texturePropertiesVideo = TextureProperties(clamp: true);
 
-// http://stackoverflow.com/questions/22419682/glsl-sampler2dshadow-and-shadow2d-clarification\
-final TextureProperties texturePropertiesShadowMap = TextureProperties()
-  ..flipY = false
-  ..clamp = true
-  ..mipmap = false
-  ..shadow = true;
-//..setFilterNearest();
+const TextureProperties texturePropertiesShadowMap = TextureProperties(
+  flipY: false,
+  clamp: true,
+  shadow: true,
+);
 
-final TextureProperties texturePropertiesMipmap = TextureProperties()
-  ..setMipmapLinear();
+const TextureProperties texturePropertiesMipmap = TextureProperties(
+  mipmap: true,
+  minFilter: glLinearMipmapLinear,
+);
 
 bool isCubeChildTextureType(int t) {
   switch (t) {
@@ -110,7 +138,7 @@ bool isCubeChildTextureType(int t) {
 /// Base class for textures. Owns its GPU handle; call [dispose] after use.
 /// Handle access, uploads, updates and installation throw [StateError] after
 /// disposal. [getTextureType], [properties] and [toString] remain available for
-/// inspection; changing properties cannot revive the released GPU handle.
+/// inspection. Settings are immutable and cannot revive a released GPU handle.
 class Texture {
   Texture(this._cgl, this._textureType, this._url, this.properties)
     : _texture = _cgl.createTexture();
@@ -317,7 +345,7 @@ class ImageTexture extends Texture {
     TextureProperties? tp,
     int textureType = glTexture2D,
   ]) : _element = element,
-       super(cgl, textureType, url, tp ?? TextureProperties()) {
+       super(cgl, textureType, url, tp ?? const TextureProperties()) {
     _initialize(() {
       _cgl.bindTexture(_textureType, _texture);
 
@@ -359,7 +387,7 @@ const List<int> _kCubeModifier = [
 
 class CubeTexture extends Texture {
   CubeTexture(ChronosGL cgl, String url, List<Object> images)
-    : super(cgl, glTextureCubeMap, url, TextureProperties()..clamp = true) {
+    : super(cgl, glTextureCubeMap, url, const TextureProperties(clamp: true)) {
     _initialize(() {
       assert(images.length == _kCubeModifier.length);
       properties.installEarly(_cgl, _textureType);

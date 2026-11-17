@@ -6,6 +6,8 @@ import 'dart:math' as math;
 
 import 'package:web/web.dart' as web;
 
+import '../shared/particles.dart';
+
 import 'dart:typed_data';
 
 import 'package:vector_math/vector_math.dart' as vm;
@@ -264,7 +266,7 @@ void main() {
 
   // JS version setup
   Material matJS = Material.transparent("stars", blendEquationMix)
-    ..setUniform(uTexture, Utils.createParticleTexture(cgl))
+    ..setUniform(uTexture, createParticleTexture(cgl))
     ..setUniform(uModelMatrix, vm.Matrix4.identity())
     ..setUniform(uPointSize, 200.0);
   MeshData mdJS = programJS.makeMeshData("mdJS", glPoints)
@@ -272,7 +274,7 @@ void main() {
 
   // GPU version setup
   Material matGPU = Material.transparent("stars", blendEquationMix)
-    ..setUniform(uTexture, Utils.createParticleTexture(cgl))
+    ..setUniform(uTexture, createParticleTexture(cgl))
     ..setUniform(uModelMatrix, vm.Matrix4.identity())
     ..setUniform(uPointSize, 200.0)
     ..setUniform(uSources, extractPolePos(srcPoles))

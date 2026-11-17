@@ -71,7 +71,7 @@ void main() {
   );
 
   final Material matWire = Material("wire")
-    ..setUniform(uColor, colorYellow)
+    ..setUniform(uColor, colorYellow.toVector3())
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
   double lastTimeMs = 0.0;

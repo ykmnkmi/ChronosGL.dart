@@ -109,7 +109,10 @@ class GoldenScene {
       Node(
           'cube',
           shapeCube(program, x: 0.28, y: 0.28, z: 0.28),
-          _color('cube', mutate ? colorGreen : colorRed),
+          _color(
+            'cube',
+            mutate ? colorGreen.toVector3() : colorRed.toVector3(),
+          ),
         )
         ..rotX(0.4)
         ..rotY(0.55)
@@ -119,14 +122,14 @@ class GoldenScene {
       Node(
         'sphere',
         shapeIcosahedron(program, subdivisions: 2, scale: 0.3),
-        _color('sphere', colorCyan),
+        _color('sphere', colorCyan.toVector3()),
       )..setPos(0.43, -0.25, 0.0),
     );
     root.add(
       Node(
           'wedge',
           shapeWedge(program, x: 0.25, y: 0.25, z: 0.25),
-          _color('wedge', colorYellow),
+          _color('wedge', colorYellow.toVector3()),
         )
         ..rotY(0.4)
         ..rotX(0.3)
@@ -154,7 +157,11 @@ class GoldenScene {
       vm.Vector3(0.7, -0.45, -0.8),
       vm.Vector3(0.0, 0.8, 0.0),
     ];
-    final colors = [colorRed, colorGreen, colorBlue];
+    final colors = [
+      colorRed.toVector3(),
+      colorGreen.toVector3(),
+      colorBlue.toVector3(),
+    ];
     for (var i = 0; i < positions.length; i++) {
       scene.add(
         Node(
@@ -194,9 +201,11 @@ class GoldenScene {
       cgl,
       'generated-texture',
       canvas,
-      TextureProperties()
-        ..clamp = true
-        ..setFilterNearest(),
+      const TextureProperties(
+        clamp: true,
+        minFilter: glNearest,
+        magFilter: glNearest,
+      ),
     );
   }
 
@@ -207,7 +216,7 @@ class GoldenScene {
       texturedVertexShader,
       texturedFragmentShader,
     );
-    final material = _color('texture', colorBlack)
+    final material = _color('texture', colorBlack.toVector3())
       ..setUniform(uTexture, _canvasTexture());
     final quad = Node('quad', _quad(program, 0.72), material)..rotZ(0.18);
     phase.add(Scene('texture', program, [_identity()])..add(quad));
@@ -218,16 +227,19 @@ class GoldenScene {
     final scene = Scene('depth', program, [_identity()]);
     // Submit the nearest surface first: a broken depth test lets blue cover it.
     scene.add(
-      Node('near', _quad(program, 0.44), _color('near', colorRed))
+      Node('near', _quad(program, 0.44), _color('near', colorRed.toVector3()))
         ..setPos(-0.18, 0.12, -0.4),
     );
     scene.add(
-      Node('far', _quad(program, 0.65), _color('far', colorBlue))
+      Node('far', _quad(program, 0.65), _color('far', colorBlue.toVector3()))
         ..setPos(0.13, -0.08, 0.3),
     );
     scene.add(
-      Node('middle', _quad(program, 0.32), _color('middle', colorGreen))
-        ..setPos(0.35, 0.36, -0.1),
+      Node(
+        'middle',
+        _quad(program, 0.32),
+        _color('middle', colorGreen.toVector3()),
+      )..setPos(0.35, 0.36, -0.1),
     );
     phase.add(scene);
   }
@@ -236,7 +248,7 @@ class GoldenScene {
     final solid = _solid();
     phase.add(
       Scene('background', solid, [_identity()])..add(
-        Node('blue', _quad(solid, 0.8), _color('blue', colorBlue))
+        Node('blue', _quad(solid, 0.8), _color('blue', colorBlue.toVector3()))
           ..setPos(0.0, 0.0, 0.5),
       ),
     );
@@ -250,9 +262,9 @@ class GoldenScene {
       fragment,
     );
     final red = Material.transparent('red', blendEquationStandard)
-      ..setUniform(uColor, colorRed);
+      ..setUniform(uColor, colorRed.toVector3());
     final green = Material.transparent('green', blendEquationStandard)
-      ..setUniform(uColor, colorGreen);
+      ..setUniform(uColor, colorGreen.toVector3());
     phase.add(
       Scene('transparent', program, [_identity()])
         ..add(Node('red', _quad(program, 0.48), red)..setPos(-0.22, 0.12, 0.0))

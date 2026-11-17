@@ -71,7 +71,7 @@ class BloomEffect {
     uniformsApply = UniformGroup("uniformApply")
       ..setUniform(uTexture, fbIn.colorTexture!)
       ..setUniform(uScale, 0.6)
-      ..setUniform(uColor, colorWhite)
+      ..setUniform(uColor, colorWhite.toVector3())
       ..setUniform(uTexture2, fb2.colorTexture!);
   }
 

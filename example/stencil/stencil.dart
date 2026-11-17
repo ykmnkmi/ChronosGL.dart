@@ -64,23 +64,23 @@ TypedTextureMutable makeStripedStencilBuffer(
   );
 }
 
-final TheStencilFunction stencilEqualZero = TheStencilFunction(
+const TheStencilFunction stencilEqualZero = TheStencilFunction(
   glEqual,
   0,
   0xff,
 );
 
-final TheStencilFunction stencilNotEqualZero = TheStencilFunction(
+const TheStencilFunction stencilNotEqualZero = TheStencilFunction(
   glNotequal,
   0,
   0xff,
 );
 
-final TheStencilFunction stencilAlways = TheStencilFunction(glAlways, 1, 0xff);
+const TheStencilFunction stencilAlways = TheStencilFunction(glAlways, 1, 0xff);
 
-final TheStencilOp stencilWriteNever = TheStencilOp(glKeep, glKeep, glKeep);
+const TheStencilOp stencilWriteNever = TheStencilOp(glKeep, glKeep, glKeep);
 
-final TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
+const TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
   glKeep,
   glKeep,
   glReplace,
@@ -143,13 +143,13 @@ void main() {
     ..clearStencilBuffer = false;
 
   final Material matRed = Material("red")
-    ..setUniform(uColor, colorRed)
+    ..setUniform(uColor, colorRed.toVector3())
     ..forceUniform(cStencilFunc, stencilNotEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
     ..forceUniform(cStencilWrite, 0x0);
 
   final Material matBlue = Material("blue")
-    ..setUniform(uColor, colorBlue)
+    ..setUniform(uColor, colorBlue.toVector3())
     ..forceUniform(cStencilFunc, stencilEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
     ..forceUniform(cStencilWrite, 0x0);

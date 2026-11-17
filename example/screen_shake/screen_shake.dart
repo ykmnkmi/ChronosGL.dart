@@ -2,6 +2,8 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../shared/particles.dart';
+
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -121,9 +123,14 @@ void main() {
     pointSpritesVertexShader,
     pointSpritesFragmentShader,
   );
-  final Material materialStars = Utils.makeStarMaterial(cgl)
+  final Material materialStars = makeStarMaterial(cgl)
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
-  final MeshData stars = Utils.makeStarMesh(progSprites, 2000, 100.0);
+  final MeshData stars = makeStarMesh(
+    progSprites,
+    2000,
+    100.0,
+    random: math.Random(),
+  );
 
   final math.Random rng = math.Random(0);
   final CameraShaker shaker = CameraShaker(orbit, rng);

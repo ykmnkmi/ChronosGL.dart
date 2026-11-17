@@ -48,19 +48,6 @@ final ShaderObject pointSpritesFragmentShader = ShaderObject("PointSpritesF")
   ..addUniformVars([uTexture])
   ..setBodyWithMain(["$oFragColor = texture( $uTexture,  gl_PointCoord);"]);
 
-final ShaderObject demoVertexShader = ShaderObject("FixedVertexColorV")
-  ..addAttributeVars([aPosition])
-  ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
-  ..addVaryingVars([vColor])
-  ..setBodyWithMain(
-    [stdVertexBody, "$vColor = ColorFromPosition($aPosition);"],
-    prolog: [stdLibShader],
-  );
-
-final ShaderObject demoFragmentShader = ShaderObject("FixedVertexColorF")
-  ..addVaryingVars([vColor])
-  ..setBodyWithMain(["$oFragColor = vec4( $vColor, 1.0 );"]);
-
 final ShaderObject multiColorVertexShader =
     ShaderObject("MultiColorVertexColorV")
       ..addAttributeVars([aPosition, aColor])

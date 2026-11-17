@@ -8,11 +8,11 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 Map<String, vm.Vector3> shapeToColor = {
-  "sphere": colorCyan,
-  "cube": colorRed,
-  "cylinder": colorGreen,
-  "quad": colorMagenta,
-  "torus": colorBlue,
+  "sphere": colorCyan.toVector3(),
+  "cube": colorRed.toVector3(),
+  "cylinder": colorGreen.toVector3(),
+  "quad": colorMagenta.toVector3(),
+  "torus": colorBlue.toVector3(),
 };
 
 void main() {

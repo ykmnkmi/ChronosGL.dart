@@ -253,7 +253,13 @@ void main() {
 
   Illumination illumination = Illumination()
     ..addLight(
-      DirectionalLight("dir", dirLight, colorWhite * 0.5, colorBlack, 100.0),
+      DirectionalLight(
+        "dir",
+        dirLight,
+        colorWhite.toVector3() * 0.5,
+        colorBlack.toVector3(),
+        100.0,
+      ),
     );
 
   final ext = cgl.getExtension("EXT_color_buffer_float");

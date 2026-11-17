@@ -7,11 +7,14 @@ import 'package:web/web.dart' as web;
 import 'dart:math' as math;
 
 Node triangle(RenderProgram program) {
-  final Material mat1 = Material("mat1")..setUniform(uColor, colorBlue);
+  final Material mat1 = Material("mat1")
+    ..setUniform(uColor, colorBlue.toVector3());
 
-  final Material mat2 = Material("mat2")..setUniform(uColor, colorRed);
+  final Material mat2 = Material("mat2")
+    ..setUniform(uColor, colorRed.toVector3());
 
-  final Material mat3 = Material("mat3")..setUniform(uColor, colorGreen);
+  final Material mat3 = Material("mat3")
+    ..setUniform(uColor, colorGreen.toVector3());
 
   double thickness = 3.0;
   double length = 5.0 * thickness;

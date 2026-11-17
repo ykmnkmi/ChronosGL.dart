@@ -6,6 +6,8 @@ import 'dart:math' as math;
 
 import 'package:web/web.dart' as web;
 
+import '../shared/particles.dart';
+
 import 'package:vector_math/vector_math.dart' as vm;
 
 final ShaderObject fireworksVertexShader = ShaderObject("FireWorksV")
@@ -100,11 +102,16 @@ void main() {
   );
 
   // used for both stars and fireworks
-  final Material material = Utils.makeStarMaterial(cgl)
+  final Material material = makeStarMaterial(cgl)
     ..setUniform(uModelMatrix, vm.Matrix4.identity())
-    ..setUniform(uColor, colorRed);
+    ..setUniform(uColor, colorRed.toVector3());
 
-  final MeshData stars = Utils.makeStarMesh(progSprites, 2000, 100.0);
+  final MeshData stars = makeStarMesh(
+    progSprites,
+    2000,
+    100.0,
+    random: math.Random(),
+  );
   final MeshData rocket = getRocket(progFireworks);
 
   double lastTimeMs = 0.0;

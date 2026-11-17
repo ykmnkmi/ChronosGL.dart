@@ -1,7 +1,11 @@
+import 'dart:math' as math;
+
 import 'dart:js_interop';
 import "dart:async";
 
 import 'package:web/web.dart' as web;
+
+import '../shared/particles.dart';
 
 import 'package:chronosgl/chronosgl.dart';
 
@@ -16,7 +20,7 @@ Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
     ),
     [perspective],
   );
-  scene.add(Utils.makeParticles(scene.program, num));
+  scene.add(makeParticles(scene.program, num, random: math.Random()));
   return scene;
 }
 
@@ -34,7 +38,8 @@ Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
     uniforms,
   );
   // textures will be set after they are loaded
-  final Material matWood = Material("wood")..setUniform(uColor, colorBlack);
+  final Material matWood = Material("wood")
+    ..setUniform(uColor, colorBlack.toVector3());
   var f3 = loadImage("../wood.jpg")
     ..then((img) {
       Texture wood = ImageTexture(cgl, "../wood.jpg", img);
@@ -43,7 +48,7 @@ Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   gLoadables.add(f3);
 
   final Material matGradient = Material("gradient")
-    ..setUniform(uColor, colorRed);
+    ..setUniform(uColor, colorRed.toVector3());
   var f1 = loadImage("../gradient.jpg")
     ..then((img) {
       Texture gradient = ImageTexture(cgl, "../gradient.jpg", img);
@@ -52,7 +57,7 @@ Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   gLoadables.add(f1);
 
   final Material matTrans = Material("trans")
-    ..setUniform(uColor, colorGray4)
+    ..setUniform(uColor, colorGray4.toVector3())
     ..forceUniform(cBlendEquation, blendEquationStandard);
   var f2 = loadImage("../transparent.png")
     ..then((img) {

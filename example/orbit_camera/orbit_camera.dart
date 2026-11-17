@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'dart:js_interop';
 
 import 'package:chronosgl/chronosgl.dart';
@@ -5,6 +7,8 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:web/web.dart' as web;
+
+import '../shared/particles.dart';
 
 Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(
@@ -17,7 +21,7 @@ Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
     ),
     [perspective],
   );
-  scene.add(Utils.makeParticles(scene.program, num));
+  scene.add(makeParticles(scene.program, num, random: math.Random()));
   return scene;
 }
 
@@ -27,7 +31,7 @@ Node makeHead(RenderProgram program) {
     ..setUniform(uColor, vm.Vector3(0.94, 0.72, 0.63));
   Node head = Node("head", sphere, headMat);
 
-  Material eyeMat = Material("eye")..setUniform(uColor, colorBlue);
+  Material eyeMat = Material("eye")..setUniform(uColor, colorBlue.toVector3());
   Node leftEye = Node("leftEye", sphere, eyeMat)
     ..setPos(-0.2, 0.4, -0.8)
     ..transform.scaleByDouble(0.2, 0.2, 0.2, 1.0);

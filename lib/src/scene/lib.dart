@@ -3,6 +3,7 @@ library;
 import 'package:vector_math/vector_math.dart' as vm;
 
 import "../core/lib.dart";
+import '../shape/lib.dart' show quadGeometry;
 
 /// # Layer: Scene (uses Core Layer)
 /// The **scene layer** adds abstractions to the *core layer**
@@ -10,3 +11,4 @@ import "../core/lib.dart";
 ///
 part "node.dart";
 part "render_phase.dart";
+part 'fullscreen_pass.dart';

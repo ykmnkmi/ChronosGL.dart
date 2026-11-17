@@ -2,9 +2,13 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../shared/particles.dart';
+
 import 'dart:async';
 
 import 'package:chronosgl/chronosgl.dart';
+
+import '../shared/shaders.dart';
 
 import 'dart:math' as math;
 
@@ -21,7 +25,7 @@ Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
     ),
     [perspective],
   );
-  scene.add(Utils.makeParticles(scene.program, num));
+  scene.add(makeParticles(scene.program, num, random: math.Random()));
   return scene;
 }
 

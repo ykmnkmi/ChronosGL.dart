@@ -24,17 +24,23 @@ final Map<String, Light> gLightSources = {
   idDirectional: DirectionalLight(
     "dir",
     dirLight,
-    colorWhite,
-    colorWhite,
+    colorWhite.toVector3(),
+    colorWhite.toVector3(),
     40.0,
   ),
-  idPoint: PointLight("point", posLight, colorWhite, colorWhite, range),
+  idPoint: PointLight(
+    "point",
+    posLight,
+    colorWhite.toVector3(),
+    colorWhite.toVector3(),
+    range,
+  ),
   idSpot: SpotLight(
     "spot",
     posLight,
     spotDirLight,
-    colorWhite,
-    colorWhite,
+    colorWhite.toVector3(),
+    colorWhite.toVector3(),
     range,
     angle,
     2.0,
@@ -57,7 +63,8 @@ Scene lightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
     uniforms,
   );
 
-  Material lightSourceMat = Material("light")..setUniform(uColor, colorYellow);
+  Material lightSourceMat = Material("light")
+    ..setUniform(uColor, colorYellow.toVector3());
   for (String k in gLightSources.keys) {
     gLightVisualizers[k] = Node(
       k,
@@ -79,25 +86,25 @@ void makeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
     Material("mat0")
       ..setUniform(
         uTexture,
-        makeSolidColorTextureRGB(cgl, "blue", colorBlue * 0.5),
+        makeSolidColorTextureRGB(cgl, "blue", colorBlue.toVector3() * 0.5),
       )
       ..setUniform(uShininess, glossiness),
     Material("mat1")
       ..setUniform(
         uTexture,
-        makeSolidColorTextureRGB(cgl, "red", colorRed * 0.5),
+        makeSolidColorTextureRGB(cgl, "red", colorRed.toVector3() * 0.5),
       )
       ..setUniform(uShininess, glossiness),
     Material("mat2")
       ..setUniform(
         uTexture,
-        makeSolidColorTextureRGB(cgl, "white", colorWhite * 0.5),
+        makeSolidColorTextureRGB(cgl, "white", colorWhite.toVector3() * 0.5),
       )
       ..setUniform(uShininess, glossiness),
     Material("mat3")
       ..setUniform(
         uTexture,
-        makeSolidColorTextureRGB(cgl, "green", colorGreen * 0.5),
+        makeSolidColorTextureRGB(cgl, "green", colorGreen.toVector3() * 0.5),
       )
       ..setUniform(uShininess, glossiness),
   ];

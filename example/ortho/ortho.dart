@@ -35,11 +35,16 @@ void main() {
   Scene scenePerspective = Scene("objects", prog, [perspective]);
   phasePerspective.add(scenePerspective);
 
-  final Material mat1 = Material("mat1")..setUniform(uColor, colorBlue);
-  final Material mat2 = Material("mat2")..setUniform(uColor, colorRed);
-  final Material mat3 = Material("mat3")..setUniform(uColor, colorGreen);
-  final Material mat4 = Material("mat4")..setUniform(uColor, colorCyan);
-  final Material mat5 = Material("plane")..setUniform(uColor, colorGray8);
+  final Material mat1 = Material("mat1")
+    ..setUniform(uColor, colorBlue.toVector3());
+  final Material mat2 = Material("mat2")
+    ..setUniform(uColor, colorRed.toVector3());
+  final Material mat3 = Material("mat3")
+    ..setUniform(uColor, colorGreen.toVector3());
+  final Material mat4 = Material("mat4")
+    ..setUniform(uColor, colorCyan.toVector3());
+  final Material mat5 = Material("plane")
+    ..setUniform(uColor, colorGray8.toVector3());
 
   final List<Node> nodes = [
     Node("sphere", shapeIcosahedron(prog, subdivisions: 3), mat1)

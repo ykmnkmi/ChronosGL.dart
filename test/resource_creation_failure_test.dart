@@ -521,7 +521,7 @@ void main() { color = varyingValue; }
               2,
               2,
               glRgba,
-              TextureProperties(),
+              const TextureProperties(),
               glRgba,
               glUnsignedByte,
               Uint8List(16),

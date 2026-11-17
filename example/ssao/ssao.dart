@@ -69,7 +69,7 @@ void main() {
   gLoadables.add(future);
 
   Material material = Material("mat")
-    ..setUniform(uColor, colorGray8)
+    ..setUniform(uColor, colorGray8.toVector3())
     ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;

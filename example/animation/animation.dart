@@ -2,6 +2,8 @@ import 'dart:js_interop';
 
 import 'package:chronosgl/chronosgl.dart';
 
+import '../shared/shaders.dart';
+
 import 'package:web/web.dart' as web;
 
 import 'dart:async';
@@ -126,7 +128,8 @@ void main() {
         ..add(sceneAnim)
         ..add(sceneDemo);
 
-  final Material matWire = Material("wire")..setUniform(uColor, colorYellow);
+  final Material matWire = Material("wire")
+    ..setUniform(uColor, colorYellow.toVector3());
 
   final Material mat = Material("mat");
   late TypedTextureMutable animationTable;

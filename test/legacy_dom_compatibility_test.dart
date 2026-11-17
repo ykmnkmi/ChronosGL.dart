@@ -54,11 +54,15 @@ void main() {
     expect(orbit.mouse.currentlyPressedButton(Mouse.left), isTrue);
     target.dispatchEvent(web.MouseEvent('mouseup'));
     final root = html.DivElement();
-    StatsFps(root, 'blue', 'gray').updateFrameCount(1000, '<b>legacy</b>');
+    final fps = StatsFps(root, 'blue', 'gray');
+    addTearDown(fps.dispose);
+    fps.updateFrameCount(1000, '<b>legacy</b>');
     expect(root.querySelector('b')!.text, 'legacy');
     final cgl = _context(canvas);
     final perspective = PerspectiveResizeAware(cgl, canvas, orbit, 0.1, 100);
+    addTearDown(perspective.dispose);
     final phase = RenderPhaseResizeAware('legacy', cgl, canvas, perspective);
+    addTearDown(phase.dispose);
     expect([phase.viewPortW, phase.viewPortH], [32, 16]);
     expect(cgl.getParameter(glViewport), [0, 0, 32, 16]);
   });

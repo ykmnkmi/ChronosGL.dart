@@ -39,7 +39,8 @@ Scene cubeScene(ChronosGL cgl, List<UniformGroup> uniforms) {
     uniforms,
   );
 
-  final Material matCube = Material("cube")..setUniform(uColor, colorRed);
+  final Material matCube = Material("cube")
+    ..setUniform(uColor, colorRed.toVector3());
 
   double dim = 0.2;
   Node cube = Node(

@@ -1,7 +1,11 @@
+import 'dart:math' as math;
+
 import 'dart:js_interop';
 import "dart:async";
 
 import 'package:web/web.dart' as web;
+
+import '../shared/particles.dart';
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:vector_math/vector_math.dart' as vm;
@@ -86,9 +90,14 @@ void main() {
     pointSpritesVertexShader,
     pointSpritesFragmentShader,
   );
-  final Material matStars = Utils.makeStarMaterial(cgl)
+  final Material matStars = makeStarMaterial(cgl)
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
-  final MeshData mdStars = Utils.makeStarMesh(progStars, 2000, 100.0);
+  final MeshData mdStars = makeStarMesh(
+    progStars,
+    2000,
+    100.0,
+    random: math.Random(),
+  );
 
   double lastTimeMs = 0.0;
   late final JSFunction onFrame;

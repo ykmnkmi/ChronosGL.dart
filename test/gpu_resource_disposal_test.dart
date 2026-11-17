@@ -149,7 +149,12 @@ void main() {
           ..width = 2
           ..height = 2;
         final Texture tex = switch (kind) {
-          'base' => Texture(cgl, glTexture2D, 'base', TextureProperties()),
+          'base' => Texture(
+            cgl,
+            glTexture2D,
+            'base',
+            const TextureProperties(),
+          ),
           'typed' => texture(),
           'mutable' => mutableTexture(),
           'image' => ImageTexture(cgl, 'image', source),
@@ -246,7 +251,7 @@ void main() {
         ..height = 2;
       web.document.body!.append(source);
       addTearDown(() => source.remove());
-      final properties = TextureProperties()..clamp = true;
+      final properties = const TextureProperties(clamp: true);
       final first = ImageTexture(cgl, 'first', source, properties);
       final second = ImageTexture(cgl, 'second', source, properties);
       first.dispose();

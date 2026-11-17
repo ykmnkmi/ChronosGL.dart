@@ -2,6 +2,8 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../shared/particles.dart';
+
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
@@ -133,9 +135,9 @@ class SceneStars extends SimpleScene {
       pointSpritesVertexShader,
       pointSpritesFragmentShader,
     );
-    mat = Utils.makeStarMaterial(cgl)
+    mat = makeStarMaterial(cgl)
       ..setUniform(uModelMatrix, vm.Matrix4.identity());
-    mesh = Utils.makeStarMesh(program, 2000, dim);
+    mesh = makeStarMesh(program, 2000, dim, random: math.Random());
   }
 }
 

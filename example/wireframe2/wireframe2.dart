@@ -47,8 +47,10 @@ void main() {
   );
   phase.add(scene);
 
-  final Material matWire = Material("wire")..setUniform(uColor, colorYellow);
-  final Material matNorm = Material("normal")..setUniform(uColor, colorBlue);
+  final Material matWire = Material("wire")
+    ..setUniform(uColor, colorYellow.toVector3());
+  final Material matNorm = Material("normal")
+    ..setUniform(uColor, colorBlue.toVector3());
 
   late Node nodeWire;
   late Node nodeNorm;

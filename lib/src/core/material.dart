@@ -1,61 +1,80 @@
 part of 'lib.dart';
 
+/// Immutable stencil comparison settings. Use [copyWith] to create a variant.
 class TheStencilFunction {
-  TheStencilFunction(this.func, this.value, this.mask);
+  const TheStencilFunction(this.func, this.value, this.mask);
 
-  int func;
-  int value;
-  int mask;
+  final int func;
+  final int value;
+  final int mask;
+
+  TheStencilFunction copyWith({int? func, int? value, int? mask}) =>
+      TheStencilFunction(
+        func ?? this.func,
+        value ?? this.value,
+        mask ?? this.mask,
+      );
 }
 
-final TheStencilFunction stencilFunctionNone = TheStencilFunction(
+const TheStencilFunction stencilFunctionNone = TheStencilFunction(
   glInvalidValue,
   0,
   ~0,
 );
 
-final TheStencilFunction stencilFunctionAlways = TheStencilFunction(
+const TheStencilFunction stencilFunctionAlways = TheStencilFunction(
   glAlways,
   0,
   ~0,
 );
 
+/// Immutable stencil operations for stencil failure, depth failure and success.
 class TheStencilOp {
-  TheStencilOp(this.fail, this.zfail, this.zpass);
+  const TheStencilOp(this.fail, this.zfail, this.zpass);
 
-  int fail;
-  int zfail;
-  int zpass;
+  final int fail;
+  final int zfail;
+  final int zpass;
+
+  TheStencilOp copyWith({int? fail, int? zfail, int? zpass}) =>
+      TheStencilOp(fail ?? this.fail, zfail ?? this.zfail, zpass ?? this.zpass);
 }
 
+/// Immutable blending settings. Materials can safely share a preset.
 class TheBlendEquation {
-  TheBlendEquation(this.equation, this.srcFactor, this.dstFactor);
+  const TheBlendEquation(this.equation, this.srcFactor, this.dstFactor);
 
-  int equation;
-  int srcFactor;
-  int dstFactor;
+  final int equation;
+  final int srcFactor;
+  final int dstFactor;
+
+  TheBlendEquation copyWith({int? equation, int? srcFactor, int? dstFactor}) =>
+      TheBlendEquation(
+        equation ?? this.equation,
+        srcFactor ?? this.srcFactor,
+        dstFactor ?? this.dstFactor,
+      );
 }
 
-final TheBlendEquation blendEquationNone = TheBlendEquation(
+const TheBlendEquation blendEquationNone = TheBlendEquation(
   glInvalidValue,
   glInvalidValue,
   glInvalidValue,
 );
 
-// dst was GL_ONE
-final TheBlendEquation blendEquationStandard = TheBlendEquation(
+const TheBlendEquation blendEquationStandard = TheBlendEquation(
   glFuncAdd,
   glSrcAlpha,
   glOneMinusSrcAlpha,
 );
 
-final TheBlendEquation blendEquationMix = TheBlendEquation(
+const TheBlendEquation blendEquationMix = TheBlendEquation(
   glFuncAdd,
   glSrcAlpha,
   glOneMinusSrcColor,
 );
 
-final TheBlendEquation blendEquationAdd = TheBlendEquation(
+const TheBlendEquation blendEquationAdd = TheBlendEquation(
   glFuncAdd,
   glOne,
   glOne,

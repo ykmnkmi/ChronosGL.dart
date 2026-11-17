@@ -55,7 +55,8 @@ See [MIGRATION.md](MIGRATION.md) for the previous names.
 
 Mathematics and CPU geometry are available on the Dart VM through these imports:
 
-- `package:chronosgl/core.dart` exports `Transform`.
+- `package:chronosgl/core.dart` exports `Transform`, immutable `Color`, and the
+  color palette.
 - `package:chronosgl/camera.dart` exports `Camera`, `PerspectiveCamera`,
   `OrthographicCamera`, `Projection`, `PerspectiveProjection`, and
   `OrthographicProjection`.
@@ -145,6 +146,51 @@ resource access on a statically typed `Node` must move to `MeshNode`.
 See the [scene contract](docs/5.1_SCENE_GRAPH.md),
 [CPU geometry boundary](docs/5.7_CPU_GEOMETRY.md), and
 [GPU layout contract](docs/5.8_MESH_LAYOUT.md).
+
+GPU convenience factories are available from `package:chronosgl/mesh.dart` and
+the aggregate import. `shapeCube`, `shapeWedge`, `shapeCylinder`,
+`shapeIcosahedron`, `shapeTorusKnot`, `shapeQuad`, and `shapeGrid` each return a
+new mesh owned by the caller. All supplied geometry options are forwarded,
+including `shapeCube(computeNormals: false)`; use a program that does not require
+normals when disabling them.
+
+Use `FullscreenPass(program)` for a reusable clip-space quad. It owns its mesh
+and creates an independent material with depth testing and writes disabled.
+Set the framebuffer and viewport before `draw()`, or add `fullscreen.node` to a
+batch. Call `fullscreen.dispose()` after its last consumer. A supplied material
+and its textures are borrowed; the program is borrowed unless
+`ownsProgram: true` is specified. The shared `emptyMaterial` has been removed.
+
+Colors are immutable RGB values exported by `core.dart`. Convert them explicitly
+when an API requires a mutable vector:
+
+```dart
+material.setUniform(uColor, colorWhite.toVector3());
+final tint = colorBlue.copyWith(r: 0.25);
+final settings = texturePropertiesFramebuffer.copyWith(
+  minFilter: glLinear,
+  magFilter: glLinear,
+);
+```
+
+Texture, blend and stencil settings are immutable and can safely share presets.
+Create variants using constructors or `copyWith()`; texture filtering helpers
+are `withFilterNearest()` and `withMipmapLinear()`.
+
+`package:chronosgl/shadows.dart` provides `ShadowMap` without diagnostic
+resources. `package:chronosgl/debug.dart` provides `ShadowMapVisualizer`,
+`LightVisualizer`, `BoneVisualizer`, `StatsPanel` and `FpsPanel`.
+Visualizers allocate GPU assets on first use and release them with `dispose()`;
+they borrow their input programs, materials and scene data. A shadow visualizer
+creates and owns its own program, quad and sampler, and leaves the shadow
+texture's comparison settings intact. Dispose visualizers before their borrowed
+shadow map, then dispose the map to release its framebuffer, attachments and
+compute program. Panels own their DOM wrapper and preserve their supplied root.
+
+Demo particles, stars and fixed demo shaders live in `example/shared/`.
+Applications can copy or replace that example code; the engine does not import
+it. See the [Phase 6 migration guide](MIGRATION.md#helpers-and-settings-refactoring-phase-6)
+for replaced helpers and ownership details.
 
 Browser camera input and sizing use separate components from the same aggregate
 import:

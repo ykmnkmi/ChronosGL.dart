@@ -6,6 +6,9 @@ import 'package:web/web.dart' as web;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
+
+import '../shared/shaders.dart';
+
 import 'package:vector_math/vector_math.dart' as vm;
 
 const String meshFile = "../asset/knight/knight.js";

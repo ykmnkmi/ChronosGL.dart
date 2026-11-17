@@ -6,6 +6,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
+
+import '../shared/shaders.dart';
+
 import 'package:vector_math/vector_math.dart' as vm;
 
 const String modelFile = "../ct_logo.obj";
@@ -300,7 +303,7 @@ void main() {
   late MeshData ctLogo;
 
   Material material = Material("mat")
-    ..setUniform(uColor, colorGray8)
+    ..setUniform(uColor, colorGray8.toVector3())
     ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
   double lastTimeMs = 0.0;

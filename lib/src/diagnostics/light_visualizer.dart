@@ -1,10 +1,27 @@
-part of 'lib.dart';
+import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:vector_math/vector_math.dart' as vm;
+
+import '../core/lib.dart';
+import '../scene/lib.dart';
+import '../shape/lib.dart';
+
+/// Creates a caller-owned line mesh; release it with `dispose()`.
 MeshData emptyLightVisualizer(RenderProgram prog, String name) {
   MeshData md = prog.makeMeshData(name, glLines);
-  md.addVertices(Float32List(3));
-  md.addFaces([0, 0]);
-  return md;
+  try {
+    md.addVertices(Float32List(3));
+    md.addFaces([0, 0]);
+    return md;
+  } catch (_) {
+    try {
+      md.dispose();
+    } catch (_) {
+      // Preserve the initialization failure.
+    }
+    rethrow;
+  }
 }
 
 void updateDirectionalLightVisualizer(
@@ -129,7 +146,7 @@ void updatePointLightVisualizer2(MeshData md, vm.Vector3 pos, double range) {
     faces.add(f.a);
   }
 
-  md.addVertices(flattenVector3List(points));
+  md.changeVertexData(flattenVector3List(points));
   md.changeFaces(faces);
 }
 
@@ -158,12 +175,73 @@ void updateLightVisualizer(MeshData md, Light light) {
     PointLight pl = light;
     updatePointLightVisualizer(md, pl.pos, pl.range);
   } else {
-    assert(false, "unknown light: ${light.runtimeType}");
+    throw ArgumentError.value(light, 'light', 'Unsupported light type');
   }
 }
 
+/// Creates a caller-owned line mesh for [light]; release it with `dispose()`.
 MeshData lightVisualizer(RenderProgram prog, Light light) {
   MeshData md = emptyLightVisualizer(prog, "dirLightViz");
-  updateLightVisualizer(md, light);
-  return md;
+  try {
+    updateLightVisualizer(md, light);
+    return md;
+  } catch (_) {
+    try {
+      md.dispose();
+    } catch (_) {
+      // Preserve the initialization failure.
+    }
+    rethrow;
+  }
+}
+
+/// A lazily created light wireframe. Owns its mesh and borrows other arguments.
+///
+/// Construction and updates before the first [mesh] access allocate no GPU
+/// resources. Removing [mesh] from a scene does not release it; call [dispose].
+class LightVisualizer {
+  LightVisualizer(
+    this.program,
+    this.material,
+    Light light, {
+    this.name = 'light',
+  }) : _light = light;
+
+  final RenderProgram program;
+  final Material material;
+  final String name;
+  Light _light;
+  MeshNode? _mesh;
+  GpuMesh? _ownedMesh;
+  bool _isDisposed = false;
+
+  bool get isDisposed => _isDisposed;
+  bool get isInitialized => _mesh != null;
+
+  void _checkNotDisposed() {
+    if (_isDisposed) throw StateError('LightVisualizer has been disposed');
+  }
+
+  MeshNode get mesh {
+    _checkNotDisposed();
+    final existing = _mesh;
+    if (existing != null) return existing;
+    final md = lightVisualizer(program, _light);
+    _ownedMesh = md;
+    return _mesh = MeshNode(name, md, material);
+  }
+
+  /// Updates an existing wireframe, deferring allocation until [mesh] is read.
+  void update([Light? light]) {
+    _checkNotDisposed();
+    if (light != null) _light = light;
+    final md = _ownedMesh;
+    if (md != null) updateLightVisualizer(md, _light);
+  }
+
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    _ownedMesh?.dispose();
+  }
 }

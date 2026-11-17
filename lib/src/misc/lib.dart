@@ -1,23 +1,13 @@
+/// Compatibility exports for callers migrating from the former misc layer.
+///
+/// Prefer the public package entry points. Demo particles and shaders now live
+/// in example/shared and are deliberately absent from the package API.
 library;
 
-import 'dart:typed_data';
-import 'dart:math' as math;
-import 'dart:js_interop';
-
-import 'package:vector_math/vector_math.dart' as vm;
-import 'package:web/web.dart' as web;
-
-import "../core/lib.dart";
-import "../shader/lib.dart";
-import "../shape/lib.dart";
-import "../scene/lib.dart";
-import "../animation/lib.dart";
-
-/// # Layer: Misc (uses Core Layer, Scene Layer, Shape Layer, Shader Layer, Animation Layer)
-/// The **misc layer** contains miscellaneous helpers
-
-part "bone_visualizer.dart";
-part "light_visualizer.dart";
-part "fps_meter.dart";
-part "example_helper.dart";
-part "shadowmap.dart";
+export '../../debug.dart';
+export '../../mesh.dart';
+export '../../shadows.dart';
+export '../core/colors.dart';
+export '../scene/lib.dart' show FullscreenPass, unitNode;
+export '../webhelper/lib.dart'
+    show RenderPhaseResizeAware, PerspectiveResizeAware;

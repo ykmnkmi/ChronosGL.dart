@@ -106,7 +106,7 @@ void main() {
   phase.add(sceneFixed);
 
   Material lightSourceMat = Material("light")
-    ..setUniform(uColor, colorYellow)
+    ..setUniform(uColor, colorYellow.toVector3())
     ..setUniform(uShininess, 25.0);
   Node shapePointLight = Node(
     "pointLight",
@@ -138,7 +138,7 @@ void main() {
   onFrame = animate.toJS;
 
   Material mat = Material("mat")
-    ..setUniform(uColor, colorGray4)
+    ..setUniform(uColor, colorGray4.toVector3())
     ..setUniform(uShininess, 25.0);
 
   List<Future<Object>> futures = [

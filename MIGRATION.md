@@ -76,6 +76,77 @@ replace populating the buffers or keeping resources alive. See the
 [CPU boundary](docs/5.7_CPU_GEOMETRY.md), and
 [GPU layout contract](docs/5.8_MESH_LAYOUT.md).
 
+## Helpers and settings (refactoring phase 6)
+
+The aggregate import still exposes supported browser helpers. Use `mesh.dart`
+for GPU mesh factories, `shadows.dart` for shadow computation, and `debug.dart`
+for optional panels and visualizers. The former `src/misc/lib.dart` now contains
+compatibility exports only. No package module depends on `example/`.
+
+| Previous use | Current use |
+| --- | --- |
+| `setUniform(uColor, colorWhite)` | `setUniform(uColor, colorWhite.toVector3())` |
+| Mutate a `color*` vector | `color.copyWith(r: ..., g: ..., b: ...)`, then `toVector3()` |
+| Assign fields of `TextureProperties` | Named constructor arguments or `properties.copyWith(...)` |
+| `properties.setFilterNearest()` | Use the returned `properties.withFilterNearest()` value |
+| `properties.setMipmapLinear()` | Use the returned `properties.withMipmapLinear()` value |
+| Assign blend/stencil setting fields | Create a variant with `copyWith(...)` and replace the material control |
+| `emptyMaterial` | A new `Material(name)` or a pass's independent material |
+| `unitNode(program)` | `FullscreenPass(program).node`, with an owner retained for disposal |
+| `shadowMap.visualize()` | `ShadowMapVisualizer(shadowMap).draw()`, retaining the visualizer for reuse |
+| `shadowMap.setVisualizationViewPort(x, y, w, h)` | `visualizer.setViewport(x, y, w, h)` |
+| `Stats`, `StatsFps` | `StatsPanel`, `FpsPanel` (old names remain aliases) |
+| `Utils.*` particle/star helpers | Top-level functions in `example/shared/particles.dart` |
+| `demoVertexShader`, `demoFragmentShader` | `example/shared/shaders.dart` |
+
+`Color` and its palette are usable through `core.dart` on the Dart VM. Each
+`toVector3()` returns an independent mutable vector; sharing that resulting vector
+explicitly still shares its mutations. Settings and their presets are immutable,
+including non-preset instances. Replace a control through
+`material.forceUniform(cBlendEquation, preset.copyWith(...))`. A texture retains
+the immutable properties passed at construction; choose the variant before
+creating the texture.
+
+All `shape*` factories return caller-owned GPU meshes and keep existing call
+signatures. `shapeCube` now forwards `computeNormals`; `shapeWedge` also exposes
+that option, `shapeTorusKnot` exposes `wrap`, `computeUVs` and `inside`, and
+`shapeQuad` accepts fractional sizes. Programs requiring omitted normals or UVs
+must be changed accordingly. Dispose each created mesh after its last consumer.
+
+`FullscreenPass` creates and owns its quad. Its default material disables depth
+testing and depth writes; a supplied material is borrowed unchanged. Its
+uniforms and textures remain borrowed. The supplied program is borrowed unless
+`ownsProgram: true` is set, which also transfers failure cleanup responsibility.
+The pass draws into the active framebuffer and viewport. Alternatively, add its
+`node` to a batch; remove every use before disposing the owner. The deprecated
+`unitNode` creates independent meshes and materials, with mesh cleanup left to
+the caller.
+
+`ShadowMap` creates no visualization resources. It owns its compute program,
+framebuffer and attachments; casters and their resources remain borrowed.
+`ShadowMapVisualizer` creates its own program, mesh and sampler on first draw.
+It samples depth without mutating comparison settings, and does not clear the
+screen. Dispose the visualizer before the map. `getMapTexture()` returns a
+borrowed texture and `getMapSize()` returns an independent vector.
+
+`LightVisualizer` and `BoneVisualizer` allocate their owned line meshes only
+when `mesh` is first read. Updates before that read do not allocate GPU assets.
+Programs, materials, lights and animations are borrowed. Old light mesh factory
+functions remain available and return caller-owned meshes. Panels own a styled
+wrapper inside their borrowed root; their DOM structure includes this wrapper.
+`dispose()` removes only that wrapper and preserves the root's styles and other
+children. `FpsPanel` uses the actual elapsed sample time in milliseconds.
+
+Legacy `RenderPhaseResizeAware` and `PerspectiveResizeAware` now belong to browser
+integration. Call `dispose()` to stop their resize subscription. Their borrowed
+resources and projection reads remain usable, while `resolutionChange()` after
+disposal throws `StateError`. Prefer `CanvasViewport` for new code.
+
+Particle examples pass an explicit `math.Random` to `makeStarMesh` and
+`makeParticles`; the old global `Utils.rand` and unused `Utils.id` are removed.
+Demo materials borrow their generated texture; example code must release that
+texture and its mesh separately when finished.
+
 ## Projection parameters (refactoring step 3.8)
 
 Mathematical perspective cameras and projections use named `fovYRadians`,
@@ -313,8 +384,8 @@ in consuming projects. The previous names have been removed.
 | `Framebuffer.Effect` | `Framebuffer.effect` |
 | `Framebuffer.Default` | `Framebuffer.defaultFramebuffer` |
 | `TypedTextureMutable.UpdateContent` | `TypedTextureMutable.updateContent` |
-| `TextureProperties.SetFilterNearest` | `TextureProperties.setFilterNearest` |
-| `Utils.MakeStarMesh` | `Utils.makeStarMesh` |
+| `TextureProperties.SetFilterNearest` | `TextureProperties.withFilterNearest()` (returns a new value) |
+| `Utils.MakeStarMesh` | Example `makeStarMesh(..., random: random)` in `example/shared/particles.dart` |
 | `Keyboard.AfterFrameCleanup` | `Keyboard.afterFrameCleanup` |
 
 Leading underscores on private declarations remain in place, for example
@@ -479,7 +550,7 @@ Helpers that create elements now return the corresponding `package:web` types:
 | `loadCubeImages` | `List<Future<web.HTMLImageElement>>` |
 | `loadVideo` | `Future<web.HTMLVideoElement>` |
 | `makeVideoElementFromCamera` | `Future<web.HTMLVideoElement?>` |
-| `makeSolidColorCanvas`, `Utils.createParticleCanvas` | `web.HTMLCanvasElement` |
+| `makeSolidColorCanvas`, example `createParticleCanvas` | `web.HTMLCanvasElement` |
 
 Update explicitly typed callbacks and variables to these types, or let Dart
 infer the callback parameter type. `ImageTexture` and `CubeTexture` accept these
