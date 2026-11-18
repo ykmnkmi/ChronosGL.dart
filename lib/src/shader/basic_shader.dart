@@ -1,7 +1,7 @@
 part of 'lib.dart';
 
 //  Gouraud shading - most action happens in vertext shader - cheaper
-final ShaderObject lightVertexShaderGourad = ShaderObject("LightGouradV")
+final ShaderObject lightVertexShaderGourad = ShaderObject.vertex("LightGouradV")
   ..addAttributeVars([aPosition, aNormal, aTexUV])
   ..addVaryingVars([vColor])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
@@ -29,16 +29,17 @@ void main() {
     prolog: [stdLibShader],
   );
 
-final ShaderObject lightFragmentShaderGourad = ShaderObject("LightGrouradV")
-  ..addVaryingVars([vColor])
-  ..setBodyWithMain(["$oFragColor = vec4($vColor, 1.0 );"]);
+final ShaderObject lightFragmentShaderGourad =
+    ShaderObject.fragment("LightGrouradV")
+      ..addVaryingVars([vColor])
+      ..setBodyWithMain(["$oFragColor = vec4($vColor, 1.0 );"]);
 
 // Phong shader - most action happens in fragment shader - expensive
 // Light Matrix m organization:
 // m[0].xyz light direction
 //
 final ShaderObject lightVertexShaderBlinnPhong =
-    ShaderObject("LightBlinnPhongV")
+    ShaderObject.vertex("LightBlinnPhongV")
       ..addAttributeVars([aPosition, aNormal, aTexUV])
       ..addVaryingVars([vPosition, vNormal, vTexUV])
       ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
@@ -54,7 +55,7 @@ void main() {
 """,
       ]);
 final ShaderObject lightFragmentShaderBlinnPhong =
-    ShaderObject("LightBlinnPhongF")
+    ShaderObject.fragment("LightBlinnPhongF")
       ..addVaryingVars([vPosition, vNormal, vTexUV])
       ..addUniformVars([uLightDescs, uLightTypes, uShininess])
       ..addUniformVars([uEyePosition, uTexture])

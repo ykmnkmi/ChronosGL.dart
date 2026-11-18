@@ -7,6 +7,7 @@ import 'package:web/web.dart' as web;
 import '../shared/particles.dart';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 
 // http://www.bidouille.org/prog/plasma
 // see also: https://www.shadertoy.com/view/XdX3Wn

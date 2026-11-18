@@ -93,6 +93,21 @@ void _cleanupAfterFailure(Iterable<void Function()> actions) {
 /// attached shaders and programs that are still in use. WebGL errors remain
 /// available through [getError].
 class ChronosGL {
+  /// Creates a WebGL2 context from a typed browser canvas.
+  ChronosGL.fromCanvas(
+    web.HTMLCanvasElement canvas, {
+    bool preserveDrawingBuffer = false,
+    bool faceCulling = false,
+    bool antialiasing = true,
+  }) : this(
+         canvas,
+         preserveDrawingBuffer: preserveDrawingBuffer,
+         faceCulling: faceCulling,
+         antialiasing: antialiasing,
+       );
+
+  /// Legacy interop boundary. Legacy SDK DOM values work only in JavaScript.
+  @Deprecated('Use ChronosGL.fromCanvas with package:web.')
   ChronosGL(
     Object canvas, {
     bool preserveDrawingBuffer = false,
@@ -115,7 +130,7 @@ class ChronosGL {
     final context =
         element.getContext("webgl2", attributes) as web.WebGL2RenderingContext?;
     if (context == null) {
-      throw Exception(noWebglMessage);
+      throw UnsupportedError(noWebglMessage);
     }
     _gl = context;
 
@@ -147,7 +162,13 @@ class ChronosGL {
       logError(_addLineNumbers(text));
       logError("Failure:");
       logError(error);
-      throw error;
+      throw ShaderCompilationException(
+        error,
+        stage: type == glVertexShader
+            ? ShaderStage.vertex
+            : ShaderStage.fragment,
+        source: text,
+      );
     }
     return shader;
   }
@@ -180,7 +201,9 @@ class ChronosGL {
         program,
         glLinkStatus,
       ) as JSBoolean).toDart) {
-        throw _gl.getProgramInfoLog(program) ?? 'Unknown program linking error';
+        throw ShaderCompilationException(
+          _gl.getProgramInfoLog(program) ?? 'Unknown program linking error',
+        );
       }
 
       _gl.detachShader(program, vs);
@@ -229,7 +252,13 @@ class ChronosGL {
   }
 
   void changeElementArrayBuffer(GlBuffer buf, TypedData data) {
-    assert((data is Uint16List) || (data is Uint32List) || (data is Uint8List));
+    if (data is! Uint16List && data is! Uint32List && data is! Uint8List) {
+      throw ArgumentError.value(
+        data,
+        'data',
+        'Indices require unsigned integer typed data',
+      );
+    }
     _gl.bindBuffer(glElementArrayBuffer, buf);
     _gl.bufferData(glElementArrayBuffer, _toJSBufferView(data), glDynamicDraw);
   }

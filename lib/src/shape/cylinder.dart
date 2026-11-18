@@ -10,7 +10,17 @@ GeometryBuilder cylinderGeometry(
   int radialSubdivisions,
   bool computeNormals,
 ) {
-  assert(radialSubdivisions > 2, "must have at least 3 divisions");
+  if (radialSubdivisions < 3 ||
+      !radTop.isFinite ||
+      !radBot.isFinite ||
+      !height.isFinite ||
+      radTop < 0 ||
+      radBot < 0 ||
+      height <= 0) {
+    throw ArgumentError(
+      'Cylinder requires finite nonnegative radii, positive height and at least three divisions',
+    );
+  }
   double halfHeight = height / 2;
 
   List<vm.Vector3> vertices = [];
@@ -100,6 +110,11 @@ GeometryBuilder cylinderGeometryWireframeFriendly(
   double height,
   int radialSubdivisions,
 ) {
+  if (radialSubdivisions < 3 || !height.isFinite || height <= 0) {
+    throw ArgumentError(
+      'Shape needs positive finite height and three radial subdivisions',
+    );
+  }
   // Compute points on edges
   final double halfHeight = height / 2;
   List<vm.Vector3> top = [];
@@ -147,11 +162,17 @@ GeometryBuilder cylinderGeometryWireframeFriendly(
 
 /// Like ConeGeometry but with duplicate Vertices to make it possible
 ///  to add aCenter attributes with generateWireframeCenters()
+@Deprecated('Use coneGeometryWireframeFriendly instead.')
 GeometryBuilder coneGeometryWireframeFrienly(
   double rad,
   double height,
   int radialSubdivisions,
 ) {
+  if (radialSubdivisions < 3 || !height.isFinite || height <= 0) {
+    throw ArgumentError(
+      'Shape needs positive finite height and three radial subdivisions',
+    );
+  }
   // Compute points on edges
   final double halfHeight = height / 2;
   vm.Vector3 top = vm.Vector3(0.0, halfHeight, 0.0);
@@ -191,3 +212,10 @@ GeometryBuilder coneGeometryWireframeFrienly(
   }
   return gb;
 }
+
+/// Cone with duplicated vertices, in caller-defined world units.
+GeometryBuilder coneGeometryWireframeFriendly({
+  required double radius,
+  required double height,
+  required int radialSubdivisions,
+}) => coneGeometryWireframeFrienly(radius, height, radialSubdivisions);

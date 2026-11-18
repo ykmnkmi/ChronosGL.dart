@@ -26,7 +26,9 @@ GeometryBuilder importGeometryFromAssimp2JsonMesh(
   GeometryBuilder gb = GeometryBuilder();
   String name = mesh['name'] as String;
 
-  assert(mesh.containsKey("vertices"), "no vertices");
+  if (!mesh.containsKey('vertices')) {
+    throw ArgumentError('Mesh requires vertices');
+  }
   gb.addVertices(convertToVector3List(_jsonList(mesh['vertices'])));
   if (mesh.containsKey("normals")) {
     gb.enableAttribute(aNormal);
@@ -36,7 +38,11 @@ GeometryBuilder importGeometryFromAssimp2JsonMesh(
     );
   }
   if (mesh.containsKey("texturecoords")) {
-    assert(_jsonList(mesh["texturecoords"]).length == 1);
+    if (_jsonList(mesh['texturecoords']).length != 1) {
+      throw UnsupportedError(
+        'Only one texture coordinate channel is supported',
+      );
+    }
     gb.enableAttribute(aTexUV);
     gb.addAttributesVector2(
       aTexUV,
@@ -59,7 +65,7 @@ GeometryBuilder importGeometryFromAssimp2JsonMesh(
   }
   List<List<int>> faces = _listIntify(_jsonList(mesh['faces']));
   for (List<int> f in faces) {
-    assert(f.length == 3);
+    if (f.length != 3) throw UnsupportedError('Assimp faces must be triangles');
     gb.addFace3(f[0], f[1], f[2]);
   }
 
@@ -71,7 +77,9 @@ GeometryBuilder importGeometryFromAssimp2JsonMesh(
   List<vm.Vector4> indices = List.generate(n, (i) => vm.Vector4.zero());
   List<vm.Vector4> weights = List.generate(n, (i) => vm.Vector4.zero());
   for (final b in _jsonObjects(mesh["bones"])) {
-    assert(name2bone.containsKey(b["name"]));
+    if (!name2bone.containsKey(b['name'])) {
+      throw ArgumentError('Mesh references an unknown bone');
+    }
     final Bone bone = name2bone[b["name"]] as Bone;
     // Note: Surprising side-effect
     bone.offsetTransform.copyFromArray(_floatify(_jsonList(b["offsetmatrix"])));
@@ -85,7 +93,11 @@ GeometryBuilder importGeometryFromAssimp2JsonMesh(
         for (pos = 0; pos < 4; ++pos) {
           if (weights[vertex][pos] == 0.0) break;
         }
-        assert(pos != 4);
+        if (pos == 4) {
+          throw UnsupportedError(
+            'At most four bone weights per vertex are supported',
+          );
+        }
         weights[vertex][pos] = _jsonDouble(w[1]);
         indices[vertex][pos] = boneIndex;
       }
@@ -150,7 +162,9 @@ SkeletalAnimation importAnimationFromAssimp2Json(
   SkeletalAnimation anim = SkeletalAnimation(name, duration, skeleton.length);
   print("animated bones: ${channels.length}");
   for (final c in channels) {
-    assert(name2bone.containsKey(c["name"]));
+    if (!name2bone.containsKey(c['name'])) {
+      throw ArgumentError('Animation references an unknown bone');
+    }
     final Bone bone = name2bone[c["name"]] as Bone;
 
     List<double> positionTimes = [];

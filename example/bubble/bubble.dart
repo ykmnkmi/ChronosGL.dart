@@ -8,6 +8,7 @@ import 'package:web/web.dart' as web;
 import '../shared/particles.dart';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 String textureFile = "sphere.png";

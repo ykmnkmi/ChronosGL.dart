@@ -5,6 +5,7 @@ import 'package:web/web.dart' as web;
 import 'dart:math' as math;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 const double kShadowBias1 = 0.001;

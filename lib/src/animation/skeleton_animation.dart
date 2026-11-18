@@ -16,6 +16,15 @@ part of 'lib.dart';
 ///  the basic unit of a skeleton. Bones form a tree structure and have
 ///  a parent bone.
 class Bone {
+  /// Bone indices are topologically ordered; -1 denotes a root parent.
+  Bone.named({
+    required String name,
+    required int index,
+    required int parentIndex,
+    required vm.Matrix4 localTransform,
+    required vm.Matrix4 offsetTransform,
+  }) : this(name, index, parentIndex, localTransform, offsetTransform);
+
   Bone(
     this.boneName,
     this.boneIndex,
@@ -23,7 +32,11 @@ class Bone {
     this.localTransform,
     this.offsetTransform,
   ) {
-    assert(boneIndex > parentNum);
+    if (boneIndex < 0 || parentNum < -1 || parentNum >= boneIndex) {
+      throw ArgumentError(
+        'Bone indices must be nonnegative and follow their parent',
+      );
+    }
   }
 
   final String boneName;
@@ -43,8 +56,12 @@ class Bone {
 /// represents a Skeleton ready to be used for skinning.
 class AnimatedSkeleton {
   AnimatedSkeleton(int length)
-    : globalTransforms = List.generate(length, (index) => vm.Matrix4.zero()),
-      skinningTransforms = List.generate(length, (index) => vm.Matrix4.zero());
+    : globalTransforms = List<vm.Matrix4>.unmodifiable(
+        List.generate(length, (index) => vm.Matrix4.zero()),
+      ),
+      skinningTransforms = List<vm.Matrix4>.unmodifiable(
+        List.generate(length, (index) => vm.Matrix4.zero()),
+      );
 
   // one for each bone
   final List<vm.Matrix4> globalTransforms;
@@ -138,6 +155,25 @@ Float32List createAnimationTable(
 
 /// represents Key frame animation data for a single bone in a skeleton.
 class BoneAnimation {
+  /// Times use animation ticks; values are copied and held until the next key.
+  BoneAnimation.keyframes({
+    required Bone bone,
+    List<double> positionTimes = const [],
+    List<vm.Vector3> positions = const [],
+    List<double> rotationTimes = const [],
+    List<vm.Quaternion> rotations = const [],
+    List<double> scaleTimes = const [],
+    List<vm.Vector3> scales = const [],
+  }) : this(
+         bone,
+         positionTimes,
+         positions,
+         rotationTimes,
+         rotations,
+         scaleTimes,
+         scales,
+       );
+
   /// Construct bone animation with [boneName]. Animation key frames
   /// will be loaded from [positions], [rotations], and [scales].
   BoneAnimation(
@@ -149,6 +185,13 @@ class BoneAnimation {
     this._scaleTimes,
     this._scaleValues,
   ) {
+    if ((_positionTimes.isEmpty && _positionValues.isNotEmpty) ||
+        (_rotationTimes.isEmpty && _rotationValues.isNotEmpty) ||
+        (_scaleTimes.isEmpty && _scaleValues.isNotEmpty)) {
+      throw ArgumentError(
+        'Keyframe times and values must have matching lengths',
+      );
+    }
     if (_positionTimes.isEmpty) {
       _positionTimes = [0.0];
       _positionValues = [vm.Vector3(0.0, 0.0, 0.0)];
@@ -164,12 +207,17 @@ class BoneAnimation {
       _scaleValues = [vm.Vector3(1.0, 1.0, 1.0)];
     }
 
-    assert(_rotationTimes.isNotEmpty);
-    assert(_positionTimes.isNotEmpty);
-    assert(_scaleTimes.isNotEmpty);
-    assert(_rotationTimes.length == _rotationValues.length);
-    assert(_positionTimes.length == _positionValues.length);
-    assert(_scaleTimes.length == _scaleValues.length);
+    _validateTrack(_rotationTimes, _rotationValues.length, 'rotations');
+    _validateTrack(_positionTimes, _positionValues.length, 'positions');
+    _validateTrack(_scaleTimes, _scaleValues.length, 'scales');
+    _positionTimes = List<double>.unmodifiable(_positionTimes);
+    _rotationTimes = List<double>.unmodifiable(_rotationTimes);
+    _scaleTimes = List<double>.unmodifiable(_scaleTimes);
+    _positionValues = [for (final value in _positionValues) value.clone()];
+    _rotationValues = [
+      for (final value in _rotationValues) vm.Quaternion.copy(value),
+    ];
+    _scaleValues = [for (final value in _scaleValues) value.clone()];
   }
 
   final Bone bone;
@@ -180,6 +228,17 @@ class BoneAnimation {
   List<vm.Quaternion> _rotationValues;
   List<double> _scaleTimes;
   List<vm.Vector3> _scaleValues;
+
+  static void _validateTrack(List<double> times, int values, String name) {
+    if (times.length != values || times.isEmpty) {
+      throw ArgumentError('$name require matching nonempty times and values');
+    }
+    for (var i = 0; i < times.length; i++) {
+      if (!times[i].isFinite || (i > 0 && times[i] < times[i - 1])) {
+        throw ArgumentError('$name times must be finite and ordered');
+      }
+    }
+  }
 
   static int _findTime(List<double> timeList, double t) {
     for (int i = 0; i < timeList.length - 1; i++) {
@@ -193,6 +252,9 @@ class BoneAnimation {
   /// Set [boneMatrix] to correspond to bone animation at time [t].
   /// Does not interpolate between key frames.
   void setBoneMatrixAtTick(double tick, vm.Matrix4 boneMatrix) {
+    if (!tick.isFinite) {
+      throw ArgumentError.value(tick, 'tick', 'Must be finite');
+    }
     final int scaleIndex = _findTime(_scaleTimes, tick);
     assert(scaleIndex >= 0);
     final int positionIndex = _findTime(_positionTimes, tick);
@@ -219,16 +281,40 @@ class BoneAnimation {
 
 /// represents Key frame animation data for an entire skeleton.
 class SkeletalAnimation {
+  /// duration uses the same animation ticks as BoneAnimation keyframes.
+  SkeletalAnimation.named({
+    required String name,
+    required double duration,
+    required int boneCount,
+  }) : this(name, duration, boneCount);
+
   SkeletalAnimation(this.name, this.duration, int length)
-    : animList = List<BoneAnimation?>.generate(length, (i) => null);
+    : _animList = List<BoneAnimation?>.filled(length, null) {
+    if (!duration.isFinite || duration < 0) {
+      throw ArgumentError.value(
+        duration,
+        'duration',
+        'Must be finite and nonnegative',
+      );
+    }
+  }
 
   final String name;
-  final List<BoneAnimation?> animList;
+  final List<BoneAnimation?> _animList;
+
+  /// Read-only track slots; use insertBone to preserve bone index consistency.
+  late final List<BoneAnimation?> animList = UnmodifiableListView(_animList);
   final double duration;
 
   void insertBone(BoneAnimation ba) {
-    assert(animList[ba.bone.boneIndex] == null);
-    animList[ba.bone.boneIndex] = ba;
+    final index = ba.bone.boneIndex;
+    if (index < 0 || index >= _animList.length) {
+      throw ArgumentError('Bone index is outside this animation');
+    }
+    if (_animList[index] != null) {
+      throw StateError('Bone already has an animation');
+    }
+    _animList[index] = ba;
   }
 
   @override

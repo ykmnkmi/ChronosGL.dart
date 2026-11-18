@@ -8,6 +8,7 @@ import 'package:web/web.dart' as web;
 import '../shared/particles.dart';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 
 Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
   Scene scene = Scene(

@@ -5,11 +5,18 @@ int _findSkinMultiplier(Map<String, Object?> json) {
   final skinWeight = json["skinWeights"] as List<Object?>?;
   if (skinIndex == null || skinIndex.isEmpty) return 0;
   final int vertexLength = _jsonList(json["vertices"]).length ~/ 3;
+  if (vertexLength == 0) throw ArgumentError('Skin data requires vertices');
   final int skinMultiplier = skinIndex.length ~/ vertexLength;
 
-  assert(vertexLength * skinMultiplier == skinIndex.length);
-  assert(vertexLength * skinMultiplier == skinWeight!.length);
-  assert(skinMultiplier <= 4);
+  if (skinMultiplier < 1 ||
+      skinMultiplier > 4 ||
+      vertexLength * skinMultiplier != skinIndex.length ||
+      skinWeight == null ||
+      skinWeight.length != skinIndex.length) {
+    throw ArgumentError(
+      'Skin indices and weights require matching widths of 1..4 per vertex',
+    );
+  }
   print("Skin multiplier is $skinMultiplier");
   return skinMultiplier;
 }
@@ -94,20 +101,8 @@ List<GeometryBuilder> importGeometryFromThreeJsJson(Map<String, Object?> json) {
       }
     }
 
-    List<int> color = [];
-    if (hasFaceColor) {
-      assert(false);
-      int col = faces[i++];
-      for (int j = 0; j < d; j++) {
-        color.add(col);
-      }
-    }
-
-    if (hasFaceVertexColor) {
-      assert(false);
-      for (int j = 0; j < d; j++) {
-        color.add(faces[i++]);
-      }
+    if (hasFaceColor || hasFaceVertexColor) {
+      throw UnsupportedError('ThreeJS face colors are not supported');
     }
 
     while (out.length <= mat) {
@@ -141,14 +136,16 @@ List<GeometryBuilder> importGeometryFromThreeJsJson(Map<String, Object?> json) {
     }
 
     if (skinMultiplier > 0) {
-      assert(vertices.length == skinIndex!.length);
-      assert(vertices.length == skinWeight!.length);
+      if (vertices.length != skinIndex!.length ||
+          vertices.length != skinWeight!.length) {
+        throw ArgumentError('Skin data must match the vertex count');
+      }
 
       List<vm.Vector4> boneIndex = [];
       List<vm.Vector4> boneWeight = [];
       for (int i in indices) {
-        boneIndex.add(skinIndex![i]);
-        boneWeight.add(skinWeight![i]);
+        boneIndex.add(skinIndex[i]);
+        boneWeight.add(skinWeight[i]);
       }
       gb.addAttributesVector4(aBoneIndex, boneIndex);
       gb.addAttributesVector4(aBoneWeight, boneWeight);
@@ -170,7 +167,10 @@ SkeletalAnimation importAnimationFromThreeJsJson(
     _jsonDouble(animation["length"]),
     hierarchy.length,
   );
-  assert(hierarchy.length == _jsonList(json["bones"]).length);
+  if (hierarchy.length != _jsonList(json['bones']).length ||
+      hierarchy.length != skeleton.length) {
+    throw ArgumentError('Animation hierarchy must match the skeleton');
+  }
   for (int i = 0; i < hierarchy.length; ++i) {
     List<double> pTimes = [];
     List<vm.Vector3> pValues = [];
@@ -214,7 +214,9 @@ SkeletalAnimation importAnimationFromThreeJsJson(
 List<Bone> importSkeletonFromThreeJsJson(Map<String, Object?> json) {
   final metadata = _jsonMap(json["metadata"]);
   final bones = _jsonObjects(json["bones"]).toList();
-  assert(bones.length == metadata["bones"]);
+  if (bones.length != metadata['bones']) {
+    throw ArgumentError('Bone count does not match metadata');
+  }
   List<Bone> out = List.generate(bones.length, (i) {
     final m = bones[i];
     String name = m["name"] as String;

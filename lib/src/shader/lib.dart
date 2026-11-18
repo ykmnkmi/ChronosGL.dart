@@ -4,7 +4,7 @@ import 'dart:math' as math;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
-import "../core/lib.dart";
+import "../core/shader_object.dart";
 
 /// # Layer: Shader (uses Core Layer)
 /// provides many standard Vertex and Fragment shaders.

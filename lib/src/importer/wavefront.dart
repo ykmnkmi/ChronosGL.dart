@@ -22,8 +22,6 @@ GeometryBuilder importGeometryFromWavefront(String text) {
   final List<vm.Vector3> normals = [];
   final List<vm.Vector2> uvs = [];
 
-  final DateTime start = DateTime.now();
-
   final List<vm.Vector3> faceVertices = [];
   final List<vm.Vector3> faceNormal = [];
   final List<vm.Vector2> faceUvs = [];
@@ -33,9 +31,8 @@ GeometryBuilder importGeometryFromWavefront(String text) {
   for (String line in lines) {
     // ignore comments
     if (line.isEmpty || line[0] == "#") continue;
-    List<String> array = line.split(sep);
-    assert(array.isNotEmpty);
-    assert(array.last.isNotEmpty);
+    List<String> array = line.trim().split(sep);
+    if (array.first.isEmpty) continue;
 
     //print("### ${array}");
 
@@ -73,7 +70,9 @@ GeometryBuilder importGeometryFromWavefront(String text) {
       for (int i = 1; i < array.length; ++i) {
         // add a new entry to the map and arrays
         List<String> f = array[i].split("/");
-        assert(f.isNotEmpty);
+        if (f.first.isEmpty) {
+          throw ArgumentError('Wavefront face requires a vertex index');
+        }
         while (f.length < 3) {
           f.add("");
         }
@@ -94,7 +93,7 @@ GeometryBuilder importGeometryFromWavefront(String text) {
         } else if (tex != -1 && tex < uvs.length) {
           faceUvs.add(uvs[tex]);
         } else {
-          logWarn("problem uv $i $tex");
+          print("problem uv $i $tex");
           faceUvs.add(vm.Vector2.zero());
         }
         if (normals.isEmpty) {
@@ -102,7 +101,7 @@ GeometryBuilder importGeometryFromWavefront(String text) {
         } else if (nor != -1 && nor < normals.length) {
           faceNormal.add(normals[nor]);
         } else {
-          logWarn("problem normals $i $nor");
+          print("problem normals $i $nor");
           faceNormal.add(vm.Vector3.zero());
         }
       }
@@ -115,7 +114,5 @@ GeometryBuilder importGeometryFromWavefront(String text) {
       gb.addAttributesVector2(aTexUV, faceUvs);
     }
   }
-  final Duration delta = DateTime.now().difference(start);
-  logInfo("Wavefront loaded in ($delta) $gb");
   return gb;
 }

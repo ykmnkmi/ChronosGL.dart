@@ -1,6 +1,6 @@
 part of 'lib.dart';
 
-final ShaderObject perlinNoiseVertexShader = ShaderObject("PerlinNoiseV")
+final ShaderObject perlinNoiseVertexShader = ShaderObject.vertex("PerlinNoiseV")
   ..addAttributeVars([aPosition])
   ..addVaryingVars([vNormal])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
@@ -22,7 +22,7 @@ ShaderObject makePerlinNoiseColorFragmentShader(bool blackVariant) {
     define = "#define BLACK 1";
     name = "Black$name";
   }
-  return ShaderObject("$name F")
+  return ShaderObject.fragment("$name F")
     ..addVaryingVars([vNormal])
     ..addUniformVars([
       // uTransformationMatrix,

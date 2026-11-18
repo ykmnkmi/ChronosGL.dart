@@ -5,6 +5,7 @@ import 'package:web/web.dart' as web;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 Map<String, vm.Vector3> shapeToColor = {

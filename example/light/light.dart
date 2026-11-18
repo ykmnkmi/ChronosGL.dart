@@ -5,6 +5,7 @@ import 'package:web/web.dart' as web;
 import "dart:math" as math;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 final vm.Vector3 posLight = vm.Vector3(11.0, 20.0, 0.0);

@@ -40,7 +40,7 @@ double easingCubic(double t) => t * t * t;
 
 typedef Easing = double Function(double t);
 
-final Map<String, Easing> mapStringToEasing = {
+const Map<String, Easing> mapStringToEasing = {
   "Cosine": easingCosine,
   "Sine": easingSine,
   "Quadratic": easingQuadratic,
@@ -57,6 +57,11 @@ List<vm.Vector2> bevelSupportPoints(
   Easing widthEasing = easingCosine,
   Easing heightEasing = easingSine,
 }) {
+  if (nSupports < 2 || !width.isFinite || !height.isFinite) {
+    throw ArgumentError(
+      'Bevel dimensions must be finite and supports at least two',
+    );
+  }
   // out[0]
   List<vm.Vector2> out = List.generate(nSupports, (i) {
     // make sure t assumes zero and one at the extremes
@@ -80,7 +85,9 @@ List<List<vm.Vector3>> bevelStrips(
   List<vm.Vector2> supports,
   vm.Matrix3 m,
 ) {
-  assert(contour.length == gradient.length);
+  if (contour.length != gradient.length) {
+    throw ArgumentError('Contour and gradient lengths must match');
+  }
   List<List<vm.Vector3>> out = [];
   vm.Vector3 v = vm.Vector3.zero();
   for (vm.Vector2 s in supports) {

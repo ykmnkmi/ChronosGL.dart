@@ -264,7 +264,13 @@ void main() {
           stage == 'fragment' ? 'invalid fragment shader' : _fragment,
           [],
         ),
-        throwsA(isA<String>().having((e) => e, 'compiler log', isNotEmpty)),
+        throwsA(
+          isA<ShaderCompilationException>().having(
+            (e) => e.message,
+            'compiler log',
+            isNotEmpty,
+          ),
+        ),
       );
       expect(cgl.shaders, hasLength(stage == 'vertex' ? 1 : 2));
       expect(cgl.programs, hasLength(1));
@@ -287,7 +293,7 @@ void main() { color = varyingValue; }
 ''',
         [],
       ),
-      throwsA(isA<String>()),
+      throwsA(isA<ShaderCompilationException>()),
     );
     expect(cgl.shaders, hasLength(2));
     expectReleased();
@@ -296,7 +302,7 @@ void main() { color = varyingValue; }
   test('Invalid transform feedback varying cleans up after link failure', () {
     expect(
       () => cgl.compileWholeProgram(_vertex, _fragment, ['missing']),
-      throwsA(isA<String>()),
+      throwsA(isA<ShaderCompilationException>()),
     );
     expect(cgl.shaders, hasLength(2));
     expectReleased();
@@ -491,7 +497,7 @@ void main() { color = varyingValue; }
           () => withDepth
               ? Framebuffer.defaultFramebuffer(cgl, 0, 2)
               : Framebuffer.effect(cgl, 0, 2),
-          throwsStateError,
+          throwsArgumentError,
         );
         checkBindings();
         expect(cgl.textures, hasLength(1));

@@ -25,6 +25,15 @@ abstract class Light extends NamedEntity {
 
 /// light is emanating from a single point in all directions
 class PointLight extends Light {
+  /// Position and range use caller-defined world units; colors are RGB values.
+  PointLight.named({
+    required String name,
+    required vm.Vector3 position,
+    required vm.Vector3 diffuse,
+    required vm.Vector3 specular,
+    required double range,
+  }) : this(name, position, diffuse, specular, range);
+
   PointLight(
     String name,
     this.pos,
@@ -57,8 +66,7 @@ class PointLight extends Light {
 
   @override
   vm.Matrix4 extractShadowProjViewMatrix() {
-    assert(false, "NYI");
-    return vm.Matrix4.zero();
+    throw UnsupportedError('Point-light shadow projection requires cube maps');
   }
 
   @override
@@ -70,6 +78,15 @@ class PointLight extends Light {
 /// Conceptually a directional light is emanating from a infinitely large source
 /// at infinite distance.
 class DirectionalLight extends Light {
+  /// shadowExtent is the positive half-size of the shadow volume in world units.
+  DirectionalLight.named({
+    required String name,
+    required vm.Vector3 direction,
+    required vm.Vector3 diffuse,
+    required vm.Vector3 specular,
+    required double shadowExtent,
+  }) : this(name, direction, diffuse, specular, shadowExtent);
+
   DirectionalLight(
     String name,
     this.dir,
@@ -127,6 +144,32 @@ class DirectionalLight extends Light {
 
 /// a cone of directional light is emanating from a point
 class SpotLight extends Light {
+  /// Half-cone angle uses radians; position, range and clipping use world units.
+  /// spotFocus is dimensionless. Shadow projection uses a 2.1 * angleRadians FOV.
+  SpotLight.named({
+    required String name,
+    required vm.Vector3 position,
+    required vm.Vector3 direction,
+    required vm.Vector3 diffuse,
+    required vm.Vector3 specular,
+    required double range,
+    required double angleRadians,
+    required double spotFocus,
+    required double near,
+    required double far,
+  }) : this(
+         name,
+         position,
+         direction,
+         diffuse,
+         specular,
+         range,
+         angleRadians,
+         spotFocus,
+         near,
+         far,
+       );
+
   SpotLight(
     String name,
     this.pos,
@@ -239,6 +282,9 @@ class Illumination extends UniformGroup {
   final Float32List _lightTypes = Float32List(kMaxLights);
 
   void addLight(Light l) {
+    if (_lights.length >= kMaxLights) {
+      throw StateError('Illumination supports at most $kMaxLights lights');
+    }
     _lights.add(l);
   }
 
@@ -265,6 +311,6 @@ class Illumination extends UniformGroup {
     _setLightInfo(_lightDescs, _lightTypes, _lights);
     forceUniform(uLightDescs, _lightDescs);
     forceUniform(uLightTypes, _lightTypes);
-    return _uniforms;
+    return super.getUniforms();
   }
 }

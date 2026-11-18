@@ -133,7 +133,10 @@ void main() {
 
   test('Program and later meshes retain the compiled attribute layout', () {
     final prog = program([aPosition]);
-    prog.shaderObjectV.getAttributeLayoutMap()[aPosition] = 5;
+    expect(
+      () => prog.shaderObjectV.getAttributeLayoutMap()[aPosition] = 5,
+      throwsUnsupportedError,
+    );
     final gpu = mesh(prog);
     expect(prog.attributeLayout.attributes[aPosition]!.location, 0);
     expect(gpu.attributeLayout.attributes[aPosition]!.location, 0);

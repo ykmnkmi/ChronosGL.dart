@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:js_interop';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:web/web.dart' as web;

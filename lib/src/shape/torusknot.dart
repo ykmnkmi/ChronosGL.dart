@@ -36,6 +36,20 @@ GeometryBuilder torusKnotGeometry({
   bool computeNormals = true,
   bool inside = false,
 }) {
+  if (segmentsR < 3 ||
+      segmentsT < 3 ||
+      !radius.isFinite ||
+      radius <= 0 ||
+      !tubeRadius.isFinite ||
+      tubeRadius <= 0 ||
+      !heightScale.isFinite) {
+    throw ArgumentError(
+      'Torus knot requires positive finite radii and at least three segments per axis',
+    );
+  }
+  if (wrap && computeUVs) {
+    throw ArgumentError('Wrapped torus knots require computeUVs: false');
+  }
   void curveFunc(double u, vm.Vector3 out) {
     torusKnotGetPos(u, q, p, radius, heightScale, out);
   }
@@ -82,7 +96,6 @@ GeometryBuilder torusKnotGeometry({
   gb.generateRegularGridFaces(w, h, wrap, inside);
 
   if (computeUVs) {
-    assert(!wrap, "uvs do not work well with wrapping");
     gb.generateRegularGridUV(w, h);
     assert(gb.attributes[aTexUV]?.length == gb.vertices.length);
   }
@@ -113,6 +126,17 @@ GeometryBuilder torusKnotGeometryWireframeFriendly({
   bool computeNormals = true,
   bool inside = false,
 }) {
+  if (segmentsR < 3 ||
+      segmentsT < 3 ||
+      !radius.isFinite ||
+      radius <= 0 ||
+      !tubeRadius.isFinite ||
+      tubeRadius <= 0 ||
+      !heightScale.isFinite) {
+    throw ArgumentError(
+      'Torus knot requires positive finite radii and at least three segments per axis',
+    );
+  }
   void curveFunc(double u, vm.Vector3 out) {
     torusKnotGetPos(u, q, p, radius, heightScale, out);
   }
@@ -187,6 +211,17 @@ GeometryBuilder torusKnotGeometryTriangularWireframeFriendly({
   double heightScale = 1.0,
   bool inside = false,
 }) {
+  if (segmentsR < 3 ||
+      segmentsT < 3 ||
+      !radius.isFinite ||
+      radius <= 0 ||
+      !tubeRadius.isFinite ||
+      tubeRadius <= 0 ||
+      !heightScale.isFinite) {
+    throw ArgumentError(
+      'Torus knot requires positive finite radii and at least three segments per axis',
+    );
+  }
   void curveFunc(double u, vm.Vector3 out) {
     torusKnotGetPos(u, q, p, radius, heightScale, out);
   }

@@ -1,23 +1,23 @@
 part of 'lib.dart';
 
-final ShaderObject effectVertexShader = ShaderObject("null")
+final ShaderObject effectVertexShader = ShaderObject.vertex("null")
   ..addAttributeVars([aPosition])
   ..setBody([nullVertexShaderString]);
 
 final ShaderObject copyVertexShader = effectVertexShader;
 
-final ShaderObject copyFragmentShader = ShaderObject("copyF")
+final ShaderObject copyFragmentShader = ShaderObject.fragment("copyF")
   ..addUniformVars([uTexture])
   ..setBodyWithMain([
     "$oFragColor = texelFetch($uTexture, ivec2(gl_FragCoord.xy), 0);",
   ]);
 
-final ShaderObject scalingCopyVertexShader = ShaderObject("nullUV")
+final ShaderObject scalingCopyVertexShader = ShaderObject.vertex("nullUV")
   ..addAttributeVars([aPosition, aTexUV])
   ..addVaryingVars([vTexUV])
   ..setBody([nullVertexShaderWithTextureForwardString]);
 
-final ShaderObject scalingCopyFragmentShader = ShaderObject("copyF")
+final ShaderObject scalingCopyFragmentShader = ShaderObject.fragment("copyF")
   ..addUniformVars([uTexture])
   ..addVaryingVars([vTexUV])
   ..setBodyWithMain(["$oFragColor = texture($uTexture, $vTexUV);"]);
@@ -132,7 +132,7 @@ void main() {
 }
 """;
 
-final ShaderObject toonFragmentShader = ShaderObject("ToonF")
+final ShaderObject toonFragmentShader = ShaderObject.fragment("ToonF")
   ..addUniformVars([uTexture])
   ..setBody([_libFragment, _toonFragment]);
 
@@ -188,11 +188,12 @@ void main() {
 }
 """;
 
-final ShaderObject hexPixelateFragmentShader = ShaderObject("HexPixelateF")
-  ..addUniformVars([uCenter2, uPointSize, uTexture])
-  ..setBody([_hexPixelateFragment]);
+final ShaderObject hexPixelateFragmentShader =
+    ShaderObject.fragment("HexPixelateF")
+      ..addUniformVars([uCenter2, uPointSize, uTexture])
+      ..setBody([_hexPixelateFragment]);
 
-final ShaderObject dotFragmentShader = ShaderObject("DotF")
+final ShaderObject dotFragmentShader = ShaderObject.fragment("DotF")
   ..addUniformVars([uCenter2, uScale, uAngle, uTexture])
   ..setBody([
     """
@@ -253,11 +254,11 @@ void main() {
 }
 """;
 
-final ShaderObject tvDistortionFragmentShader = ShaderObject("DotF")
+final ShaderObject tvDistortionFragmentShader = ShaderObject.fragment("DotF")
   ..addUniformVars([uScale, uTime, uTexture])
   ..setBody([_tvDistortionFragment]);
 
-final ShaderObject kaleidoscopeShader = ShaderObject("KaleidoscopeF")
+final ShaderObject kaleidoscopeShader = ShaderObject.fragment("KaleidoscopeF")
   ..addUniformVars([uScale, uCenter2, uTexture])
   ..setBody([
     """
@@ -279,7 +280,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject lumidotsFragmentShader = ShaderObject("LumidotsF")
+final ShaderObject lumidotsFragmentShader = ShaderObject.fragment("LumidotsF")
   ..addUniformVars([uPointSize, uTexture])
   ..setBody([
     """
@@ -305,7 +306,7 @@ void main() {
   ]);
 
 final ShaderObject squarePixelateFragmentShader =
-    ShaderObject("SquarePixelateF")
+    ShaderObject.fragment("SquarePixelateF")
       ..addUniformVars([uPointSize, uTexture])
       ..setBody([
         """
@@ -318,7 +319,7 @@ void main() {
       ]);
 
 final ShaderObject luminosityHighPassFragmentShader =
-    ShaderObject("LuminosityHighPassF")
+    ShaderObject.fragment("LuminosityHighPassF")
       ..addUniformVars([uRange, uColorAlpha, uTexture])
       ..setBody([
         """
@@ -335,7 +336,7 @@ void main() {
  """,
       ]);
 
-final ShaderObject fisheyeFragmentShader = ShaderObject("FisheyePassF")
+final ShaderObject fisheyeFragmentShader = ShaderObject.fragment("FisheyePassF")
   ..addUniformVars([uTexture])
   ..setBody([
     """
@@ -359,7 +360,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject filmFragmentShader = ShaderObject("FilmPassF")
+final ShaderObject filmFragmentShader = ShaderObject.fragment("FilmPassF")
   ..addUniformVars([uTexture])
   ..setBody([
     """
@@ -489,7 +490,7 @@ final vm.Matrix3 convolutionMatrixBlur = vm.Matrix3(
 final vm.Vector3 convolutionOffsetBlur = vm.Vector3(0.0, 0.0, 0.0);
 
 final ShaderObject convolution3x3FragmentShader =
-    ShaderObject("Convolution3x3F")
+    ShaderObject.fragment("Convolution3x3F")
       ..addUniformVars([uTexture, uColor, uConvolutionMatrix])
       ..setBody([
         """
@@ -508,10 +509,11 @@ void main() {
 """,
       ]);
 
-final ShaderObject scanlineFragmentShader = ShaderObject("ScanlinePixelateF")
-  ..addUniformVars([uTexture, uRange])
-  ..setBody([
-    """
+final ShaderObject scanlineFragmentShader =
+    ShaderObject.fragment("ScanlinePixelateF")
+      ..addUniformVars([uTexture, uRange])
+      ..setBody([
+        """
       
 // const vec3 comp = vec3(0.05, 0.15, 0.95);
 const vec3 comp = vec3(0.1, 0.30, 0.85);
@@ -529,9 +531,9 @@ void main() {
     $oFragColor = vec4(color * m, 1.0);
 }
 """,
-  ]);
+      ]);
 
-final ShaderObject waterFragmentShader = ShaderObject("WaterPixelateF")
+final ShaderObject waterFragmentShader = ShaderObject.fragment("WaterPixelateF")
   ..addUniformVars([uTexture, uTime])
   ..setBody([
     """
@@ -558,8 +560,12 @@ void main() {
 """,
   ]);
 
+/// Creates diagonal (mode 0) or regular (mode 1) crosshatching.
 ShaderObject crosshatchFragmentShader(int mode) {
-  return ShaderObject("crosshatchPixelateF")
+  if (mode != 0 && mode != 1) {
+    throw ArgumentError.value(mode, 'mode', 'Expected 0 or 1');
+  }
+  return ShaderObject.fragment("crosshatchPixelateF")
     ..addUniformVars([uTexture])
     ..setBody([
       "#define MODE $mode",
@@ -703,7 +709,7 @@ float VignettingFactor(vec2 uv, float innerRadius, float outerRadius) {
 }
 """;
 
-final ShaderObject sepiaFragmentShader = ShaderObject("sepiaPixelateF")
+final ShaderObject sepiaFragmentShader = ShaderObject.fragment("sepiaPixelateF")
   ..addUniformVars([uTexture, uScale])
   ..setBody([
     photoEffectHelper,
@@ -718,7 +724,7 @@ void main() {
   ]);
 
 final ShaderObject techicolorFragmentShader =
-    ShaderObject("technicolorPixelateF")
+    ShaderObject.fragment("technicolorPixelateF")
       ..addUniformVars([uTexture])
       ..setBody([
         photoEffectHelper,
@@ -731,7 +737,7 @@ void main() {
       ]);
 
 final ShaderObject vignettingFragmentShader =
-    ShaderObject("vignettingPixelateF")
+    ShaderObject.fragment("vignettingPixelateF")
       ..addUniformVars([uTexture, uRange])
       ..setBody([
         photoEffectHelper,
@@ -745,7 +751,7 @@ void main() {
 """,
       ]);
 
-final ShaderObject blur1DShader9 = ShaderObject("blurF")
+final ShaderObject blur1DShader9 = ShaderObject.fragment("blurF")
   ..addUniformVars([uTexture, uDirection])
   ..setBody([
     """
@@ -767,7 +773,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject blur1DShader7 = ShaderObject("blurF")
+final ShaderObject blur1DShader7 = ShaderObject.fragment("blurF")
   ..addUniformVars([uTexture, uDirection])
   ..setBody([
     """
@@ -787,7 +793,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject blur1DShader5 = ShaderObject("blurF")
+final ShaderObject blur1DShader5 = ShaderObject.fragment("blurF")
   ..addUniformVars([uTexture, uDirection])
   ..setBody([
     """
@@ -808,7 +814,7 @@ void main() {
 /*
 // DOES NOT WORK YET
 final ShaderObject waterColorFragmentShader =
-    new ShaderObject("WaterColorPixelateF")
+    new ShaderObject.fragment("WaterColorPixelateF")
       ..addVaryingVars([vTexUV])
       ..addUniformVars([uTexture])
       ..setBody([

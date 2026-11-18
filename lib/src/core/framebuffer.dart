@@ -13,8 +13,7 @@ int textureChannelsByType(int format) {
     case glRgba:
       return 4;
     default:
-      assert(false, "unexpected format: $format");
-      return -1;
+      throw UnsupportedError('Unsupported framebuffer format: $format');
   }
 }
 
@@ -444,12 +443,10 @@ class Framebuffer {
     int viewPortH,
   ) {
     _checkUsable();
+    if (viewPortW <= 0 || viewPortH <= 0) {
+      throw ArgumentError('Viewport width and height must be positive');
+    }
     _cgl.bindFramebuffer(glFramebuffer, _framebuffer);
-
-    assert(
-      viewPortW > 0 && viewPortH > 0,
-      "width and height must be > 0: $viewPortW $viewPortW",
-    );
     _cgl.viewport(viewPortX, viewPortY, viewPortW, viewPortH);
 
     if (clearMode != 0) {
@@ -460,6 +457,11 @@ class Framebuffer {
   /// If buf is non-null it must have size 4*w*h elements
   Float32List extractFloatData(Float32List? buf, int x, int y, int w, int h) {
     _checkUsable();
+    if (w < 0 || h < 0 || (buf != null && buf.length != 4 * w * h)) {
+      throw ArgumentError(
+        'Readback requires nonnegative dimensions and exactly 4*w*h elements',
+      );
+    }
     _cgl.bindFramebuffer(glFramebuffer, _framebuffer);
     buf ??= Float32List(4 * w * h);
     _cgl.readPixels(x, y, w, h, glRgba, glFloat, buf);
@@ -470,6 +472,11 @@ class Framebuffer {
   /// If buf is non-null it must have size 4*w*h elements
   Uint8List extractByteData(Uint8List? buf, int x, int y, int w, int h) {
     _checkUsable();
+    if (w < 0 || h < 0 || (buf != null && buf.length != 4 * w * h)) {
+      throw ArgumentError(
+        'Readback requires nonnegative dimensions and exactly 4*w*h elements',
+      );
+    }
     _cgl.bindFramebuffer(glFramebuffer, _framebuffer);
     buf ??= Uint8List(4 * w * h);
     _cgl.readPixels(x, y, w, h, glRgba, glUnsignedByte, buf);

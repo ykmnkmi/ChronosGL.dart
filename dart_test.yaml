@@ -68,6 +68,13 @@ presets:
       - test/shadow_diagnostics_test.dart
       - test/phase6_boundaries_test.dart
       - test/resize_aware_disposal_test.dart
+      - test/public_cpu_imports_test.dart
+      - test/public_exports_test.dart
+      - test/shader_api_test.dart
+      - test/uniform_api_test.dart
+      - test/runtime_contracts_vm_test.dart
+      - test/runtime_contracts_web_test.dart
+      - test/public_render_api_test.dart
       - test/render_program_uniforms_test.dart
       - test/scene_uniforms_test.dart
       - test/webhelper_interop_test.dart

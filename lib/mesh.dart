@@ -1,8 +1,7 @@
-/// Browser-facing GPU mesh factories.
+/// Browser-facing GPU meshes, uploads, and shape factories.
 ///
-/// Every factory uploads a new mesh for the supplied program. The caller owns
-/// that mesh and must dispose it after use. Use `geometry.dart` for CPU-only
-/// geometry construction without a WebGL context.
+/// Each upload/factory returns a caller-owned mesh. CPU geometry stays in
+/// `geometry.dart`; dispose a GPU mesh after its last consumer.
 library;
 
 export 'src/core/lib.dart'
@@ -12,5 +11,20 @@ export 'src/core/lib.dart'
         MeshAttributeLayout,
         VertexAttributeLayout,
         uploadGeometry,
-        uploadWireframeGeometry;
-export 'src/mesh/shape_factories.dart';
+        uploadWireframeGeometry,
+        geometryBuilderToMeshData,
+        geometryBuilderToMeshDataWireframe,
+        geometryBuilderToWireframeNormals,
+        lineEndPointsToMeshData,
+        extractWireframeNormals,
+        getMeshFaceArea,
+        extractPointCloud;
+export 'src/mesh/shape_factories.dart'
+    show
+        shapeCube,
+        shapeWedge,
+        shapeCylinder,
+        shapeIcosahedron,
+        shapeTorusKnot,
+        shapeQuad,
+        shapeGrid;

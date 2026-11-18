@@ -4,7 +4,8 @@ library;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
-import "../core/lib.dart";
+import '../core/geometry_builder.dart';
+import '../core/shader_object.dart';
 import "../animation/lib.dart";
 
 /// # Layer: Importer (uses Core Layer)

@@ -39,11 +39,17 @@ class _InputListeners {
 /// After [dispose], queries return false and [afterFrameCleanup] is harmless.
 /// Disposal is final; callbacks cannot resume input processing.
 class Keyboard {
-  Keyboard(Object? elem) {
-    final target = elem == null
-        ? web.document
-        : JSObject.fromInteropObject(elem) as web.EventTarget;
+  /// Compatibility boundary for legacy DOM objects in JavaScript builds.
+  @Deprecated('Use Keyboard.forTarget with a package:web EventTarget.')
+  Keyboard(Object? elem)
+    : this.forTarget(
+        elem == null
+            ? web.document
+            : JSObject.fromInteropObject(elem) as web.EventTarget,
+      );
 
+  /// Listens to a borrowed, explicitly typed browser event target.
+  Keyboard.forTarget(web.EventTarget target) {
     try {
       _listeners.addSubscription(
         web.EventStreamProviders.keyDownEvent.forTarget(target).listen((e) {
@@ -161,11 +167,17 @@ class Keyboard {
 /// and [afterFrameCleanup] is harmless. Writing coordinates/deltas then throws
 /// [StateError], including while listener cancellation is still pending.
 class Mouse {
-  Mouse(Object? elem) {
-    final target = elem == null
-        ? web.document
-        : JSObject.fromInteropObject(elem) as web.EventTarget;
+  /// Compatibility boundary for legacy DOM objects in JavaScript builds.
+  @Deprecated('Use Mouse.forTarget with a package:web EventTarget.')
+  Mouse(Object? elem)
+    : this.forTarget(
+        elem == null
+            ? web.document
+            : JSObject.fromInteropObject(elem) as web.EventTarget,
+      );
 
+  /// Listens to a borrowed browser target; motion is measured in CSS pixels.
+  Mouse.forTarget(web.EventTarget target) {
     try {
       _listeners.addSubscription(
         web.EventStreamProviders.mouseMoveEvent.forTarget(target).listen((e) {

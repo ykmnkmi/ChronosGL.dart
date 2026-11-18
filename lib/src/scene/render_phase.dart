@@ -5,6 +5,12 @@ part of 'lib.dart';
 /// The supplied list of uniforms is copied; its groups, the program and nodes
 /// remain borrowed. Editing links does not dispose their GPU resources.
 class RenderBatch extends NamedEntity {
+  RenderBatch.named({
+    required String name,
+    required RenderProgram program,
+    List<UniformGroup> uniforms = const [],
+  }) : this(name, program, uniforms);
+
   RenderBatch(super.name, this.program, [List<UniformGroup>? uniforms])
     : uniforms = List<UniformGroup>.of(uniforms ?? const []);
 
@@ -66,7 +72,7 @@ void _drawNode(
       final template = uniforms.isEmpty ? null : uniforms.last;
       final transforms = UniformGroup(template?.name ?? 'transforms');
       if (template != null) {
-        transforms.getUniforms().addAll(template.getUniforms());
+        transforms.addUniforms(template.getUniforms());
       }
       node.updateTransforms(transforms, model);
       program.draw(node.mesh, [
@@ -92,6 +98,13 @@ void _drawNode(
 /// framebuffers are borrowed. A disabled pass or empty viewport performs no
 /// framebuffer work.
 class RenderPass extends NamedEntity {
+  /// Viewport fields use framebuffer backing-store pixels.
+  RenderPass.named({
+    required String name,
+    required ChronosGL context,
+    Framebuffer? framebuffer,
+  }) : this(name, context, framebuffer);
+
   RenderPass(super.name, ChronosGL cgl, [Framebuffer? framebuffer])
     : _framebuffer = framebuffer ?? Framebuffer.screen(cgl);
 

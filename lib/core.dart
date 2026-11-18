@@ -1,10 +1,28 @@
-/// Browser-independent transformations and colors, usable on the Dart VM.
+/// Browser-independent transforms and immutable colors.
 ///
-/// Exports [Transform], [Color] and the color palette without DOM, WebGL or
-/// rendering dependencies. Cameras and reusable projections are available
-/// separately through `camera.dart`.
-/// Use `chronosgl.dart` for the browser-facing engine and rendering adapters.
+/// Usable on the Dart VM. Use `camera.dart` for cameras and `geometry.dart`
+/// for CPU geometry; `chronosgl.dart` is the browser-facing engine import.
 library;
 
-export 'src/core/transform.dart';
-export 'src/core/colors.dart';
+export 'src/core/transform.dart' show Transform;
+export 'src/core/colors.dart'
+    show
+        Color,
+        colorWhite,
+        colorGray8,
+        colorGray6,
+        colorGray4,
+        colorGray2,
+        colorBlack,
+        colorBlue,
+        colorLiteBlue,
+        colorRed,
+        colorLiteRed,
+        colorGreen,
+        colorLiteGreen,
+        colorYellow,
+        colorLiteYellow,
+        colorMagenta,
+        colorLiteMagenta,
+        colorCyan,
+        colorLiteCyan;

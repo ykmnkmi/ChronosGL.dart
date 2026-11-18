@@ -2,7 +2,7 @@ part of 'lib.dart';
 
 List<ShaderObject> createPlane2GreyShader() {
   return [
-    ShaderObject("Plane2GreyV")
+    ShaderObject.vertex("Plane2GreyV")
       ..addAttributeVars([aPosition, aNormal])
       ..addVaryingVars([vColor])
       ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
@@ -11,7 +11,7 @@ List<ShaderObject> createPlane2GreyShader() {
         "$vColor = vec3(d,d,d);",
         stdVertexBody,
       ]),
-    ShaderObject("Plane2GreyF")
+    ShaderObject.fragment("Plane2GreyF")
       ..addVaryingVars([vColor])
       ..setBodyWithMain(["$oFragColor = vec4($vColor, 1.0);"]),
   ];
@@ -47,12 +47,12 @@ void main(void) {
 
 List<ShaderObject> createPlane2ColorShader() {
   return [
-    ShaderObject("Plane2ColorV")
+    ShaderObject.vertex("Plane2ColorV")
       ..addAttributeVars([aPosition, aNormal])
       ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
       ..addVaryingVars([vColor])
       ..setBody([_vertexShaderPlane2ColorV]),
-    ShaderObject("Plane2ColorF")
+    ShaderObject.fragment("Plane2ColorF")
       ..addVaryingVars([vColor])
       ..setBodyWithMain(["$oFragColor = vec4( vColor, 1.0 );"]),
   ];

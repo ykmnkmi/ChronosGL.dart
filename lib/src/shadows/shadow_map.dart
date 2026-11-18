@@ -164,7 +164,7 @@ class ShadowMap {
     _isDisposed = true;
     _batch.removeAll();
     _pass.removeAll();
-    _uniforms.getUniforms().clear();
+    _uniforms.clearUniforms();
     Object? error;
     StackTrace? stack;
     for (final cleanup in [_program.dispose, _shadowBuffer.dispose]) {

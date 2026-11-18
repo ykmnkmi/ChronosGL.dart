@@ -1,11 +1,11 @@
 part of 'lib.dart';
 
-/// Interactive Camera focused on a specific point.
+/// Legacy frame-based orbit camera focused on a specific point.
+/// Prefer a mathematical camera with [OrbitControls] for time-based input.
 class OrbitCamera extends Spatial {
-  /// OrbitCamera initializes an orbiting camera
-  ///
-  /// @param this._radius blah
-  /// @param this._polar blah
+  /// Uses world units for radius and radians for azimuth and polar angles.
+  /// The Object-based target accepts SDK DOM objects only in JavaScript builds.
+  @Deprecated('Use PerspectiveCamera with OrbitControls.forCamera instead.')
   OrbitCamera(this._radius, this.azimuth, this.polar, Object eventElement)
     : keyboard = Keyboard(null),
       mouse = Mouse(eventElement),

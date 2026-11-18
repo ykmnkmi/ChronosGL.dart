@@ -22,6 +22,38 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 - Move demo particle/star factories and demo shaders to `example/shared/` and
   remove the shared `emptyMaterial`. Replace shadow map visualization methods
   with a separate `ShadowMapVisualizer`.
+- Curate supported exports through public modules. Import diagnostics from
+  `debug.dart` separately; remove unfinished `MidiInput`, `findBridge` and
+  `extractWireframe` from supported exports, together with internal helpers.
+- Protect shader interface collections, uniform maps, animation track structure,
+  GPU attribute snapshots and the easing registry from external changes that
+  bypass their owners. Use explicit mutation methods where provided.
+- Replace assertion-only public contracts with runtime checks and string shader
+  failures with `ShaderCompilationException`. Invalid arguments, invalid state
+  and unsupported operations use distinct typed errors in all build modes.
+
+### Supported public API
+
+- Add `animation.dart`, `importers.dart`, `shaders.dart`, `webgl.dart`,
+  `render.dart`, `scene.dart` and `web.dart`. Animation, importer and shader
+  descriptions join transforms, cameras and geometry as VM-compatible modules.
+- Add explicit `ShaderStage.vertex`/`fragment`, `ShaderObject.create`, `.vertex`
+  and `.fragment`; retain deprecated stage inference only for the legacy
+  constructor. Built-in shader descriptions use explicit stages.
+- Add `UniformKey<T>`, built-in `UniformKeys`, and typed `set`, `force` and `get`
+  alongside existing canonical string names and setter calls.
+- Add named constructors for programs, scene passes/batches, textures, lights,
+  animation and browser integration, with documented units. Add typed browser
+  constructors for contexts, input, texture sources and diagnostic panels;
+  preserve deprecated Object-based JavaScript compatibility boundaries.
+- Add a public module contract and migration table, plus focused VM export,
+  runtime contract and browser scene/diagnostic integration coverage.
+- Add explicit diagnostic imports to affected examples so removing diagnostics
+  from the aggregate preserves example compilation. Deprecate the legacy
+  Object-based `OrbitCamera` constructor in favor of a mathematical camera and
+  `OrbitControls.forCamera`.
+- Reject `GpuMesh.changeFaces` before an index buffer exists, including after
+  `clearData()`, with `StateError` before changing mesh data or WebGL bindings.
 
 ### Helpers, shadows and diagnostics
 

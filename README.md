@@ -53,6 +53,21 @@ Constants, functions, methods, and variables use lowerCamelCase, for example
 `glArrayBuffer`, `geometryBuilderToMeshData`, and `Keyboard.pageUp`.
 See [MIGRATION.md](MIGRATION.md) for the previous names.
 
+Use the supported public modules instead of imports under `src/`:
+
+| Import | Contents |
+| --- | --- |
+| `core.dart`, `camera.dart` | Transforms, colors, cameras and projections |
+| `geometry.dart`, `animation.dart`, `importers.dart`, `shaders.dart` | CPU geometry, skeletal animation, model parsing and shader descriptions |
+| `webgl.dart`, `render.dart`, `mesh.dart` | WebGL2 bindings, GPU resources, uniforms and mesh factories |
+| `scene.dart`, `shadows.dart`, `web.dart` | Scene traversal, shadow computation and browser integration |
+| `debug.dart` | Optional panels and visualizers, imported separately |
+
+The first two rows work on the Dart VM. `chronosgl.dart` combines the supported
+engine modules for browser applications. It excludes diagnostics and unfinished
+helpers such as `MidiInput`. See the [public API contract](docs/7.1_PUBLIC_API.md)
+and [Phase 7 migration table](MIGRATION.md#supported-public-api-refactoring-phase-7).
+
 Mathematics and CPU geometry are available on the Dart VM through these imports:
 
 - `package:chronosgl/core.dart` exports `Transform`, immutable `Color`, and the
@@ -92,6 +107,28 @@ Use the same imports in command-line tools and VM tests. The aggregate
 `package:chronosgl/chronosgl.dart` includes browser dependencies; use it in
 browser code. See the [VM import contract](docs/3.10_VM_MATH_IMPORTS.md) for a
 standalone example and the import regression test.
+
+New shader descriptions declare their stage explicitly with
+`ShaderObject.create(name: ..., stage: ShaderStage.vertex)`,
+`ShaderObject.vertex(name)` or `ShaderObject.fragment(name)`. Set interface
+variables before generating the body. For uniforms, use typed keys:
+
+```dart
+final material = Material('surface')
+  ..set(UniformKeys.color, colorWhite.toVector3());
+material.force(UniformKeys.color, colorBlue.toVector3());
+final tint = material.get(UniformKeys.color);
+```
+
+Canonical strings remain available for GLSL and existing `setUniform` calls.
+Stored uniform groups expose a read-only `getUniforms()` snapshot; use
+`addUniforms`, `removeUniform` and `clearUniforms` to edit a group.
+`CameraUniforms` returns a fresh mutable map with independent camera snapshots.
+Invalid arguments throw `ArgumentError`, invalid object state throws
+`StateError`, and unavailable operations throw
+`UnsupportedError`. Shader compiler and linker failures throw
+`ShaderCompilationException`, including the driver message and stage details.
+These contracts apply with assertions enabled or disabled.
 
 For browser rendering, import `package:chronosgl/chronosgl.dart` and wrap either
 camera in `CameraUniforms`:
@@ -199,9 +236,18 @@ import:
 final camera = PerspectiveCamera(near: 0.1, far: 1000);
 canvas.tabIndex = 0;
 canvas.focus(); // Receive keyboard input on this explicit target.
-final controls = OrbitControls(camera, canvas, radius: 15);
-final phase = RenderPhase('main', cgl);
-final viewport = CanvasViewport(cgl, canvas, camera, renderPhase: phase);
+final controls = OrbitControls.forCamera(
+  camera: camera,
+  eventTarget: canvas,
+  radius: 15,
+);
+final phase = RenderPass.named(name: 'main', context: cgl);
+final viewport = CanvasViewport.forCanvas(
+  cgl: cgl,
+  canvas: canvas,
+  camera: camera,
+  renderPass: phase,
+);
 // Add scenes with CameraUniforms(camera) to phase.
 
 // In requestAnimationFrame, convert timestamp differences from ms to seconds.
@@ -226,8 +272,18 @@ physical buffer pixels through `setViewport`. See the
 The [orbit camera example](example/orbit_camera/orbit_camera.dart) combines
 these components. The [torus-knot example](example/torusknot_camera/torusknot_camera.dart)
 keeps its trajectory in an example controller that drives a supplied camera.
-Legacy `OrbitCamera` and resize helpers remain available during migration;
-their existing frame-based input and resize behavior is unchanged.
+Legacy `OrbitCamera` and resize helpers remain available but deprecated during
+migration; their existing frame-based input and resize behavior is unchanged.
+
+Use `ChronosGL.fromCanvas` and `ImageTexture.fromCanvas/fromImage/fromVideo`
+with `package:web` elements, and `Keyboard.forTarget`/`Mouse.forTarget` with a
+typed event target. Diagnostics provide `StatsPanel.attach` and
+`FpsPanel.attach`. The previous Object-based constructors remain deprecated
+compatibility boundaries; legacy SDK DOM objects work only in JavaScript.
+
+`GpuMesh.changeFaces` updates an existing index buffer. Call `addFaces` first,
+including after `clearData()`. Otherwise it throws `StateError` before changing
+mesh data or WebGL bindings.
 
 
 Create a new Dart webapp project, add this as a `pubspec.yaml` dependency:

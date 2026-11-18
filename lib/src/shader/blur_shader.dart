@@ -7,7 +7,15 @@ double _gaussianPdf(double x, double sigma) {
   return 0.39894 * math.exp(-0.5 * x * x / (sigma * sigma)) / sigma;
 }
 
+/// Builds a symmetric blur kernel. [radius] is the number of nonnegative
+/// texel offsets, including the center; [sigma] is measured in texels.
 String makeGaussianPdfKernelString(int radius, double sigma) {
+  if (radius <= 0) {
+    throw ArgumentError.value(radius, 'radius', 'Must be positive');
+  }
+  if (!sigma.isFinite || sigma <= 0) {
+    throw ArgumentError.value(sigma, 'sigma', 'Must be finite and positive');
+  }
   List<double> w = [];
   double total = 0.0;
   for (int i = 0; i < radius; ++i) {
@@ -17,6 +25,13 @@ String makeGaussianPdfKernelString(int radius, double sigma) {
     if (i > 0) total += x;
   }
 
+  if (!total.isFinite || total <= 0) {
+    throw ArgumentError.value(
+      sigma,
+      'sigma',
+      'Cannot represent a finite blur kernel',
+    );
+  }
   StringBuffer sb = StringBuffer("");
   String sep = "";
   for (int i = 0; i < radius; ++i) {
@@ -44,22 +59,23 @@ void main() {
 
 ShaderObject createBloomTextureFragmentShader(int radius, double sigma) {
   String constants = makeGaussianPdfKernelString(radius, sigma);
-  return ShaderObject("BloomPassF")
+  return ShaderObject.fragment("BloomPassF")
     ..addVaryingVars([vTexUV])
     ..addUniformVars([uDirection, uTexture])
     ..setBody([constants, _kernelFragment]);
 }
 
-final ShaderObject uvPassthruVertexShader = ShaderObject("uv-passthru")
+final ShaderObject uvPassthruVertexShader = ShaderObject.vertex("uv-passthru")
   ..addAttributeVars([aPosition, aTexUV])
   ..addVaryingVars([vTexUV])
   ..setBody([nullVertexShaderWithTextureForwardString]);
 
-final ShaderObject applyBloomEffectFragmentShader = ShaderObject("BloomPassF")
-  ..addVaryingVars([vTexUV])
-  ..addUniformVars([uTexture, uTexture2, uScale, uColor])
-  ..setBody([
-    """
+final ShaderObject applyBloomEffectFragmentShader =
+    ShaderObject.fragment("BloomPassF")
+      ..addVaryingVars([vTexUV])
+      ..addUniformVars([uTexture, uTexture2, uScale, uColor])
+      ..setBody([
+        """
 void main() {
 	$oFragColor = texture($uTexture, $vTexUV) +
 	                $uScale *
@@ -67,10 +83,10 @@ void main() {
 	                texture($uTexture2, $vTexUV);
 }
 """,
-  ]);
+      ]);
 
 final ShaderObject scaledLuminosityHighPassFragmentShader =
-    ShaderObject("ScaledLuminosityHighPassF")
+    ShaderObject.fragment("ScaledLuminosityHighPassF")
       ..addVaryingVars([vTexUV])
       ..addUniformVars([uRange, uColorAlpha, uTexture])
       ..setBody([

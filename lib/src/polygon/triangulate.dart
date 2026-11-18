@@ -36,7 +36,9 @@ bool _isGoodEar(
 
 // Triangulate will not work for all contours.
 List<int>? triangulate(List<vm.Vector2> contour) {
-  assert(contour.length >= 3);
+  if (contour.length < 3) {
+    throw ArgumentError('A polygon requires at least three points');
+  }
   List<int> triangles = <int>[];
 
   List<int> available = <int>[];
@@ -78,10 +80,4 @@ List<int>? triangulate(List<vm.Vector2> contour) {
   } while (available.length >= 3);
 
   return triangles;
-}
-
-// David Eberly's algorithm for finding a bridge between hole and outer polygon
-// We assume the hole does not touch the contour
-void findBridge(List<vm.Vector2> contour, vm.Vector2 leftmostHole) {
-  //double qx = double.NEGATIVE_INFINITY;
 }

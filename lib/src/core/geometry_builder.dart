@@ -139,9 +139,13 @@ class GeometryBuilder {
   // Note: the normal matrix should be a submatrix mat
   void applyTransform([vm.Matrix4? mat, vm.Matrix3? matNormal]) {
     if (attributes.containsKey(aNormal)) {
-      assert(matNormal != null, "no normal matrix provided");
+      if (matNormal == null) {
+        throw ArgumentError(
+          'A normal matrix is required when normals are present',
+        );
+      }
       for (vm.Vector3 v in attributes[aNormal] as List<vm.Vector3>) {
-        v.applyMatrix3(matNormal!);
+        v.applyMatrix3(matNormal);
       }
     }
     if (mat != null) {
@@ -192,7 +196,9 @@ class GeometryBuilder {
       }
     } else {
       for (String a in other.attributes.keys) {
-        assert(attributes.containsKey(a), "missing attribute $a");
+        if (!attributes.containsKey(a)) {
+          throw StateError('Missing attribute $a');
+        }
         attributes[a]!.addAll(other.attributes[a]!);
       }
     }
@@ -329,17 +335,17 @@ class GeometryBuilder {
   }
 
   void addFace3(int a, int b, int c, [bool reverse = false]) {
-    assert(pointsOnly == false, "pointsOnly must be false");
+    if (pointsOnly) throw StateError('Point geometry cannot contain faces');
     faces3.add(reverse ? Face3(c, b, a) : Face3(a, b, c));
   }
 
   void addFace4(int a, int b, int c, int d, [bool reverse = false]) {
-    assert(pointsOnly == false, "pointsOnly must be false");
+    if (pointsOnly) throw StateError('Point geometry cannot contain faces');
     faces4.add(reverse ? Face4(d, c, b, a) : Face4(a, b, c, d));
   }
 
   void addFaces3(int n, [bool reverse = false]) {
-    assert(pointsOnly == false, "pointsOnly must be false");
+    if (pointsOnly) throw StateError('Point geometry cannot contain faces');
 
     int v = vertices.length;
     for (int i = 0; i < n; i++, v += 3) {
@@ -348,7 +354,7 @@ class GeometryBuilder {
   }
 
   void addFaces4(int n, [bool reverse = false]) {
-    assert(pointsOnly == false);
+    if (pointsOnly) throw StateError('Point geometry cannot contain faces');
     int v = vertices.length;
     for (int i = 0; i < n; i++, v += 4) {
       addFace4(v + 0, v + 1, v + 2, v + 3, reverse);
@@ -385,14 +391,18 @@ class GeometryBuilder {
   }
 
   void addVerticesFace3(List<vm.Vector3> vs) {
-    assert(vs.length == 3);
+    if (vs.length != 3) {
+      throw ArgumentError('A triangle requires three vertices');
+    }
     int i = vertices.length;
     addFace3(i + 0, i + 1, i + 2);
     addVertices(vs);
   }
 
   void addVerticesFace3TakeOwnership(List<vm.Vector3> vs) {
-    assert(vs.length == 3);
+    if (vs.length != 3) {
+      throw ArgumentError('A triangle requires three vertices');
+    }
     int i = vertices.length;
     addFace3(i + 0, i + 1, i + 2);
     addVerticesTakeOwnership(vs);
@@ -472,21 +482,23 @@ class GeometryBuilder {
   }
 
   void addVerticesFace4(List<vm.Vector3> vs) {
-    assert(vs.length == 4);
+    if (vs.length != 4) throw ArgumentError('A quad requires four vertices');
     int i = vertices.length;
     addFace4(i + 0, i + 1, i + 2, i + 3);
     addVertices(vs);
   }
 
   void addVerticesFace4TakeOwnership(List<vm.Vector3> vs) {
-    assert(vs.length == 4);
+    if (vs.length != 4) throw ArgumentError('A quad requires four vertices');
     int i = vertices.length;
     addFace4(i + 0, i + 1, i + 2, i + 3);
     addVerticesTakeOwnership(vs);
   }
 
   void addFaces4Strip(List<vm.Vector3> top, List<vm.Vector3> bot, bool closed) {
-    assert(top.length == bot.length);
+    if (top.length != bot.length || top.length < 2) {
+      throw ArgumentError('Strips require matching lengths of at least two');
+    }
     final n = top.length - 1;
     for (int i = 0; i < n; ++i) {
       addVerticesFace4([bot[i], bot[i + 1], top[i + 1], top[i]]);
@@ -513,7 +525,9 @@ class GeometryBuilder {
   // generateFaces is usually only called once to initialize _faces.
   // Its main purpose is to convert Face4 into two triangles
   List<int> generateFaceIndices() {
-    assert(faces3.isNotEmpty || faces4.isNotEmpty);
+    if (faces3.isEmpty && faces4.isEmpty) {
+      throw StateError('Geometry has no faces');
+    }
     List<int> faces = List.generate(
       faces3.length * 3 + faces4.length * 6,
       (i) => 0,
@@ -704,10 +718,19 @@ class GeometryBuilder {
     attributes[aCenter] = center;
   }
 
+  void _checkGridDimensions(int w, int h) {
+    if (w < 2 || h < 2) {
+      throw ArgumentError('Grid dimensions must each be at least two');
+    }
+    if (vertices.length != w * h) {
+      throw StateError('Grid vertex count does not match its dimensions');
+    }
+  }
+
   /// w: num horizontal points
   /// h: num vertical points
   void generateRegularGridUV(int w, int h) {
-    assert(vertices.length == w * h, "grid vertices length mismatch");
+    _checkGridDimensions(w, h);
     List<vm.Vector2> uvs = [];
     attributes[aTexUV] = uvs;
 
@@ -726,7 +749,8 @@ class GeometryBuilder {
     bool wrapped, [
     bool reverse = false,
   ]) {
-    assert(vertices.length == w * h);
+    _checkGridDimensions(w, h);
+    final originalFaceCount = faces4.length;
     for (int i = 0; i < h - (wrapped ? 0 : 1); ++i) {
       for (int j = 0; j < w - (wrapped ? 0 : 1); ++j) {
         int ip = i + 1;
@@ -739,9 +763,15 @@ class GeometryBuilder {
       }
     }
     if (wrapped) {
-      assert(faces4.length == w * h, "face4 length mismatch");
+      assert(
+        faces4.length - originalFaceCount == w * h,
+        "face4 length mismatch",
+      );
     } else {
-      assert(faces4.length == (w - 1) * (h - 1), "face4 length mismatch");
+      assert(
+        faces4.length - originalFaceCount == (w - 1) * (h - 1),
+        "face4 length mismatch",
+      );
     }
   }
 

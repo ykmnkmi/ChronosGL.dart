@@ -32,6 +32,15 @@ class RenderProgram extends NamedEntity {
       attributeLayout = MeshAttributeLayout(
         _shaderObjectV.getAttributeLayoutMap(),
       ) {
+    if (_shaderObjectV.stage != ShaderStage.vertex ||
+        _shaderObjectF.stage != ShaderStage.fragment) {
+      throw ArgumentError(
+        'RenderProgram requires a vertex shader and a fragment shader',
+      );
+    }
+    if (_shaderObjectV.shader == null || _shaderObjectF.shader == null) {
+      throw StateError('RenderProgram requires completed shader bodies');
+    }
     _program = _cgl.compileWholeProgram(
       _shaderObjectV.shader!,
       _shaderObjectF.shader!,
@@ -54,6 +63,14 @@ class RenderProgram extends NamedEntity {
       rethrow;
     }
   }
+
+  /// Creates a program from two completed shader descriptions.
+  RenderProgram.create({
+    required String name,
+    required ChronosGL context,
+    required ShaderObject vertexShader,
+    required ShaderObject fragmentShader,
+  }) : this(name, context, vertexShader, fragmentShader);
 
   final ChronosGL _cgl;
   final ShaderObject _shaderObjectV;
@@ -134,6 +151,25 @@ class RenderProgram extends NamedEntity {
     return _uniformLocations.containsKey(canonical);
   }
 
+  void _validateControl(String canonical, Object value) {
+    final valid = switch (canonical) {
+      cDepthTest || cDepthWrite => value is bool,
+      cDepthFunc || cStencilWrite => value is int,
+      cStencilFunc => value is TheStencilFunction,
+      cStencilOp => value is TheStencilOp,
+      cBlendEquation => value is TheBlendEquation,
+      cColorWrite => value is List<bool> && value.length == 4,
+      _ => throw UnsupportedError('Unknown rendering control $canonical'),
+    };
+    if (!valid) {
+      throw ArgumentError.value(
+        value,
+        canonical,
+        'Invalid rendering control value',
+      );
+    }
+  }
+
   void _setControl(String canonical, Object val) {
     switch (canonical) {
       case cDepthTest:
@@ -181,7 +217,7 @@ class RenderProgram extends NamedEntity {
         break;
 
       default:
-        assert(false, "unknown control canonical $canonical");
+        throw UnsupportedError('Unknown rendering control $canonical');
     }
   }
 
@@ -197,8 +233,11 @@ class RenderProgram extends NamedEntity {
     // Note, we could make this smarter and skip
     // overwriting values with the same values;
     ShaderVarDesc desc = retrieveShaderVarDesc(canonical);
-    assert(_uniformLocations.containsKey(canonical));
-    GlUniformLocation l = _uniformLocations[canonical]!;
+    final l = _uniformLocations[canonical];
+    if (l == null) throw StateError('Uniform $canonical is not active');
+    if (!_matchesUniformType(desc, val)) {
+      throw ArgumentError.value(val, canonical, 'Expected GLSL ${desc.type}');
+    }
     switch (desc.type) {
       case varTypeInt:
         if (desc.arraySize == 0) {
@@ -220,7 +259,7 @@ class RenderProgram extends NamedEntity {
         } else if (val is Float32List) {
           _cgl.uniformMatrix4fv(l, false, val);
         } else {
-          assert(false, "bad unform: $canonical");
+          throw ArgumentError.value(val, canonical, 'Expected Float32List');
         }
         break;
       case varTypeMat3:
@@ -229,7 +268,7 @@ class RenderProgram extends NamedEntity {
         } else if (val is Float32List) {
           _cgl.uniformMatrix3fv(l, false, val);
         } else {
-          assert(false, "bad unform: $canonical");
+          throw ArgumentError.value(val, canonical, 'Expected Float32List');
         }
         break;
       case varTypeVec4:
@@ -261,15 +300,13 @@ class RenderProgram extends NamedEntity {
         _nextTextureUnit++;
         break;
       case varTypeSamplerCube:
-        assert(canonical == uCubeTexture);
         _cgl.activeTexture(glTexture0 + _nextTextureUnit);
         _cgl.bindTexture(glTextureCubeMap, (val as Texture).getTexture());
         _cgl.uniform1i(l, _nextTextureUnit);
         _nextTextureUnit++;
         break;
       default:
-        print("Error: unknow uniform type: ${desc.type}");
-        assert(false);
+        throw UnsupportedError('Unsupported uniform type ${desc.type}');
     }
   }
 
@@ -294,6 +331,9 @@ class RenderProgram extends NamedEntity {
     final DateTime start = DateTime.now();
 
     for (String canonical in inputs.keys) {
+      if (canonical.isEmpty) {
+        throw ArgumentError('Uniform name must not be empty');
+      }
       switch (canonical.codeUnitAt(0)) {
         case prefixUniform:
           if (_hasUniform(canonical)) {
@@ -319,17 +359,37 @@ class RenderProgram extends NamedEntity {
         'GpuMesh ${md.name} has an incompatible context or attribute layout for $name',
       );
     }
+    if (uniforms.whereType<Material>().length > 1) {
+      throw ArgumentError('RenderProgram $name accepts at most one Material');
+    }
     final DateTime start = DateTime.now();
     // Resolve each group once: getUniforms() can compute values on demand.
-    // Validate all active samplers before changing any WebGL or draw state.
+    // Validate controls and active uniforms before changing WebGL or draw state.
     // Optimized-out uniforms are deliberately ignored, just as during upload.
-    final inputs = [for (final group in uniforms) group.getUniforms()];
+    final inputs = [
+      for (final group in uniforms) Map<String, Object>.of(group.getUniforms()),
+    ];
     _checkNotDisposed();
     md._checkNotDisposed();
     for (final values in inputs) {
       for (final entry in values.entries) {
+        if (entry.key.isEmpty) {
+          throw ArgumentError('Uniform name must not be empty');
+        }
+        if (entry.key.codeUnitAt(0) == prefixControl) {
+          _validateControl(entry.key, entry.value);
+          continue;
+        }
         if (!_hasUniform(entry.key)) continue;
-        final type = retrieveShaderVarDesc(entry.key).type;
+        final desc = retrieveShaderVarDesc(entry.key);
+        final type = desc.type;
+        if (!_matchesUniformType(desc, entry.value)) {
+          throw ArgumentError.value(
+            entry.value,
+            entry.key,
+            'Expected GLSL $type',
+          );
+        }
         if (type == varTypeSampler2D ||
             type == varTypeSampler2DShadow ||
             type == varTypeSamplerCube) {
@@ -340,19 +400,10 @@ class RenderProgram extends NamedEntity {
     _cgl.useProgram(_program!);
     _clearState();
 
-    // TODO: put this behind a flag
     _uniformsInitialized.clear();
-    bool haveSeenMaterial = false;
     for (int i = 0; i < uniforms.length; ++i) {
       final u = uniforms[i];
       _activateUniforms(u.name, inputs[i]);
-      if (u is Material) {
-        assert(
-          !haveSeenMaterial,
-          "in program $name: multiple materials specified",
-        );
-        haveSeenMaterial = true;
-      }
     }
 
     _attributesInitialized.clear();
@@ -370,7 +421,6 @@ class RenderProgram extends NamedEntity {
       String mesg =
           "$name mesh:${md.name} mode:${md.drawMode}: uninitialized inputs: $uninitialized";
       logError(mesg);
-      //throw mesg;
     }
 
     md.activate();

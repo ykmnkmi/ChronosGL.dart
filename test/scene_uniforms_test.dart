@@ -123,48 +123,42 @@ void main() {
   });
 
   for (final fail in [false, true]) {
-    test(
-      'Direct traversal preserves list and transform group (fail=$fail)',
-      () {
-        final fixture = _Fixture();
-        final observed = _ObservedUniforms();
-        final matrix = vm.Matrix4.identity()..translateByDouble(9, 8, 7, 1);
-        final transforms = UniformGroup('caller transforms')
-          ..setUniform(uModelMatrix, matrix)
-          ..setUniform(uTime, 123.0);
-        final before = Map<String, Object>.of(transforms.getUniforms());
-        final matrixBefore = List<double>.of(matrix.storage);
-        final uniforms = List<UniformGroup>.unmodifiable([
-          observed,
-          transforms,
-        ]);
-        final failure = StateError('direct traversal failed');
-        observed.onRead = () {
-          expect(uniforms, [observed, transforms]);
-          expect(transforms.getUniforms(), before);
-          if (fail) throw failure;
-        };
-        void draw() => drawRecursively(
-          fixture.program,
-          fixture.root,
-          vm.Matrix4.identity(),
-          null,
-          uniforms,
-        );
-        if (fail) {
-          expect(draw, throwsA(same(failure)));
-        } else {
-          draw();
-          fixture.expectGreen();
-        }
-        expect(transforms.getUniforms(), before);
-        expect(matrix.storage, matrixBefore);
-        observed.onRead = null;
-        draw();
-        fixture.expectGreen();
+    test('Public scene preserves list and transform group (fail=$fail)', () {
+      final fixture = _Fixture();
+      final observed = _ObservedUniforms();
+      final matrix = vm.Matrix4.identity()..translateByDouble(9, 8, 7, 1);
+      final transforms = UniformGroup('caller transforms')
+        ..setUniform(uModelMatrix, matrix)
+        ..setUniform(uTime, 123.0);
+      final before = Map<String, Object>.of(transforms.getUniforms());
+      final matrixBefore = List<double>.of(matrix.storage);
+      final uniforms = List<UniformGroup>.unmodifiable([observed, transforms]);
+      final failure = StateError('direct traversal failed');
+      observed.onRead = () {
         expect(uniforms, [observed, transforms]);
         expect(transforms.getUniforms(), before);
-      },
-    );
+        if (fail) throw failure;
+      };
+      final batch = RenderBatch('public traversal', fixture.program, uniforms)
+        ..add(fixture.root);
+      final pass = RenderPass('public traversal', fixture.cgl)
+        ..viewPortW = 2
+        ..viewPortH = 2
+        ..add(batch);
+      void draw() => pass.draw();
+      if (fail) {
+        expect(draw, throwsA(same(failure)));
+      } else {
+        draw();
+        fixture.expectGreen();
+      }
+      expect(transforms.getUniforms(), before);
+      expect(matrix.storage, matrixBefore);
+      observed.onRead = null;
+      draw();
+      fixture.expectGreen();
+      expect(uniforms, [observed, transforms]);
+      expect(transforms.getUniforms(), before);
+    });
   }
 }

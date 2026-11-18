@@ -37,13 +37,13 @@ void main() {
 }
 """;
 
-final ShaderObject wireframeVertexShader = ShaderObject("WireframeV")
+final ShaderObject wireframeVertexShader = ShaderObject.vertex("WireframeV")
   ..addAttributeVars([aPosition, aCenter])
   ..addVaryingVars([vCenter])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
   ..setBodyWithMain([stdVertexBody, "$vCenter = $aCenter;"]);
 
-final ShaderObject wireframeFragmentShader = ShaderObject("WireframeF")
+final ShaderObject wireframeFragmentShader = ShaderObject.fragment("WireframeF")
   ..addVaryingVars([vCenter])
   ..addUniformVars([uColorAlpha, uColorAlpha2, uThickness])
   ..setBody([_wireframeF]);

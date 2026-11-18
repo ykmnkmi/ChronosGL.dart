@@ -11,6 +11,9 @@ Iterable<List<Object?>> _jsonLists(Object? value) =>
 double _jsonDouble(Object? value) => (value as num).toDouble();
 
 List<vm.Vector3> convertToVector3List(List<Object?> lst) {
+  if (lst.length % 3 != 0) {
+    throw ArgumentError('Expected complete vectors of width 3');
+  }
   List<vm.Vector3> out = List.generate(
     lst.length ~/ 3,
     (i) => vm.Vector3(
@@ -23,6 +26,9 @@ List<vm.Vector3> convertToVector3List(List<Object?> lst) {
 }
 
 List<vm.Vector2> convertToVector2List(List<Object?> lst) {
+  if (lst.length % 2 != 0) {
+    throw ArgumentError('Expected complete vectors of width 2');
+  }
   List<vm.Vector2> out = List.generate(
     lst.length ~/ 2,
     (i) => vm.Vector2(_jsonDouble(lst[2 * i + 0]), _jsonDouble(lst[2 * i + 1])),
@@ -32,6 +38,9 @@ List<vm.Vector2> convertToVector2List(List<Object?> lst) {
 }
 
 List<vm.Vector4> convertToVector4List(int nFill, List<Object?> lst) {
+  if (nFill < 1 || nFill > 4 || lst.length % nFill != 0) {
+    throw ArgumentError('Vector width must be 1..4 and divide the data length');
+  }
   List<vm.Vector4> out = List.generate(lst.length ~/ nFill, (i) {
     int pos = i * nFill;
     vm.Vector4 v = vm.Vector4.zero();

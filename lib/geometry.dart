@@ -1,10 +1,11 @@
-/// Browser-independent CPU geometry builders, shapes, and polygon algorithms.
+/// Browser-independent CPU geometry, shape factories, and polygon algorithms.
 ///
-/// Create and validate geometry on the Dart VM. Use `chronosgl.dart` and
-/// `uploadGeometry` to create GPU buffers when a WebGL context is available.
+/// Validate edited builders before uploading them through `render.dart`.
+/// CPU geometry collections are intentionally editable; validation guards upload.
 library;
 
-export 'src/core/geometry_builder.dart';
+export 'src/core/geometry_builder.dart'
+    show GeometryBuilder, Face3, Face4, normalFromPoints;
 export 'src/core/shader_object.dart'
     show
         ShaderVarDesc,
@@ -27,5 +28,47 @@ export 'src/core/shader_object.dart'
         aPointSize,
         aBoneIndex,
         aBoneWeight;
-export 'src/shape/lib.dart';
-export 'src/polygon/lib.dart';
+export 'src/shape/lib.dart'
+    show
+        cubeGeometry,
+        wedgeGeometry,
+        cylinderGeometry,
+        cylinderGeometryWireframeFriendly,
+        coneGeometryWireframeFrienly,
+        coneGeometryWireframeFriendly,
+        icosahedronGeometry,
+        quadGeometry,
+        gridGeometry,
+        torusKnotGetPos,
+        torusKnotGeometry,
+        torusKnotGeometryWireframeFriendly,
+        torusKnotGeometryTriangularWireframeFriendly,
+        buildPlaneVectors,
+        tubeHullBands,
+        ParametricCurveFunc,
+        parametricCurvePointsAndTangents;
+export 'src/polygon/lib.dart'
+    show
+        getSignedArea,
+        getBounds,
+        isInTriangle,
+        lineIntersection,
+        colinear,
+        filterDupsAndColinear,
+        isInPolygon,
+        isCounterClockWise,
+        isConvex,
+        getContourGradient,
+        contourCircle,
+        generalProjection,
+        simpleExtrusionAxisZ,
+        easingCosine,
+        easingSine,
+        easingLinear,
+        easingQuadratic,
+        easingCubic,
+        Easing,
+        mapStringToEasing,
+        bevelSupportPoints,
+        bevelStrips,
+        triangulate;

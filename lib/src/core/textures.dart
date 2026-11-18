@@ -209,7 +209,7 @@ class Texture {
     _cgl.bindTexture(_textureType, _texture);
     properties.installLate(_cgl, _textureType);
     int err = _cgl.getError();
-    assert(err == glNoError);
+    if (err != glNoError) throw StateError('Texture installation error: $err');
   }
 
   int getTextureType() => _textureType;
@@ -227,6 +227,16 @@ class Texture {
 
 // https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glTexImage2D.xhtml
 class TypedTexture extends Texture {
+  /// Dimensions use texture pixels, internalFormat is a sized WebGL format.
+  TypedTexture.allocate({
+    required ChronosGL context,
+    required int width,
+    required int height,
+    required int internalFormat,
+    String name = '',
+    TextureProperties properties = const TextureProperties(),
+  }) : this(context, name, width, height, internalFormat, properties);
+
   TypedTexture(
     ChronosGL cgl,
     String url,
@@ -236,6 +246,9 @@ class TypedTexture extends Texture {
     TextureProperties prop,
   ) : super(cgl, glTexture2D, url, prop) {
     _initialize(() {
+      if (_width <= 0 || _height <= 0) {
+        throw ArgumentError('Texture dimensions must be positive');
+      }
       _cgl.bindTexture(_textureType, _texture);
       _cgl.texStorage2D(glTexture2D, 1, _internalFormat, _width, _height);
       properties.installLate(_cgl, _textureType);
@@ -253,6 +266,29 @@ class TypedTexture extends Texture {
 }
 
 class TypedTextureMutable extends Texture {
+  /// Dimensions use texture pixels; format/type describe the supplied data.
+  TypedTextureMutable.allocate({
+    required ChronosGL context,
+    required int width,
+    required int height,
+    required int internalFormat,
+    required int format,
+    required int dataType,
+    TypedData? data,
+    String name = '',
+    TextureProperties properties = const TextureProperties(),
+  }) : this(
+         context,
+         name,
+         width,
+         height,
+         internalFormat,
+         properties,
+         format,
+         dataType,
+         data,
+       );
+
   TypedTextureMutable(
     ChronosGL cgl,
     String url,
@@ -265,6 +301,9 @@ class TypedTextureMutable extends Texture {
     TypedData? data,
   ) : super(cgl, glTexture2D, url, prop) {
     _initialize(() {
+      if (_width <= 0 || _height <= 0) {
+        throw ArgumentError('Texture dimensions must be positive');
+      }
       _cgl.bindTexture(_textureType, _texture);
       _cgl.texImage2D(
         glTexture2D,
@@ -338,6 +377,42 @@ class TypedTextureMutable extends Texture {
 // TODO: We want to call  install() in the constructor but this does not
 // seem to work for video elements.
 class ImageTexture extends Texture {
+  /// Borrows an image; texture dimensions use source pixels.
+  ImageTexture.fromImage({
+    required ChronosGL context,
+    required web.HTMLImageElement image,
+    String name = '',
+    TextureProperties properties = const TextureProperties(),
+  }) : this(context, name, image, properties);
+
+  /// Borrows a canvas; texture dimensions use its backing-store pixels.
+  ImageTexture.fromCanvas({
+    required ChronosGL context,
+    required web.HTMLCanvasElement canvas,
+    String name = '',
+    TextureProperties properties = const TextureProperties(),
+  }) : this(context, name, canvas, properties);
+
+  /// Borrows a video element; call update after new frames become available.
+  ImageTexture.fromVideo({
+    required ChronosGL context,
+    required web.HTMLVideoElement video,
+    String name = '',
+    TextureProperties properties = const TextureProperties(),
+  }) : this(context, name, video, properties);
+
+  /// Borrows a bitmap without transferring responsibility for closing it.
+  ImageTexture.fromImageBitmap({
+    required ChronosGL context,
+    required web.ImageBitmap bitmap,
+    String name = '',
+    TextureProperties properties = const TextureProperties(),
+  }) : this(context, name, bitmap, properties);
+
+  /// Legacy SDK DOM values are accepted only by JavaScript builds.
+  @Deprecated(
+    'Use a typed ImageTexture.fromImage/fromCanvas/fromVideo constructor.',
+  )
   ImageTexture(
     ChronosGL cgl,
     String url,
@@ -386,10 +461,21 @@ const List<int> _kCubeModifier = [
 ];
 
 class CubeTexture extends Texture {
+  /// Borrows six images ordered -X, +X, -Y, +Y, -Z, +Z.
+  CubeTexture.fromImages({
+    required ChronosGL context,
+    required List<web.HTMLImageElement> images,
+    String name = '',
+  }) : this(context, name, images);
+
+  /// Legacy SDK DOM values are accepted only by JavaScript builds.
+  @Deprecated('Use CubeTexture.fromImages with package:web.')
   CubeTexture(ChronosGL cgl, String url, List<Object> images)
     : super(cgl, glTextureCubeMap, url, const TextureProperties(clamp: true)) {
     _initialize(() {
-      assert(images.length == _kCubeModifier.length);
+      if (images.length != _kCubeModifier.length) {
+        throw ArgumentError('A cube texture requires exactly six images');
+      }
       properties.installEarly(_cgl, _textureType);
 
       _cgl.bindTexture(_textureType, _texture);

@@ -26,7 +26,7 @@ class Orthographic extends UniformGroup {
     _projViewMatrix.setFrom(_proj);
     _projViewMatrix.multiply(_viewMatrix);
     forceUniform(uPerspectiveViewMatrix, _projViewMatrix);
-    return _uniforms;
+    return super.getUniforms();
   }
 
   void update() {
@@ -95,6 +95,6 @@ class Perspective extends UniformGroup {
     _perspectiveViewMatrix.setFrom(_mat);
     _perspectiveViewMatrix.multiply(_viewMatrix);
     forceUniform(uPerspectiveViewMatrix, _perspectiveViewMatrix);
-    return _uniforms;
+    return super.getUniforms();
   }
 }

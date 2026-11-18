@@ -1,19 +1,18 @@
-/// Browser-facing engine, including WebGL, scene and camera uniform adapters.
+/// Supported browser-facing ChronosGL API.
 ///
-/// Use `core.dart` and `camera.dart` for browser-independent mathematics on
-/// the Dart VM.
+/// Use individual entrypoints to state module dependencies. Core, camera, geometry,
+/// animation, importers, and shaders can run on the Dart VM. Diagnostics are
+/// available separately through `debug.dart`. Implementations under `src` are internal.
 library;
 
+export 'core.dart';
 export 'camera.dart';
 export 'geometry.dart';
-export 'mesh.dart';
+export 'animation.dart';
+export 'importers.dart';
+export 'shaders.dart';
+export 'webgl.dart';
+export 'render.dart';
+export 'scene.dart';
 export 'shadows.dart';
-export 'debug.dart';
-export 'src/core/lib.dart';
-export 'src/shape/lib.dart';
-export 'src/polygon/lib.dart';
-export 'src/shader/lib.dart';
-export 'src/importer/lib.dart';
-export 'src/animation/lib.dart';
-export 'src/webhelper/lib.dart';
-export 'src/scene/lib.dart';
+export 'web.dart';

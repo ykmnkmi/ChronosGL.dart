@@ -6,6 +6,7 @@ import 'package:web/web.dart' as web;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 
 import '../shared/shaders.dart';
 

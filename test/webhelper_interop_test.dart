@@ -5,6 +5,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:test/test.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;

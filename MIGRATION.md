@@ -15,6 +15,146 @@ Run `dart pub get` and `dart analyze` after updating names and imports. For Wasm
 replace all legacy SDK browser imports in your application as well as upgrading
 ChronosGL; legacy DOM compatibility is available only for JavaScript builds.
 
+## Supported public API (refactoring phase 7)
+
+Import supported modules rather than implementation paths under `src/`:
+
+| Import | Supported use | Runtime |
+| --- | --- | --- |
+| `core.dart` | Transform, immutable Color and palette | VM and browser |
+| `camera.dart` | Cameras and reusable projections | VM and browser |
+| `geometry.dart` | CPU builders, shapes and polygon algorithms | VM and browser |
+| `animation.dart` | Skeletons, keyframes and pose calculation | VM and browser |
+| `importers.dart` | Wavefront, ThreeJS and Assimp parsing | VM and browser |
+| `shaders.dart` | Shader descriptions, canonical names and GLSL | VM and browser |
+| `webgl.dart` | WebGL2 context, handles and numeric constants | Browser |
+| `render.dart` | Programs, GPU meshes, uniforms, materials, textures and lights | Browser |
+| `scene.dart` | Nodes, batches and passes | Browser |
+| `shadows.dart` | Shadow map computation | Browser |
+| `web.dart` | Input, controls, viewport, URL loading and browser assets | Browser |
+| `debug.dart` | Statistics panels and visualizers | Browser, explicit import |
+
+`chronosgl.dart` combines the supported engine modules. It no longer exports
+panels or visualizers: add `import 'package:chronosgl/debug.dart';` where they
+are used. `mesh.dart` remains a supported focused import for GPU mesh uploads
+and factories. Public exports use explicit name lists; new internal helpers do
+not automatically become package API.
+
+`MidiInput`, `findBridge`, and the unfinished GPU `extractWireframe` helper are
+removed from supported exports. Use `uploadWireframeGeometry` with the source
+CPU geometry for wireframes. MIDI and polygon-hole bridging have no implemented
+replacement. `UnknownEntity`, `kUnknownEntity`, `Face1`, `Face2`, `Edge3`,
+`hashVector3`, storage-column indices, shader-name prefix codes, icosahedron
+tables/UV helpers, `noWebglMessage`, `textureChannelsByType`, `isCubeChildTextureType`,
+`drawRecursively`, and `getOrthogonalVector3` are implementation details. Keep
+application-specific equivalents locally where needed; use `Face3`, `Face4`,
+public shape factories and scene traversal operations for supported behavior.
+
+### Explicit shader stages and typed uniforms
+
+```dart
+final vertex = ShaderObject.create(
+  name: 'generated vertex',
+  stage: ShaderStage.vertex,
+)..setBodyWithMain(['gl_Position = vec4(0.0, 0.0, 0.0, 1.0);']);
+final fragment = ShaderObject.fragment('solid fragment')
+  ..setBodyWithMain(['$oFragColor = vec4(1.0);']);
+final program = RenderProgram.create(
+  name: 'solid',
+  context: cgl,
+  vertexShader: vertex,
+  fragmentShader: fragment,
+);
+
+final material = Material('paint')
+  ..set(UniformKeys.color, colorWhite.toVector3());
+material.force(UniformKeys.color, colorBlue.toVector3());
+final color = material.get(UniformKeys.color);
+```
+
+`ShaderObject.vertex(name)` and `.fragment(name)` are convenient explicit
+constructors. Attribute-free vertex shaders now work without stage inference.
+The deprecated `ShaderObject(name)` constructor retains the previous inference
+for migration. Set interface variables before generating or assigning the body;
+subsequent edits throw `StateError`. Shader variable lists and layout maps are
+read-only snapshots.
+
+Canonical `u*` strings keep their GLSL values. Existing
+`setUniform(name, value)` and `forceUniform(name, value)` remain supported string
+boundaries. Prefer `set`, `force`, and `get` with `UniformKeys`, or register a
+custom `ShaderVarDesc` then use `UniformKey<T>('uCustom')`. Typed calls validate
+both the Dart value and the registered GLSL shape. Matrix arrays use flattened
+`Float32List` values; integer arrays use `Int32List`. `set` and `setUniform`
+reject an existing key with `StateError`; use `force` or `forceUniform` to
+replace it.
+
+### Named constructors, units, and typed browser objects
+
+| Existing construction | Preferred entrypoint |
+| --- | --- |
+| `ChronosGL(canvas, ...)` | `ChronosGL.fromCanvas(packageWebCanvas, ...)` |
+| `RenderProgram(name, cgl, vertex, fragment)` | `RenderProgram.create(name: ..., context: ..., vertexShader: ..., fragmentShader: ...)` |
+| `Keyboard(target)`, `Mouse(target)` | `Keyboard.forTarget(target)`, `Mouse.forTarget(target)` |
+| `OrbitControls(camera, target, ...)` | `OrbitControls.forCamera(camera: ..., eventTarget: ..., ...)` |
+| `OrbitCamera(radius, azimuth, polar, target)` | A mathematical camera with `OrbitControls.forCamera(camera: ..., eventTarget: ..., radius: ..., azimuth: ..., polar: ...)` |
+| `CanvasViewport(cgl, canvas, camera, ...)` | `CanvasViewport.forCanvas(cgl: ..., canvas: ..., camera: ..., ...)` |
+| `ImageTexture(cgl, name, element, properties)` | `ImageTexture.fromImage/fromCanvas/fromVideo/fromImageBitmap(context: ..., name: ..., image/canvas/video/bitmap: ..., properties: ...)` |
+| `CubeTexture(cgl, name, images)` | `CubeTexture.fromImages(context: ..., name: ..., images: ...)` |
+| `StatsPanel(root, foreground, background)` | `StatsPanel.attach(root: ..., foreground: ..., background: ...)` |
+| `FpsPanel(root, foreground, background)` | `FpsPanel.attach(root: ..., foreground: ..., background: ...)` |
+| `RenderBatch(name, program, uniforms)`, `RenderPass(name, cgl, framebuffer)` | `RenderBatch.named`, `RenderPass.named` |
+| Positional typed texture constructors | `TypedTexture.allocate`, `TypedTextureMutable.allocate` (named pixel dimensions and formats) |
+| Positional light constructors | `PointLight.named`, `DirectionalLight.named`, `SpotLight.named` |
+| Positional animation constructors | `Bone.named`, `BoneAnimation.keyframes`, `SkeletalAnimation.named` |
+| `coneGeometryWireframeFrienly(radius, height, subdivisions)` | `coneGeometryWireframeFriendly(radius: ..., height: ..., radialSubdivisions: ...)` |
+
+Constructors whose original meaning remains valid still work. Typed browser
+constructors require `package:web` objects. Deprecated Object-based browser
+constructors are compatibility boundaries; SDK `dart:html` objects work only in
+JavaScript builds. Use typed constructors for JavaScript and Wasm applications.
+Texture sources, event targets and panel roots remain borrowed.
+
+Camera and light angles are radians (`SpotLight.named.angleRadians` is the cone
+half-angle); positions, near/far distances, light ranges and directional shadow
+extents use consistent application world units. Viewport sizes are framebuffer
+pixels, CSS sizes are CSS pixels, and pixel ratio converts between them. Controls
+consume elapsed seconds; FPS panels consume monotonic timestamps in
+milliseconds. Low-level animation sampling retains the clip's caller-selected
+time units: keys, sample time and duration must match. This phase does not
+normalize the existing ThreeJS and Assimp importers' time conventions. See
+[the units audit](docs/1.3_UNITS_CONVENTIONS.md) for existing importer limitations.
+
+### Errors and collection mutation
+
+Handle `ArgumentError` for invalid inputs, `StateError` for invalid object
+state (including disposed use), `UnsupportedError` for unsupported operations,
+and `ShaderCompilationException` for shader compilation or program linking.
+The shader exception carries the driver message, optional stage and source;
+link failures have no stage. Public checks no longer rely on assertions or
+throw string values.
+Rendering controls and active uniform values are validated before changing
+WebGL state, including controls supplied through legacy string setters.
+`GpuMesh.changeFaces` requires an index buffer created by `addFaces`. Calling
+it before `addFaces`, or after `clearData()` without recreating the index buffer,
+throws `StateError` before changing mesh data or WebGL bindings.
+
+`UniformGroup.getUniforms()` returns a read-only map snapshot. Replace edits to
+that map with `setUniform`, `forceUniform`, `addUniforms`, `removeUniform`, or
+`clearUniforms`. Values remain borrowed: copy a vector/matrix explicitly if
+independent value ownership is needed. `CameraUniforms` preserves its earlier
+contract: each read returns a fresh caller-owned mutable map with independent
+camera matrix/vector snapshots, so editing it cannot change the adapter.
+
+Shader interfaces/layouts, animation track views, GPU readback snapshots and
+the easing registry similarly protect their structural invariants. Use
+`SkeletalAnimation.insertBone` to add a track. Scene child/root lists and batch
+uniform lists remain editable between draws; cycles are checked during
+traversal. CPU geometry remains editable and must pass `validate()` before
+upload.
+
+See [the public API contract](docs/7.1_PUBLIC_API.md) for the module boundaries
+and focused public-import validation.
+
 ## Scene graph and geometry (refactoring phase 5)
 
 Use these names through `package:chronosgl/chronosgl.dart`:

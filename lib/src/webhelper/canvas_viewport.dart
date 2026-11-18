@@ -20,6 +20,22 @@ import '../scene/lib.dart';
 /// or zero-sized canvas preserves the last valid projection. Resize observers,
 /// window resize and device-pixel-ratio changes also synchronize automatically.
 class CanvasViewport {
+  /// Named browser integration. [pixelRatio] is device pixels per CSS pixel.
+  CanvasViewport.forCanvas({
+    required ChronosGL cgl,
+    required web.HTMLCanvasElement canvas,
+    required Camera camera,
+    RenderPass? renderPass,
+    double? pixelRatio,
+  }) : this(
+         cgl,
+         canvas,
+         camera,
+         renderPhase: renderPass,
+         pixelRatio: pixelRatio,
+       );
+
+  @Deprecated('Use CanvasViewport.forCanvas with named arguments.')
   CanvasViewport(
     this.cgl,
     this.canvas,

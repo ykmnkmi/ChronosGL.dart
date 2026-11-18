@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 
 final vm.Vector3 posLight = vm.Vector3(11.0, 20.0, 0.0);
 final vm.Vector3 dirLight = vm.Vector3(0.0, -50.0, 0.0);

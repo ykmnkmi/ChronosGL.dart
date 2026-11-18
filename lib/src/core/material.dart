@@ -4,6 +4,12 @@ part of 'lib.dart';
 class TheStencilFunction {
   const TheStencilFunction(this.func, this.value, this.mask);
 
+  const TheStencilFunction.create({
+    required this.func,
+    required this.value,
+    required this.mask,
+  });
+
   final int func;
   final int value;
   final int mask;
@@ -32,6 +38,12 @@ const TheStencilFunction stencilFunctionAlways = TheStencilFunction(
 class TheStencilOp {
   const TheStencilOp(this.fail, this.zfail, this.zpass);
 
+  const TheStencilOp.create({
+    required this.fail,
+    required this.zfail,
+    required this.zpass,
+  });
+
   final int fail;
   final int zfail;
   final int zpass;
@@ -43,6 +55,12 @@ class TheStencilOp {
 /// Immutable blending settings. Materials can safely share a preset.
 class TheBlendEquation {
   const TheBlendEquation(this.equation, this.srcFactor, this.dstFactor);
+
+  const TheBlendEquation.create({
+    required this.equation,
+    required this.srcFactor,
+    required this.dstFactor,
+  });
 
   final int equation;
   final int srcFactor;

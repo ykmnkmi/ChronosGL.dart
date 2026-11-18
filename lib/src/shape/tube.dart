@@ -2,6 +2,12 @@ part of 'lib.dart';
 
 // modified from vectormath's version to not use arbitrary thresholds
 void buildPlaneVectors(vm.Vector3 planeNormal, vm.Vector3 u, vm.Vector3 v) {
+  if (!planeNormal.x.isFinite ||
+      !planeNormal.y.isFinite ||
+      !planeNormal.z.isFinite ||
+      planeNormal.length2 == 0) {
+    throw ArgumentError('Plane normal must be finite and nonzero');
+  }
   if (planeNormal.x.abs() > 0) {
     // choose u in x-y plane
     final double a =
@@ -41,6 +47,14 @@ List<List<vm.Vector3>> tubeHullBands(
   int segments,
   double radius,
 ) {
+  if (segments < 3 ||
+      !radius.isFinite ||
+      radius <= 0 ||
+      pointsAndTangents.length.isOdd) {
+    throw ArgumentError(
+      'Tube needs point/tangent pairs, three segments and positive finite radius',
+    );
+  }
   final List<List<vm.Vector3>> out = [];
   // Avoid unnecessary allocations:
 
@@ -99,7 +113,15 @@ List<vm.Vector3> parametricCurvePointsAndTangents(
   double epsilon = 0.001,
   bool halfOpen = false,
 }) {
-  assert(numPoints >= 2);
+  if (numPoints < 2 ||
+      !start.isFinite ||
+      !end.isFinite ||
+      !epsilon.isFinite ||
+      epsilon <= 0) {
+    throw ArgumentError(
+      'Curve requires finite bounds, positive epsilon and at least two points',
+    );
+  }
   final List<vm.Vector3> out = [];
   final vm.Vector3 p = vm.Vector3.zero();
   final vm.Vector3 d = vm.Vector3.zero();

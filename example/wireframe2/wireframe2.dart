@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 
 const String meshFile = "../asset/dragon/dragon.obj";
 

@@ -9,6 +9,7 @@ import 'dart:js_interop';
 import 'dart:web_gl' as webgl;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 

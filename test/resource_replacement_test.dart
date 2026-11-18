@@ -301,7 +301,8 @@ void main() {
           throwsA(same(cgl.failure)),
         );
         expect(md.getBuffer(aPosition), previous);
-        expect(md.getAttribute(aPosition), same(data));
+        expect(md.getAttribute(aPosition), orderedEquals(data));
+        expect(md.getAttribute(aPosition), isNot(same(data)));
         expect(md.getNumItems(), 3);
         expectPointer(md, 0, previous);
         cgl.viewport(0, 0, 2, 2);
@@ -379,7 +380,8 @@ void main() {
     expect(() => md.addVertices(data), throwsA(same(cgl.failure)));
     cgl.failDeletion = false;
     expect(md.getBuffer(aPosition), isNot(old));
-    expect(md.getAttribute(aPosition), same(data));
+    expect(md.getAttribute(aPosition), orderedEquals(data));
+    expect(md.getAttribute(aPosition), isNot(same(data)));
     expect(md.getNumItems(), 6);
     expectPointer(md, 0, md.getBuffer(aPosition));
     md.dispose();

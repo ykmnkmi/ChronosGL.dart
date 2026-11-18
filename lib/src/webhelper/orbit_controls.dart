@@ -17,6 +17,37 @@ import '../core/pose_math.dart';
 /// Configuration is applied by [update], including when its time step is zero.
 /// The controller never changes camera projection or owns the camera/target.
 class OrbitControls {
+  /// Named integration; angles are radians and [radius] uses world units.
+  /// Keyboard speeds are per second; pointer sensitivity uses CSS pixels.
+  OrbitControls.forCamera({
+    required Camera camera,
+    required web.EventTarget eventTarget,
+    vm.Vector3? target,
+    double radius = 10,
+    double azimuth = 0,
+    double polar = 0,
+    double rotationSpeed = 1.8,
+    double zoomSpeed = 0.6,
+    double dragRadiansPerPixel = 0.01,
+    double wheelZoomPerUnit = 0.002,
+    double wheelLineHeightCssPixels = 16,
+    bool enabled = true,
+  }) : this(
+         camera,
+         eventTarget,
+         target: target,
+         radius: radius,
+         azimuth: azimuth,
+         polar: polar,
+         rotationSpeed: rotationSpeed,
+         zoomSpeed: zoomSpeed,
+         dragRadiansPerPixel: dragRadiansPerPixel,
+         wheelZoomPerUnit: wheelZoomPerUnit,
+         wheelLineHeightCssPixels: wheelLineHeightCssPixels,
+         enabled: enabled,
+       );
+
+  @Deprecated('Use OrbitControls.forCamera with named arguments.')
   OrbitControls(
     this.camera,
     this.eventTarget, {

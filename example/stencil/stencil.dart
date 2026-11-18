@@ -5,6 +5,7 @@ import 'package:web/web.dart' as web;
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 
 final web.HTMLInputElement gStencil =
     web.document.querySelector('#stencil') as web.HTMLInputElement;

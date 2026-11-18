@@ -266,24 +266,22 @@ class GpuMesh extends NamedEntity {
       throw ArgumentError('Invalid attribute or data width: $canonical');
     }
     if (debug) print("ChangeBuffer $canonical ${data.length}");
-    if (canonical.codeUnitAt(0) == prefixInstancer) {
-      assert(data.length ~/ width == _instances, "ChangeAttribute $_instances");
-    } else {
-      assert(
-        data.length ~/ width == _vertices.length ~/ 3,
-        "wrong size for attribute: $canonical expected: ${_vertices.length ~/ 3} got: ${data.length ~/ width}",
-      );
+    final expected = attribute.divisor != 0
+        ? _instances
+        : _vertices.length ~/ 3;
+    if (data.length ~/ width != expected) {
+      throw ArgumentError('Attribute $canonical requires $expected items');
     }
     final uploadData = _uploadData(attribute, data);
-    _attributes[canonical] = data;
     _cgl.changeArrayBuffer(_buffers[canonical]!, uploadData);
+    _attributes[canonical] = _copyNumericList(data);
   }
 
   void changeVertexData(Float32List data) {
     _checkNotDisposed();
     final String canonical = aPosition;
-    _vertices = data;
     changeAttributeData(canonical, data, 3);
+    _vertices = Float32List.fromList(data);
   }
 
   bool supportsAttribute(String canonical) {
@@ -317,13 +315,24 @@ class GpuMesh extends NamedEntity {
 
   List<num> getAttribute(String canonical) {
     _checkNotDisposed();
-    return _attributes[canonical]!;
+    final values = _attributes[canonical];
+    if (values == null) throw ArgumentError('No data for attribute $canonical');
+    if (values is Float32List) return Float32List.fromList(values);
+    if (values is Uint32List) return Uint32List.fromList(values);
+    if (values is Uint16List) return Uint16List.fromList(values);
+    if (values is Uint8List) return Uint8List.fromList(values);
+    if (values is Int32List) return Int32List.fromList(values);
+    return List<num>.unmodifiable(values);
   }
 
   /// Returns a borrowed handle; this does not transfer ownership to the caller.
   GlBuffer getBuffer(String canonical) {
     _checkNotDisposed();
-    return _buffers[canonical]!;
+    final buffer = _buffers[canonical];
+    if (buffer == null) {
+      throw ArgumentError('No buffer for attribute $canonical');
+    }
+    return buffer;
   }
 
   /// Borrows [buffer] by default; its owner must keep it alive while in use.
@@ -480,8 +489,8 @@ class GpuMesh extends NamedEntity {
         takeOwnership: true,
         upload: () => _cgl.changeArrayBuffer(buffer, uploadData),
         commitData: () {
-          _attributes[canonical] = data;
-          if (positions != null) _vertices = positions;
+          _attributes[canonical] = _copyNumericList(data);
+          if (positions != null) _vertices = Float32List.fromList(positions);
           if (instanced && _instances == 0) _instances = count;
           committed = true;
         },
@@ -493,6 +502,15 @@ class GpuMesh extends NamedEntity {
       }
       rethrow;
     }
+  }
+
+  static List<num> _copyNumericList(List<num> values) {
+    if (values is Float32List) return Float32List.fromList(values);
+    if (values is Uint32List) return Uint32List.fromList(values);
+    if (values is Uint16List) return Uint16List.fromList(values);
+    if (values is Uint8List) return Uint8List.fromList(values);
+    if (values is Int32List) return Int32List.fromList(values);
+    return List<num>.unmodifiable(values);
   }
 
   List<num> _uploadData(VertexAttributeLayout attribute, List<num> data) {
@@ -528,8 +546,15 @@ class GpuMesh extends NamedEntity {
     _addAttribute(aPosition, data, 3);
   }
 
+  /// Updates an index buffer previously created by [addFaces].
+  /// Throws [StateError] before changing CPU or GPU state when no index buffer
+  /// exists, including after [clearData].
   void changeFaces(List<int> faces) {
     _checkNotDisposed();
+    final indexBuffer = _indexBuffer;
+    if (indexBuffer == null) {
+      throw StateError('Mesh $name requires addFaces before changeFaces');
+    }
     if (_vertices.length < 3 * 256) {
       _faces = Uint8List.fromList(faces);
       _indexBufferType = glUnsignedByte;
@@ -542,7 +567,7 @@ class GpuMesh extends NamedEntity {
     }
 
     _cgl.bindVertexArray(_vao!);
-    _cgl.changeElementArrayBuffer(_indexBuffer!, _faces as TypedData);
+    _cgl.changeElementArrayBuffer(indexBuffer, _faces as TypedData);
   }
 
   /// Uploads new index storage before releasing the previous owned buffer.
@@ -692,7 +717,9 @@ MeshData _extractWireframeNormals(
   List<double> normals,
   double scale,
 ) {
-  assert(vertices.length == normals.length);
+  if (vertices.length != normals.length || vertices.length % 3 != 0) {
+    throw ArgumentError('Vertices and normals must contain matching triples');
+  }
   Float32List v = Float32List(2 * vertices.length);
   for (int i = 0; i < vertices.length; i += 3) {
     v[2 * i + 0] = vertices[i + 0];
@@ -771,7 +798,9 @@ MeshData extractWireframeNormals(
 ]) {
   prog._checkNotDisposed();
   md._checkNotDisposed();
-  assert(md._drawMode == glTriangles, "expected GL_TRIANGLES");
+  if (md._drawMode != glTriangles) {
+    throw ArgumentError('Mesh must contain triangles');
+  }
   final Float32List vertices = md.getAttribute(aPosition) as Float32List;
   final Float32List normals = md.getAttribute(aNormal) as Float32List;
   MeshData out = prog.makeMeshData(md.name, glLines);
@@ -779,26 +808,7 @@ MeshData extractWireframeNormals(
 }
 
 MeshData extractWireframe(RenderProgram prog, MeshData md) {
-  prog._checkNotDisposed();
-  md._checkNotDisposed();
-  assert(false);
-  assert(md._drawMode == glTriangles);
-  MeshData out = prog.makeMeshData(md.name, glLines);
-  out.addVertices(md._vertices);
-  final List<int> faces = md._faces!;
-  // Probably wrong
-  List<int> lines = List.generate(faces.length * 2, (i) => i);
-  for (int i = 0; i < faces.length; i += 3) {
-    lines[i * 2 + 0] = faces[i + 0];
-    lines[i * 2 + 1] = faces[i + 1];
-    lines[i * 2 + 2] = faces[i + 1];
-    lines[i * 2 + 3] = faces[i + 2];
-    lines[i * 2 + 4] = faces[i + 2];
-    lines[i * 2 + 5] = faces[i + 0];
-  }
-
-  out.addFaces(lines);
-  return out;
+  throw UnsupportedError('Use uploadWireframeGeometry with the CPU geometry');
 }
 
 List<double> _getMeshFaceAreas(List<int> faces, Float32List verts) {
@@ -842,12 +852,20 @@ MeshData extractPointCloud(
 }) {
   prog._checkNotDisposed();
   md._checkNotDisposed();
-  assert(md._drawMode == glTriangles, "expected GL_TRIANGLES");
+  if (md._drawMode != glTriangles) {
+    throw ArgumentError('Mesh must contain triangles');
+  }
   if (extractNormal) {
-    assert(md.supportsAttribute(aNormal), "expected support for aNormal");
+    if (!md.supportsAttribute(aNormal)) {
+      throw ArgumentError('Mesh needs normals');
+    }
   }
   if (extractColor) {
-    assert(md.supportsAttribute(aColor), "expected support for aColor");
+    if (!md.supportsAttribute(aColor)) throw ArgumentError('Mesh needs colors');
+  }
+  if (numPoints < 0) throw ArgumentError.value(numPoints, 'numPoints');
+  if (md._faces == null || md._faces!.isEmpty) {
+    throw StateError('Mesh needs indexed faces');
   }
   final List<int> faces = md._faces!;
   final Float32List verts = md._vertices;
@@ -855,13 +873,17 @@ MeshData extractPointCloud(
       ? md.getAttribute(aNormal) as Float32List
       : Float32List(0);
   if (extractNormal) {
-    assert(norms.length == verts.length);
+    if (norms.length != verts.length) {
+      throw StateError('Normal count does not match vertices');
+    }
   }
   final Float32List cols = extractColor
       ? md.getAttribute(aColor) as Float32List
       : Float32List(0);
   if (extractColor) {
-    assert(cols.length == verts.length);
+    if (cols.length != verts.length) {
+      throw StateError('Color count does not match vertices');
+    }
   }
 
   vm.Vector3 v0 = vm.Vector3.zero();

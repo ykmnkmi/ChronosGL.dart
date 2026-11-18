@@ -1,6 +1,49 @@
 /// CPU-only shader interface descriptions and canonical variable metadata.
 library;
 
+/// The programmable pipeline stage described by a [ShaderObject].
+enum ShaderStage { vertex, fragment }
+
+/// A shader compiler or program linker failure, including the driver log.
+class ShaderCompilationException implements Exception {
+  const ShaderCompilationException(this.message, {this.stage, this.source});
+
+  final String message;
+
+  /// Null for a failure while linking a complete program.
+  final ShaderStage? stage;
+  final String? source;
+
+  @override
+  String toString() =>
+      'ShaderCompilationException'
+      '${stage == null ? " (link)" : " (${stage!.name})"}: $message';
+}
+
+/// A uniform name paired with the Dart type accepted by typed setters.
+///
+/// Canonical strings remain available for GLSL interpolation and legacy APIs.
+/// Register custom names using [introduceNewShaderVar] before using their key.
+/// Values and shader metadata are checked when a group accepts this key.
+class UniformKey<T extends Object> {
+  const UniformKey(this.name);
+
+  final String name;
+
+  void validateValue(Object value) {
+    if (name.isEmpty || !name.startsWith('u')) {
+      throw ArgumentError.value(name, 'name', 'Expected a uniform name');
+    }
+    retrieveShaderVarDesc(name);
+    if (value is! T) {
+      throw ArgumentError.value(value, name, 'Expected $T');
+    }
+  }
+
+  @override
+  String toString() => name;
+}
+
 const int kMaxLights = 4;
 const int kMaxBones = 128;
 
@@ -49,9 +92,12 @@ class ShaderVarDesc {
       case varTypeVec4:
       case varTypeUvec4:
         return 4;
+      case varTypeUvec2:
+        return 2;
       default:
-        assert(false);
-        return -1;
+        throw UnsupportedError(
+          'No vertex attribute width for shader type $type',
+        );
     }
   }
 
@@ -313,10 +359,28 @@ final Map<String, ShaderVarDesc> _varsDb = {
 };
 
 void introduceNewShaderVar(String canonical, ShaderVarDesc desc) {
-  assert(
-    !_varsDb.containsKey(canonical),
-    "duplicate shader variable $canonical",
-  );
+  if (canonical.isEmpty ||
+      !RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*$').hasMatch(canonical)) {
+    throw ArgumentError.value(
+      canonical,
+      'canonical',
+      'Expected a GLSL identifier',
+    );
+  }
+  if (_varsDb.containsKey(canonical)) {
+    throw ArgumentError.value(
+      canonical,
+      'canonical',
+      'Duplicate shader variable',
+    );
+  }
+  if (desc.arraySize < 0) {
+    throw ArgumentError.value(
+      desc.arraySize,
+      'arraySize',
+      'Must be nonnegative',
+    );
+  }
   _varsDb[canonical] = desc;
 }
 
@@ -329,143 +393,153 @@ ShaderVarDesc retrieveShaderVarDesc(String canonical) {
       ));
 }
 
-// Describes a shader (either fragment or vertex) and its
-// interface to the world on a syntactical (uncompiled) level.
-// Protocol:
-// setBody(WithMain) must be called last;
+/// A shader description with an explicit pipeline [stage].
+///
+/// Add interface variables before setting the source body. Interface collections
+/// are read-only; mutation after source generation throws [StateError].
 class ShaderObject {
-  ShaderObject(this.name);
+  /// Legacy constructor. Only this compatibility path infers the stage from
+  /// attributes; use [ShaderObject.create] for vertex shaders without attributes.
+  @Deprecated('Use ShaderObject.create with an explicit ShaderStage')
+  ShaderObject(this.name) : _stage = null;
+
+  factory ShaderObject.create({
+    required String name,
+    required ShaderStage stage,
+  }) => switch (stage) {
+    ShaderStage.vertex => ShaderObject.vertex(name),
+    ShaderStage.fragment => ShaderObject.fragment(name),
+  };
+
+  ShaderObject.vertex(this.name) : _stage = ShaderStage.vertex;
+  ShaderObject.fragment(this.name) : _stage = ShaderStage.fragment;
 
   final String name;
-  String? shader;
+  final ShaderStage? _stage;
+  ShaderStage get stage =>
+      _stage ??
+      (_attributeVars.isEmpty ? ShaderStage.fragment : ShaderStage.vertex);
 
-  final List<String> attributeVars = [];
-  final List<String> uniformVars = [];
-  final List<String> varyingVars = [];
-  final List<String> transformVars = []; // "transformFeedbackVaryings"
-  // start with one to deliberately exercise corner cases
-  int _nextLayoutPos = 0;
+  String? _shader;
+  String? get shader => _shader;
+
+  /// Accepts a complete GLSL source once, for callers that generate it elsewhere.
+  set shader(String? source) {
+    _checkEditable();
+    if (source == null || source.trim().isEmpty) {
+      throw ArgumentError.value(
+        source,
+        'source',
+        'Shader source must not be empty',
+      );
+    }
+    _shader = source;
+  }
+
+  final List<String> _attributeVars = [];
+  final List<String> _uniformVars = [];
+  final List<String> _varyingVars = [];
+  final List<String> _transformVars = [];
+  List<String> get attributeVars => List.unmodifiable(_attributeVars);
+  List<String> get uniformVars => List.unmodifiable(_uniformVars);
+  List<String> get varyingVars => List.unmodifiable(_varyingVars);
+  List<String> get transformVars => List.unmodifiable(_transformVars);
   final Map<String, int> _canonicalToLayoutPos = {};
 
   int getAttributeLayoutPos(String canonical) =>
-      _canonicalToLayoutPos[canonical]!;
+      _canonicalToLayoutPos[canonical] ??
+      (throw ArgumentError.value(canonical, 'canonical', 'Unknown attribute'));
 
   int getTransformBindingIndex(String canonical) =>
-      transformVars.indexOf(canonical);
+      _transformVars.indexOf(canonical);
 
-  Map<String, int> getAttributeLayoutMap() => _canonicalToLayoutPos;
+  Map<String, int> getAttributeLayoutMap() =>
+      Map.unmodifiable(_canonicalToLayoutPos);
+
+  void _checkEditable() {
+    if (_shader != null) throw StateError('Shader $name already has a body');
+  }
+
+  void _addVars(List<String> names, List<String> destination) {
+    _checkEditable();
+    final seen = destination.toSet();
+    for (final n in names) {
+      retrieveShaderVarDesc(n);
+      if (!seen.add(n)) {
+        throw ArgumentError.value(n, 'names', 'Duplicate shader variable');
+      }
+    }
+    destination.addAll(names);
+    destination.sort();
+  }
 
   void addAttributeVars(List<String> names) {
-    assert(shader == null);
-
-    for (String n in names) {
-      assert(_varsDb.containsKey(n));
-      assert(!attributeVars.contains(n));
-      attributeVars.add(n);
-      _canonicalToLayoutPos[n] = _nextLayoutPos;
-      ++_nextLayoutPos;
+    if (_stage == ShaderStage.fragment) {
+      throw UnsupportedError(
+        'Fragment shaders cannot declare vertex attributes',
+      );
     }
-    attributeVars.sort();
+    _addVars(names, _attributeVars);
+    for (final n in names) {
+      _canonicalToLayoutPos[n] = _canonicalToLayoutPos.length;
+    }
   }
 
-  void addUniformVars(List<String> names) {
-    assert(shader == null);
-
-    for (String n in names) {
-      assert(_varsDb.containsKey(n), "missing uniform $n");
-      assert(!uniformVars.contains(n));
-      uniformVars.add(n);
-    }
-    uniformVars.sort();
-  }
-
-  void addVaryingVars(List<String> names) {
-    assert(shader == null);
-
-    for (String n in names) {
-      assert(_varsDb.containsKey(n));
-      assert(!varyingVars.contains(n));
-      varyingVars.add(n);
-    }
-    varyingVars.sort();
-  }
+  void addUniformVars(List<String> names) => _addVars(names, _uniformVars);
+  void addVaryingVars(List<String> names) => _addVars(names, _varyingVars);
 
   void addTransformVars(List<String> names) {
-    assert(shader == null);
-
-    for (String n in names) {
-      assert(_varsDb.containsKey(n));
-      assert(!transformVars.contains(n));
-      transformVars.add(n);
+    if (_stage == ShaderStage.fragment) {
+      throw UnsupportedError('Transform feedback requires a vertex shader');
     }
-    transformVars.sort();
+    _addVars(names, _transformVars);
   }
 
   void setBodyWithMain(List<String> body, {List<String>? prolog}) {
-    assert(shader == null);
-    shader = _createShader(true, body, prolog);
+    _checkEditable();
+    _shader = _createShader(true, body, prolog);
   }
 
   void setBody(List<String> body, {List<String>? prolog}) {
-    assert(shader == null);
-    shader = _createShader(false, body, prolog);
+    _checkEditable();
+    _shader = _createShader(false, body, prolog);
   }
 
-  /// _CreateShader updates the shader field from header and body.
-  /// If you have set shader manually do not call this.
   String _createShader(
     bool addWrapperForMain,
     List<String> body,
     List<String>? prolog,
   ) {
-    assert(shader == null);
-    // Hack
-    bool isFragmentShader = attributeVars.isEmpty;
-    List<String> out = [
+    final isFragmentShader = stage == ShaderStage.fragment;
+    final out = <String>[
       "#version 300 es",
       "precision highp float;",
       "precision highp sampler2DShadow;",
       "",
     ];
-    for (String a in attributeVars) {
-      ShaderVarDesc d = _varsDb[a]!;
-      int pos = getAttributeLayoutPos(a);
+    for (final a in _attributeVars) {
+      final d = retrieveShaderVarDesc(a);
+      final pos = getAttributeLayoutPos(a);
       out.add("layout (location=$pos) in ${d.type} $a;");
     }
     out.add("");
-
-    String modifier = isFragmentShader ? "in" : "out";
-    if (isFragmentShader) {
-      out.add("out vec4 $oFragColor;");
-    }
-
-    for (String v in varyingVars) {
-      ShaderVarDesc d = _varsDb[v]!;
-      out.add("$modifier ${d.type} $v;");
-    }
-    for (String v in transformVars) {
-      ShaderVarDesc d = _varsDb[v]!;
+    final modifier = isFragmentShader ? "in" : "out";
+    if (isFragmentShader) out.add("out vec4 $oFragColor;");
+    for (final v in [..._varyingVars, ..._transformVars]) {
+      final d = retrieveShaderVarDesc(v);
       out.add("$modifier ${d.type} $v;");
     }
     out.add("");
-    for (String v in uniformVars) {
-      ShaderVarDesc d = _varsDb[v]!;
-      String suffix = d.arraySize == 0 ? "" : "[${d.arraySize}]";
+    for (final v in _uniformVars) {
+      final d = retrieveShaderVarDesc(v);
+      final suffix = d.arraySize == 0 ? "" : "[${d.arraySize}]";
       out.add("uniform ${d.type} $v$suffix;");
     }
     out.add("");
-
     if (prolog != null) out.addAll(prolog);
-
-    if (addWrapperForMain) {
-      out.add("void main(void) {");
-    }
+    if (addWrapperForMain) out.add("void main(void) {");
     out.addAll(body);
-    if (addWrapperForMain) {
-      out.add("}");
-    }
-
-    // print (out.join("\n"));
+    if (addWrapperForMain) out.add("}");
     return out.join("\n");
   }
 }

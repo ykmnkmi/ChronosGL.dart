@@ -5,6 +5,7 @@ import 'package:web/web.dart' as web;
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 
 web.HTMLSelectElement gEffect =
     web.document.querySelector('#effect') as web.HTMLSelectElement;

@@ -9,6 +9,7 @@ import '../shared/particles.dart';
 import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
+import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
 final ShaderObject instancedVertexShader = ShaderObject("InstancedV")

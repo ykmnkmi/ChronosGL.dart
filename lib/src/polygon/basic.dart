@@ -21,6 +21,7 @@ double getSignedArea(List<vm.Vector2> contour) {
 }
 
 vm.Vector4 getBounds(List<vm.Vector2> contour) {
+  if (contour.isEmpty) throw ArgumentError('Contour cannot be empty');
   double maxX = double.negativeInfinity;
   double minX = double.infinity;
   double maxY = double.negativeInfinity;
@@ -69,6 +70,7 @@ bool colinear(vm.Vector2 a, vm.Vector2 b, vm.Vector2 c) {
 // Note: this has one known bug when the first element is colinear
 // with its neighbors
 List<vm.Vector2> filterDupsAndColinear(List<vm.Vector2> contour) {
+  if (contour.length < 3) throw ArgumentError('Contour needs three points');
   List<vm.Vector2> out = <vm.Vector2>[];
   final cl = contour.length;
   out.add(contour[0]);
@@ -100,6 +102,7 @@ List<vm.Vector2> filterDupsAndColinear(List<vm.Vector2> contour) {
 }
 
 bool isInPolygon(List<vm.Vector2> contour, vm.Vector2 p) {
+  if (contour.length < 3) throw ArgumentError('Contour needs three points');
   vm.Vector2 a;
   vm.Vector2 b = contour.last - p;
   int depth = 0;
@@ -124,7 +127,9 @@ bool isCounterClockWise(vm.Vector2 a, vm.Vector2 b, vm.Vector2 c) {
 }
 
 bool isConvex(List<vm.Vector2> contour) {
-  assert(contour.length >= 3);
+  if (contour.length < 3) {
+    throw ArgumentError('A polygon requires at least three points');
+  }
 
   for (int i = 0; i < contour.length; i++) {
     int im1 = i - 1;
@@ -150,10 +155,11 @@ vm.Vector2 _getMovement(vm.Vector2 prev, vm.Vector2 curr, vm.Vector2 next) {
   vm.Vector2 cpOrtho = vm.Vector2(cp.y, -cp.x)..normalize();
   vm.Vector2 ncOrtho = vm.Vector2(nc.y, -nc.x)..normalize();
 
-  assert(
-    nc.dot(cpOrtho) != 0.0,
-    "possibly colinear points in contour? use FilterDupsAndColinear",
-  );
+  if (nc.dot(cpOrtho) == 0.0) {
+    throw ArgumentError(
+      'Contour gradient requires noncollinear adjacent points',
+    );
+  }
 
   vm.Vector2 prevShifted = prev + cpOrtho;
   vm.Vector2 nextShifted = next + ncOrtho;
@@ -166,6 +172,7 @@ vm.Vector2 _getMovement(vm.Vector2 prev, vm.Vector2 curr, vm.Vector2 next) {
 // The output contains a direction Vector2 for each input point.
 // The input must be free of colinear data.
 List<vm.Vector2> getContourGradient(List<vm.Vector2> contour) {
+  if (contour.length < 3) throw ArgumentError('Contour needs three points');
   List<vm.Vector2> out = <vm.Vector2>[];
   final cl = contour.length;
   for (int i = 0; i < contour.length; i++) {
@@ -186,6 +193,11 @@ List<vm.Vector2> contourCircle(
   double radius, [
   bool ccw = true,
 ]) {
+  if (nSegmemts < 3 || !radius.isFinite || radius <= 0) {
+    throw ArgumentError(
+      'A circle requires at least three segments and positive finite radius',
+    );
+  }
   List<vm.Vector2> out = List.generate(nSegmemts, (i) {
     double angle = math.pi * 2 * i / nSegmemts * (ccw ? 1.0 : -1.0);
     return vm.Vector2(radius * math.cos(angle), radius * math.sin(angle));
