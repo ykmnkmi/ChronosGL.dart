@@ -10,7 +10,7 @@ void main() {
     final canvas = web.HTMLCanvasElement()
       ..width = 200
       ..height = 200;
-    ChronosGL chronosGL = ChronosGL(canvas);
+    ChronosGL chronosGL = ChronosGL.fromCanvas(canvas);
     addTearDown(() {
       final extension = chronosGL.getExtension('WEBGL_lose_context');
       if (extension != null) {

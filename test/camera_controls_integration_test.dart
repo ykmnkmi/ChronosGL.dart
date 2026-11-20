@@ -17,48 +17,48 @@ void main() {
       ..style.height = '40px';
     web.document.body!.appendChild(canvas);
     addTearDown(() => canvas.remove());
-    final cgl = ChronosGL(canvas);
+    final cgl = ChronosGL.fromCanvas(canvas);
     addTearDown(() {
       (cgl.getExtension('WEBGL_lose_context') as web.WEBGL_lose_context?)
           ?.loseContext();
     });
     final camera = PerspectiveCamera(near: 0.1, far: 100);
-    final controls = OrbitControls(
-      camera,
-      canvas,
+    final controls = OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
       radius: 10,
       rotationSpeed: 1,
     );
     addTearDown(controls.dispose);
-    final vertex = ShaderObject('controls integration-v')
+    final vertex = ShaderObject.vertex('controls integration-v')
       ..addAttributeVars([aPosition])
       ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
       ..setBodyWithMain([
         'gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4($aPosition, 1.0);',
       ]);
-    final fragment = ShaderObject('controls integration-f')
+    final fragment = ShaderObject.fragment('controls integration-f')
       ..addUniformVars([uEyePosition])
       ..setBodyWithMain([
         '$oFragColor = vec4(abs($uEyePosition) / 16.0, 1.0);',
       ]);
-    final program = RenderProgram(
-      'controls integration',
-      cgl,
-      vertex,
-      fragment,
+    final program = RenderProgram.create(
+      name: 'controls integration',
+      context: cgl,
+      vertexShader: vertex,
+      fragmentShader: fragment,
     );
     addTearDown(program.dispose);
-    final mesh = program.makeMeshData('triangle', glTriangles)
+    final mesh = program.makeGpuMesh('triangle', glTriangles)
       ..addVertices(Float32List.fromList([-1, -1, 0, 1, -1, 0, 0, 1, 0]));
     addTearDown(mesh.dispose);
-    final scene = Scene('scene', program, [CameraUniforms(camera)])
-      ..add(Node('triangle', mesh, Material.empty('material')));
-    final phase = RenderPhase('main', cgl)..add(scene);
-    final viewport = CanvasViewport(
-      cgl,
-      canvas,
-      camera,
-      renderPhase: phase,
+    final scene = RenderBatch('scene', program, [CameraUniforms(camera)])
+      ..add(MeshNode('triangle', mesh, Material.empty('material')));
+    final phase = RenderPass('main', cgl)..add(scene);
+    final viewport = CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
       pixelRatio: 2,
     );
     addTearDown(viewport.dispose);

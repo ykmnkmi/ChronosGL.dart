@@ -10,7 +10,11 @@ import '../shared/particles.dart';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
-final ShaderObject fireworksVertexShader = ShaderObject("FireWorksV")
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
+final ShaderObject fireworksVertexShader = ShaderObject.vertex("FireWorksV")
   ..addAttributeVars([aPosition, aNormal])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])
   ..setBody([
@@ -30,7 +34,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
+final ShaderObject fireworksFragmentShader = ShaderObject.fragment("FireWorksF")
   ..addUniformVars([
     uTime,
     //uColor,
@@ -51,7 +55,7 @@ void main() {
 """,
   ]);
 
-MeshData getRocket(RenderProgram prog) {
+GpuMesh getRocket(RenderProgram prog) {
   int numPoints = 200;
   math.Random rand = math.Random();
 
@@ -68,7 +72,7 @@ MeshData getRocket(RenderProgram prog) {
     );
   }
 
-  return prog.makeMeshData("firefwork-particles", glPoints)
+  return lifetime.own(prog.makeGpuMesh("firefwork-particles", glPoints))
     ..addVertices(flattenVector3List(vertices))
     ..addAttribute(aNormal, flattenVector3List(normals), 3);
 }
@@ -82,54 +86,74 @@ void main() {
   canvas.width = w;
   canvas.height = h;
 
-  ChronosGL cgl = ChronosGL(canvas);
-  OrbitCamera orbit = OrbitCamera(15.0, 0.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
-  perspective.adjustAspect(w, h);
-
-  final RenderProgram progSprites = RenderProgram(
-    "basic",
-    cgl,
-    pointSpritesVertexShader,
-    pointSpritesFragmentShader,
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 15.0,
+      azimuth: 0.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
   );
 
-  final RenderProgram progFireworks = RenderProgram(
-    "fireworks",
-    cgl,
-    fireworksVertexShader,
-    fireworksFragmentShader,
+  final RenderProgram progSprites = lifetime.own(
+    RenderProgram(
+      "basic",
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
+  );
+
+  final RenderProgram progFireworks = lifetime.own(
+    RenderProgram(
+      "fireworks",
+      cgl,
+      fireworksVertexShader,
+      fireworksFragmentShader,
+    ),
   );
 
   // used for both stars and fireworks
-  final Material material = makeStarMaterial(cgl)
+  final Material material = lifetime.own(makeStarMaterial(cgl))
     ..setUniform(uModelMatrix, vm.Matrix4.identity())
     ..setUniform(uColor, colorRed.toVector3());
 
-  final MeshData stars = makeStarMesh(
-    progSprites,
-    2000,
-    100.0,
-    random: math.Random(),
+  final GpuMesh stars = lifetime.own(
+    makeStarMesh(progSprites, 2000, 100.0, random: math.Random()),
   );
-  final MeshData rocket = getRocket(progFireworks);
+  final GpuMesh rocket = getRocket(progFireworks);
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
     material.forceUniform(uTime, timeMs / 1000.0);
 
     progSprites.draw(stars, [perspective, material]);
     progFireworks.draw(rocket, [perspective, material]);
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

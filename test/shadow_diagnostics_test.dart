@@ -410,6 +410,179 @@ void main() {
     cgl.expectReleased(gl);
   });
 
+  for (final fixture
+      in <
+        ({
+          String name,
+          int vertices,
+          int indices,
+          void Function(GpuMesh, double) update,
+        })
+      >[
+        (
+          name: 'directional',
+          vertices: 74,
+          indices: 74,
+          update: (mesh, offset) => debug.updateDirectionalLightVisualizer(
+            mesh,
+            1,
+            0.25,
+            vm.Vector3(offset, -1, 0),
+          ),
+        ),
+        (
+          name: 'spot',
+          vertices: 10,
+          indices: 42,
+          update: (mesh, offset) => debug.updateSpotLightVisualizer(
+            mesh,
+            vm.Vector3(offset, 0, 0),
+            vm.Vector3(0, 0, -1),
+            0.5,
+            0.25,
+          ),
+        ),
+        (
+          name: 'point rays',
+          vertices: 13,
+          indices: 24,
+          update: (mesh, offset) => debug.updatePointLightVisualizer(
+            mesh,
+            vm.Vector3(offset, 0, 0),
+            0.5,
+          ),
+        ),
+        (
+          name: 'point rays and faces',
+          vertices: 13,
+          indices: 144,
+          update: (mesh, offset) => debug.updatePointLightVisualizer2(
+            mesh,
+            vm.Vector3(offset, 0, 0),
+            0.5,
+          ),
+        ),
+      ]) {
+    test(
+      'Light wireframe ${fixture.name} initializes and reuses equal-size buffers',
+      () {
+        final (cgl, gl) = _context();
+        final program = _lines(cgl);
+        addTearDown(program.dispose);
+        final mesh = debug.emptyLightVisualizer(program, fixture.name);
+        addTearDown(mesh.dispose);
+        final placeholder = mesh.getBuffer(aPosition);
+        fixture.update(mesh, 0);
+        expect(mesh.getAttribute(aPosition), hasLength(fixture.vertices * 3));
+        expect(mesh.getNumItems(), fixture.indices);
+        expect(gl.isBuffer(placeholder), isFalse);
+        mesh.activate();
+        final indices = Uint8List(fixture.indices).toJS;
+        gl.getBufferSubData(glElementArrayBuffer, 0, indices);
+        expect(
+          indices.toDart,
+          everyElement(inInclusiveRange(0, fixture.vertices - 1)),
+        );
+
+        final positionBuffer = mesh.getBuffer(aPosition);
+        final indexBuffer =
+            cgl.getParameter(glElementArrayBufferBinding) as JSObject;
+        final created = cgl.buffers.created.length;
+        final before = mesh.getAttribute(aPosition);
+        fixture.update(mesh, 0.125);
+        expect(mesh.getAttribute(aPosition), isNot(orderedEquals(before)));
+        _expectHandle(mesh.getBuffer(aPosition), positionBuffer);
+        mesh.activate();
+        _expectHandle(
+          cgl.getParameter(glElementArrayBufferBinding),
+          indexBuffer,
+        );
+        expect(cgl.buffers.created, hasLength(created));
+        expect(mesh.getNumItems(), fixture.indices);
+        cgl.viewport(0, 0, 2, 2);
+        final stats = <DrawStats>[];
+        program.draw(mesh, [Material('wireframe')], stats);
+        expect(stats.single.numItems, fixture.indices);
+        expect(cgl.getError(), glNoError);
+        mesh.dispose();
+        program.dispose();
+        cgl.expectReleased(gl);
+      },
+    );
+  }
+
+  test(
+    'LightVisualizer changes topology while retaining its node and mesh',
+    () {
+      final (cgl, gl) = _context();
+      final program = _lines(cgl);
+      addTearDown(program.dispose);
+      final material = Material('wireframe');
+      final point = PointLight.named(
+        name: 'point',
+        position: vm.Vector3.zero(),
+        diffuse: vm.Vector3.all(1),
+        specular: vm.Vector3.zero(),
+        range: 0.5,
+      );
+      final directional = DirectionalLight.named(
+        name: 'directional',
+        direction: vm.Vector3(0, -1, 0),
+        diffuse: vm.Vector3.all(1),
+        specular: vm.Vector3.zero(),
+        shadowExtent: 1,
+      );
+      final spot = SpotLight.named(
+        name: 'spot',
+        position: vm.Vector3.zero(),
+        direction: vm.Vector3(0, 0, -1),
+        diffuse: vm.Vector3.all(1),
+        specular: vm.Vector3.zero(),
+        range: 0.5,
+        angleRadians: 0.25,
+        spotFocus: 1,
+        near: 0.1,
+        far: 10,
+      );
+      final visualizer = debug.LightVisualizer(program, material, point);
+      addTearDown(visualizer.dispose);
+      final node = visualizer.mesh;
+      final mesh = node.mesh;
+      expect(mesh.getAttribute(aPosition), hasLength(13 * 3));
+      for (final (light, vertices, indices) in <(Light, int, int)>[
+        (directional, 74, 74),
+        (spot, 10, 42),
+        (point, 13, 24),
+      ]) {
+        final previous = mesh.getBuffer(aPosition);
+        visualizer.update(light);
+        expect(visualizer.mesh, same(node));
+        expect(node.mesh, same(mesh));
+        expect(mesh.getAttribute(aPosition), hasLength(vertices * 3));
+        expect(mesh.getNumItems(), indices);
+        expect(gl.isBuffer(previous), isFalse);
+        cgl.viewport(0, 0, 2, 2);
+        final stats = <DrawStats>[];
+        program.draw(mesh, [material], stats);
+        expect(stats.single.numItems, indices);
+        expect(cgl.getError(), glNoError);
+      }
+      final positionBuffer = mesh.getBuffer(aPosition);
+      final created = cgl.buffers.created.length;
+      final before = mesh.getAttribute(aPosition);
+      point.pos = vm.Vector3(0.125, 0, 0);
+      visualizer.update();
+      _expectHandle(mesh.getBuffer(aPosition), positionBuffer);
+      expect(mesh.getAttribute(aPosition), isNot(orderedEquals(before)));
+      expect(cgl.buffers.created, hasLength(created));
+      visualizer.dispose();
+      expect(mesh.isDisposed, isTrue);
+      expect(program.isDisposed, isFalse);
+      program.dispose();
+      cgl.expectReleased(gl);
+    },
+  );
+
   for (final bone in [false, true]) {
     test(
       'Diagnostic wireframe is lazy and retains its owned mesh (bone=$bone)',

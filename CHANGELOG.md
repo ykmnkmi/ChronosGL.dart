@@ -5,6 +5,32 @@
 This release migrates ChronosGL to `package:web` and introduces source-breaking
 API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 
+### Examples and release migration
+
+- Migrate the complete gallery to mathematical cameras, `CameraUniforms`,
+  elapsed-second controls, `CanvasViewport` and supported scene/mesh names.
+  Keep orthographic bounds and offscreen attachment sizes explicit.
+- Replace light wireframe vertex storage when switching topology, retaining
+  buffer reuse for fixed-size updates under the strict mesh contract. Resize
+  the transform-feedback example's CPU and GPU particle meshes together.
+- Add a standalone minimal cube scene with typed public constructors and
+  explicit animation, input, observer and GPU teardown. Register gallery
+  resources with a shared example lifetime; stop camera streams, MIDI ports
+  and custom input subscriptions when their example ends.
+- Migrate rendering fixtures and smoke helpers to supported public imports,
+  preserving dedicated legacy compatibility tests. Release fixture GPU
+  resources explicitly and cover example teardown, shared resource ownership
+  and cancellation, including cleanup errors.
+- Preserve all seven rendering references across the JavaScript and Wasm
+  fixture migration. The intentional color-regression self-check still detects
+  mismatches and produces comparison images; no reference updates are needed.
+- Rewrite the class and architecture guide around supported modules, dependency
+  direction and ownership. Document camera-local/world/view semantics, snapshot
+  mutation and the JavaScript-only legacy DOM boundary in the migration guide.
+- Build all release examples in CI alongside analysis, VM/JavaScript and Wasm
+  suites and the golden regression self-check. API reference generation uses
+  `dart doc` and preserves the maintained class guide.
+
 ### Breaking changes
 
 - Rename functions, methods, fields, constants, parameters, and named

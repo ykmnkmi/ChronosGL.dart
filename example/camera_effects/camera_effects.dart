@@ -7,13 +7,19 @@ import 'package:vector_math/vector_math.dart' as vm;
 import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 web.HTMLSelectElement gEffect =
     web.document.querySelector('#effect') as web.HTMLSelectElement;
 
 class Effect {
   Effect(ChronosGL cgl, ShaderObject shader, this.uniforms)
     : name = uniforms.name,
-      program = RenderProgram(uniforms.name, cgl, effectVertexShader, shader) {
+      program = lifetime.own(
+        RenderProgram(uniforms.name, cgl, effectVertexShader, shader),
+      ) {
     all[uniforms.name] = this;
   }
 
@@ -142,7 +148,23 @@ void registerEffects(ChronosGL cgl) {
   }
 }
 
+void releaseVideo(web.HTMLVideoElement video) {
+  video.pause();
+  final source = video.srcObject;
+  if (source != null && source.isA<web.MediaStream>()) {
+    for (final track in (source as web.MediaStream).getTracks().toDart) {
+      track.stop();
+    }
+  }
+  video.srcObject = null;
+  video.remove();
+}
+
 void main2(web.HTMLVideoElement? video) {
+  if (lifetime.isDisposed) {
+    if (video != null) releaseVideo(video);
+    return;
+  }
   if (video == null) {
     web.window.alert(
       "Could not access camera - do you have a camera installed?",
@@ -150,10 +172,13 @@ void main2(web.HTMLVideoElement? video) {
     return;
   }
 
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  lifetime.onDispose(() => releaseVideo(video));
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
@@ -163,26 +188,49 @@ void main2(web.HTMLVideoElement? video) {
   canvas.width = width;
   canvas.height = height;
 
-  final ChronosGL cgl = ChronosGL(canvas);
-
-  final ImageTexture texture = ImageTexture(
-    cgl,
-    "video",
-    video,
-    texturePropertiesVideo,
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: OrthographicCamera(
+        left: -1,
+        right: 1,
+        bottom: -1,
+        top: 1,
+        near: -1,
+        far: 1,
+      ),
+    ),
   );
-  final Framebuffer screen = Framebuffer.screen(cgl);
-  final RenderProgram progScale = RenderProgram(
-    "bg",
-    cgl,
-    scalingCopyVertexShader,
-    scalingCopyFragmentShader,
-  );
-  final Material material = Material("mat")..setUniform(uTexture, texture);
-  final MeshData unitQuad = shapeQuad(progScale, 1);
 
-  final Framebuffer fb0 = Framebuffer.defaultFramebuffer(cgl, width, height);
-  final Framebuffer fb1 = Framebuffer.defaultFramebuffer(cgl, width, height);
+  final ImageTexture texture = lifetime.own(
+    ImageTexture.fromVideo(
+      context: cgl,
+      name: "video",
+      video: video,
+      properties: texturePropertiesVideo,
+    ),
+  );
+  final Framebuffer screen = lifetime.own(Framebuffer.screen(cgl));
+  final RenderProgram progScale = lifetime.own(
+    RenderProgram(
+      "bg",
+      cgl,
+      scalingCopyVertexShader,
+      scalingCopyFragmentShader,
+    ),
+  );
+  final Material material = lifetime.own(Material("mat"))
+    ..setUniform(uTexture, texture);
+  final GpuMesh unitQuad = lifetime.own(shapeQuad(progScale, 1));
+
+  final Framebuffer fb0 = lifetime.own(
+    Framebuffer.defaultFramebuffer(cgl, width, height),
+  );
+  final Framebuffer fb1 = lifetime.own(
+    Framebuffer.defaultFramebuffer(cgl, width, height),
+  );
 
   registerEffects(cgl);
   assert(
@@ -191,6 +239,11 @@ void main2(web.HTMLVideoElement? video) {
 
   late final JSFunction onFrame;
   void animate(double timeMs) {
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
     try {
       // Get new image from camera and update texture with it.
       texture.update();
@@ -209,24 +262,34 @@ void main2(web.HTMLVideoElement? video) {
 
       if (i == rounds - 1) dst = screen;
 
-      dst.activate(glClearAll, 0, 0, width, height);
+      dst.activate(
+        glClearAll,
+        0,
+        0,
+        identical(dst, screen) ? canvas.width : width,
+        identical(dst, screen) ? canvas.height : height,
+      );
       // apply effect
       Effect active = Effect.all[gEffect.value]!;
       active.uniforms.forceUniform(uTime, timeMs / 1000.0);
       active.uniforms.forceUniform(uTexture, src.colorTexture!);
       active.program.draw(unitQuad, [active.uniforms]);
     }
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(timeMs + 0.0);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }
 
 void main() {
   makeVideoElementFromCamera().then(main2).catchError((Object error) {
-    web.window.alert("Camera error $error: - do you have a camera installed?");
+    if (!lifetime.isDisposed) {
+      web.window.alert(
+        "Camera error $error: - do you have a camera installed?",
+      );
+    }
   });
 }

@@ -8,6 +8,10 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 final vm.Vector3 posLight = vm.Vector3(11.0, 20.0, 0.0);
 final vm.Vector3 dirLight = vm.Vector3(0.0, -50.0, 0.0);
 final vm.Vector3 spotDirLight = vm.Vector3(-11.0, -30.0, 0.0);
@@ -52,22 +56,29 @@ final Map<String, Light> gLightSources = {
 
 final Map<String, Node> gLightVisualizers = {};
 
-Scene lightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
-  Scene scene = Scene(
-    "Fixed",
-    RenderProgram(
+RenderBatch lightSourceVisualizerScene(
+  ChronosGL cgl,
+  List<UniformGroup> uniforms,
+) {
+  RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
       "Fixed",
-      cgl,
-      solidColorVertexShader,
-      solidColorFragmentShader,
+      lifetime.own(
+        RenderProgram(
+          "Fixed",
+          cgl,
+          solidColorVertexShader,
+          solidColorFragmentShader,
+        ),
+      ),
+      uniforms,
     ),
-    uniforms,
   );
 
-  Material lightSourceMat = Material("light")
+  Material lightSourceMat = lifetime.own(Material("light"))
     ..setUniform(uColor, colorYellow.toVector3());
   for (String k in gLightSources.keys) {
-    gLightVisualizers[k] = Node(
+    gLightVisualizers[k] = MeshNode(
       k,
       lightVisualizer(scene.program, gLightSources[k]!),
       lightSourceMat,
@@ -80,29 +91,29 @@ Scene lightSourceVisualizerScene(ChronosGL cgl, List<UniformGroup> uniforms) {
 }
 
 void makeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
-  MeshData cubeMeshData = shapeCube(prog, x: 2.0, y: 2.0, z: 2.0);
-  MeshData sphereMeshData = shapeIcosahedron(prog);
+  GpuMesh cubeMeshData = lifetime.own(shapeCube(prog, x: 2.0, y: 2.0, z: 2.0));
+  GpuMesh sphereMeshData = lifetime.own(shapeIcosahedron(prog));
 
   List<Material> mats = [
-    Material("mat0")
+    lifetime.own(Material("mat0"))
       ..setUniform(
         uTexture,
         makeSolidColorTextureRGB(cgl, "blue", colorBlue.toVector3() * 0.5),
       )
       ..setUniform(uShininess, glossiness),
-    Material("mat1")
+    lifetime.own(Material("mat1"))
       ..setUniform(
         uTexture,
         makeSolidColorTextureRGB(cgl, "red", colorRed.toVector3() * 0.5),
       )
       ..setUniform(uShininess, glossiness),
-    Material("mat2")
+    lifetime.own(Material("mat2"))
       ..setUniform(
         uTexture,
         makeSolidColorTextureRGB(cgl, "white", colorWhite.toVector3() * 0.5),
       )
       ..setUniform(uShininess, glossiness),
-    Material("mat3")
+    lifetime.own(Material("mat3"))
       ..setUniform(
         uTexture,
         makeSolidColorTextureRGB(cgl, "green", colorGreen.toVector3() * 0.5),
@@ -116,7 +127,7 @@ void makeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
     double z = i & 4 == 0 ? -10.0 : 10.0;
 
     container.add(
-      Node("mesh", i % 2 == 0 ? cubeMeshData : sphereMeshData, mats[i % 4])
+      MeshNode("mesh", i % 2 == 0 ? cubeMeshData : sphereMeshData, mats[i % 4])
         ..setPos(x, y, z)
         ..lookUp(1.0)
         ..lookLeft(0.7),
@@ -124,53 +135,77 @@ void makeSceneCubeSphere(ChronosGL cgl, RenderProgram prog, Node container) {
   }
 
   // Subdivide plane to show Gourad shading issues
-  Node grid = Node("grid", shapeGrid(prog, 20, 20, 80.0, 80.0), mats[2]);
+  Node grid = MeshNode(
+    "grid",
+    lifetime.own(shapeGrid(prog, 20, 20, 80.0, 80.0)),
+    mats[2],
+  );
   grid.rotX(-math.pi * 0.48);
   grid.setPos(0.0, -20.0, 20.0);
   container.add(grid);
 }
 
 void main() {
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
 
-  final OrbitCamera orbit = OrbitCamera(50.0, 10.0, 0.0, canvas)
-    ..setPos(0.0, 0.0, 56.0);
-  final Perspective perspective = Perspective(orbit, 0.1, 10000.0);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 10000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 50.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
 
   final Illumination illumination = Illumination();
   for (Light l in gLightSources.values) {
     illumination.addLight(l);
   }
 
-  final Scene sceneFixed = lightSourceVisualizerScene(cgl, [perspective]);
+  final RenderBatch sceneFixed = lightSourceVisualizerScene(cgl, [perspective]);
 
-  final Scene sceneBlinnPhong = Scene(
-    "BlinnPhong",
-    RenderProgram(
+  final RenderBatch sceneBlinnPhong = lifetime.ownBatch(
+    RenderBatch(
       "BlinnPhong",
-      cgl,
-      lightVertexShaderBlinnPhong,
-      lightFragmentShaderBlinnPhong,
+      lifetime.own(
+        RenderProgram(
+          "BlinnPhong",
+          cgl,
+          lightVertexShaderBlinnPhong,
+          lightFragmentShaderBlinnPhong,
+        ),
+      ),
+      [perspective, illumination],
     ),
-    [perspective, illumination],
   );
 
-  final Scene sceneGourad = Scene(
-    "Gourad",
-    RenderProgram(
+  final RenderBatch sceneGourad = lifetime.ownBatch(
+    RenderBatch(
       "Gourad",
-      cgl,
-      lightVertexShaderGourad,
-      lightFragmentShaderGourad,
+      lifetime.own(
+        RenderProgram(
+          "Gourad",
+          cgl,
+          lightVertexShaderGourad,
+          lightFragmentShaderGourad,
+        ),
+      ),
+      [perspective, illumination],
     ),
-    [perspective, illumination],
   );
   assert(
     sceneBlinnPhong.program.hasCompatibleAttributesTo(sceneGourad.program),
@@ -182,15 +217,16 @@ void main() {
   // Each has two scenes
   // 1 the lighting specific scene
   // 2 the lighting visualization scene which is shared by the two phases
-  final RenderPhase phaseBlinnPhong = RenderPhase("BlinnPhong", cgl)
-    ..add(sceneBlinnPhong)
-    ..add(sceneFixed);
+  final RenderPass phaseBlinnPhong =
+      lifetime.ownPass(RenderPass("BlinnPhong", cgl))
+        ..add(sceneBlinnPhong)
+        ..add(sceneFixed);
 
-  final RenderPhase phaseGourad = RenderPhase("Gourad", cgl)
+  final RenderPass phaseGourad = lifetime.ownPass(RenderPass("Gourad", cgl))
     ..add(sceneGourad)
     ..add(sceneFixed);
 
-  Node node = Node.container("scene");
+  Node node = GroupNode("scene");
   makeSceneCubeSphere(cgl, sceneBlinnPhong.program, node);
 
   sceneGourad.add(node);
@@ -204,25 +240,27 @@ void main() {
     web.document.getElementsByTagName("input"),
   )) {
     web.HTMLElement input = node as web.HTMLElement;
-    input.onChange.listen((web.Event e) {
-      web.HTMLInputElement input = e.target as web.HTMLInputElement;
-      final String tag = input.id;
-      print("$tag toggle ${input.checked}");
-      if (tag == "lightDiffuse") {
-        for (Light light in gLightSources.values) {
-          double v = input.checked ? 1.0 : 0.0;
-          light.colorDiffuse.setValues(v, v, v);
+    lifetime.own(
+      input.onChange.listen((web.Event e) {
+        web.HTMLInputElement input = e.target as web.HTMLInputElement;
+        final String tag = input.id;
+        print("$tag toggle ${input.checked}");
+        if (tag == "lightDiffuse") {
+          for (Light light in gLightSources.values) {
+            double v = input.checked ? 1.0 : 0.0;
+            light.colorDiffuse.setValues(v, v, v);
+          }
+        } else if (tag == "lightSpecular") {
+          for (Light light in gLightSources.values) {
+            double v = input.checked ? 1.0 : 0.0;
+            light.colorSpecular.setValues(v, v, v);
+          }
+        } else {
+          gLightSources[tag]!.enabled = input.checked;
+          gLightVisualizers[tag]!.enabled = input.checked;
         }
-      } else if (tag == "lightSpecular") {
-        for (Light light in gLightSources.values) {
-          double v = input.checked ? 1.0 : 0.0;
-          light.colorSpecular.setValues(v, v, v);
-        }
-      } else {
-        gLightSources[tag]!.enabled = input.checked;
-        gLightVisualizers[tag]!.enabled = input.checked;
-      }
-    });
+      }),
+    );
   }
 
   // Update default settings
@@ -234,32 +272,37 @@ void main() {
     input.dispatchEvent(web.Event("change"));
   }
 
-  void resolutionChange(web.Event? ev) {
-    int w = canvas.clientWidth;
-    int h = canvas.clientHeight;
-    canvas.width = w;
-    canvas.height = h;
-    print("size change $w $h");
-    perspective.adjustAspect(w, h);
-    phaseGourad.viewPortW = w;
-    phaseGourad.viewPortH = h;
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phaseBlinnPhong,
+    ),
+  );
+  final viewportGourad = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phaseGourad,
+    ),
+  );
 
-    phaseBlinnPhong.viewPortW = w;
-    phaseBlinnPhong.viewPortH = h;
-  }
-
-  resolutionChange(null);
-  web.EventStreamProviders.resizeEvent
-      .forTarget(web.window)
-      .listen(resolutionChange);
-
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    viewportGourad.update();
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
 
     for (Node m in node.children) {
       if (m.name != "grid") {
@@ -268,15 +311,15 @@ void main() {
       }
     }
 
-    RenderPhase phase = selectPhase.selectedIndex == 0
+    RenderPass phase = selectPhase.selectedIndex == 0
         ? phaseBlinnPhong
         : phaseGourad;
     phase.draw();
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

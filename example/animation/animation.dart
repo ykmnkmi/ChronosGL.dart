@@ -12,6 +12,10 @@ import 'dart:typed_data';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const String meshFile = "../asset/monster/monster.json";
 const String textureFile = "../asset/monster/monster.jpg";
 
@@ -56,7 +60,7 @@ void main() {
 }
 """;
 
-final ShaderObject animationVertexShader = ShaderObject("AnimationV")
+final ShaderObject animationVertexShader = ShaderObject.vertex("AnimationV")
   ..addAttributeVars([aPosition, aTexUV, aBoneIndex, aBoneWeight])
   //..AddAttributeVar(aNormal)
   ..addVaryingVars([vTexUV])
@@ -69,7 +73,7 @@ final ShaderObject animationVertexShader = ShaderObject("AnimationV")
   ])
   ..setBody([skinningVertexShader]);
 
-final ShaderObject animationFragmentShader = ShaderObject("AnimationV")
+final ShaderObject animationFragmentShader = ShaderObject.fragment("AnimationV")
   ..addVaryingVars([vTexUV])
   ..addUniformVars([uTexture])
   ..setBody([skinningFragmentShader]);
@@ -77,62 +81,94 @@ final ShaderObject animationFragmentShader = ShaderObject("AnimationV")
 final double kAnimTimeStep = 0.0333;
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  OrbitCamera orbit = OrbitCamera(5000.0, 0.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 1.0, 10000.0);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 1.0, far: 10000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 5000.0,
+      azimuth: 0.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
 
   // Shows the actual animation.
-  final Scene sceneAnim = Scene(
-    "animation",
-    RenderProgram(
+  final RenderBatch sceneAnim = lifetime.ownBatch(
+    RenderBatch(
       "animation",
-      cgl,
-      animationVertexShader,
-      animationFragmentShader,
+      lifetime.own(
+        RenderProgram(
+          "animation",
+          cgl,
+          animationVertexShader,
+          animationFragmentShader,
+        ),
+      ),
+      [perspective],
     ),
-    [perspective],
   );
 
   // Shows a bone only animation.
-  final Scene sceneSkeleton = Scene(
-    "solid",
-    RenderProgram(
+  final RenderBatch sceneSkeleton = lifetime.ownBatch(
+    RenderBatch(
       "solid",
-      cgl,
-      solidColorVertexShader,
-      solidColorFragmentShader,
+      lifetime.own(
+        RenderProgram(
+          "solid",
+          cgl,
+          solidColorVertexShader,
+          solidColorFragmentShader,
+        ),
+      ),
+      [perspective],
     ),
-    [perspective],
   );
 
   // Shows the un-animated object.
-  final Scene sceneDemo = Scene(
-    "demo",
-    RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
-    [perspective],
+  final RenderBatch sceneDemo = lifetime.ownBatch(
+    RenderBatch(
+      "demo",
+      lifetime.own(
+        RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
+      ),
+      [perspective],
+    ),
   );
 
   assert(
     sceneSkeleton.program.hasDownwardCompatibleAttributesTo(sceneAnim.program),
   );
 
-  final RenderPhaseResizeAware phase =
-      RenderPhaseResizeAware("main", cgl, canvas, perspective)
-        ..add(sceneSkeleton)
-        ..add(sceneAnim)
-        ..add(sceneDemo);
+  final RenderPass phase = lifetime.ownPass(RenderPass("main", cgl))
+    ..add(sceneSkeleton)
+    ..add(sceneAnim)
+    ..add(sceneDemo);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
+  );
 
-  final Material matWire = Material("wire")
+  final Material matWire = lifetime.own(Material("wire"))
     ..setUniform(uColor, colorYellow.toVector3());
 
-  final Material mat = Material("mat");
+  final Material mat = lifetime.own(Material("mat"));
   late TypedTextureMutable animationTable;
   late List<double> animationSteps;
   late BoneVisualizer boneVisualizer;
@@ -147,11 +183,13 @@ void main() {
     web.document.getElementsByTagName("input"),
   )) {
     web.HTMLElement input = node as web.HTMLElement;
-    input.onChange.listen((web.Event e) {
-      web.HTMLInputElement input = e.target as web.HTMLInputElement;
-      print("${input.id} toggle ${input.checked}");
-      programMap[input.id]!.enabled = input.checked;
-    });
+    lifetime.own(
+      input.onChange.listen((web.Event e) {
+        web.HTMLInputElement input = e.target as web.HTMLInputElement;
+        print("${input.id} toggle ${input.checked}");
+        programMap[input.id]!.enabled = input.checked;
+      }),
+    );
   }
 
   for (web.Node node in web.JSImmutableListWrapper(
@@ -162,20 +200,26 @@ void main() {
     input.dispatchEvent(web.Event("change"));
   }
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
 
   mat.forceUniform(uTime, 0.0);
 
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
     phase.draw();
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
 
     int step =
         ((timeMs / 1000.0) / kAnimTimeStep).floor() % animationSteps.length;
@@ -188,8 +232,15 @@ void main() {
   List<Future<Object>> futures = [loadJson(meshFile), loadImage(textureFile)];
 
   Future.wait(futures).then((list) {
+    if (lifetime.isDisposed) return;
     // Setup Texture
-    Texture tex = ImageTexture(cgl, textureFile, list[1]);
+    Texture tex = lifetime.own(
+      ImageTexture.fromImage(
+        context: cgl,
+        name: textureFile,
+        image: list[1] as web.HTMLImageElement,
+      ),
+    );
     mat.setUniform(uTexture, tex);
 
     final json = list[0] as Map<String, Object?>;
@@ -206,9 +257,11 @@ void main() {
     SkeletalAnimation anim = importAnimationFromAssimp2Json(animJson, skeleton);
     print("Imnported $anim");
     {
-      MeshData md = geometryBuilderToMeshData(meshFile, sceneAnim.program, gb);
-      Node mesh = Node(md.name, md, mat)..rotX(-3.14 / 4);
-      Node n = Node.container("wrapper", mesh);
+      GpuMesh md = lifetime.own(
+        uploadGeometry(meshFile, sceneAnim.program, gb),
+      );
+      Node mesh = MeshNode(md.name, md, mat)..rotX(-3.14 / 4);
+      Node n = GroupNode("wrapper", mesh);
       n.lookAt(vm.Vector3(100.0, 0.0, 0.0));
       sceneDemo.add(n);
       sceneAnim.add(n);
@@ -225,33 +278,32 @@ void main() {
         anim,
         animationSteps,
       );
-      animationTable = TypedTextureMutable(
-        cgl,
-        "anim",
-        skeleton.length * 4,
-        animationSteps.length,
-        glRgba32f,
-        texturePropertiesFramebuffer,
-        glRgba,
-        glFloat,
-        animationData,
+      animationTable = lifetime.own(
+        TypedTextureMutable(
+          cgl,
+          "anim",
+          skeleton.length * 4,
+          animationSteps.length,
+          glRgba32f,
+          texturePropertiesFramebuffer,
+          glRgba,
+          glFloat,
+          animationData,
+        ),
       );
       mat.setUniform(uAnimationTable, animationTable);
 
-      boneVisualizer = BoneVisualizer(
-        sceneSkeleton.program,
-        matWire,
-        skeleton,
-        anim,
+      boneVisualizer = lifetime.own(
+        BoneVisualizer(sceneSkeleton.program, matWire, skeleton, anim),
       );
 
       Node mesh = boneVisualizer.mesh..rotX(3.14 / 4);
-      Node n = Node.container("wrapper", mesh);
+      Node n = GroupNode("wrapper", mesh);
       n.lookAt(vm.Vector3(100.0, 0.0, 0.0));
       sceneSkeleton.add(n);
     }
 
     // Start
-    animate(0.0);
+    lifetime.requestAnimationFrame(onFrame);
   });
 }

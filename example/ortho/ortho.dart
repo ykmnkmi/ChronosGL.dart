@@ -5,58 +5,102 @@ import 'package:web/web.dart' as web;
 import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas);
 
-  OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
+  final camera = PerspectiveCamera(near: 0.1, far: 1000);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 25,
+      azimuth: 10,
+    ),
+  );
   double d = 20.0;
 
-  RenderProgram prog = RenderProgram(
-    "textured",
-    cgl,
-    solidColorVertexShader,
-    solidColorFragmentShader,
+  RenderProgram prog = lifetime.own(
+    RenderProgram.create(
+      name: "textured",
+      context: cgl,
+      vertexShader: solidColorVertexShader,
+      fragmentShader: solidColorFragmentShader,
+    ),
   );
 
-  Orthographic orthographic = Orthographic(orbit, -d, d, -d, -d, 100.0);
-  RenderPhase phaseOrthograhic = RenderPhase("shadow", cgl);
-  Scene sceneOrthographic = Scene("objects", prog, [orthographic]);
+  final orthographicCamera = OrthographicCamera(
+    left: -d,
+    right: d,
+    bottom: -d,
+    top: d,
+    near: -d,
+    far: 100,
+  );
+  final orthographic = CameraUniforms(orthographicCamera);
+  RenderPass phaseOrthograhic = lifetime.ownPass(RenderPass("shadow", cgl));
+  RenderBatch sceneOrthographic = lifetime.ownBatch(
+    RenderBatch("objects", prog, [orthographic]),
+  );
   phaseOrthograhic.add(sceneOrthographic);
 
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
-  RenderPhase phasePerspective = RenderPhase("perspective", cgl);
+  final perspective = CameraUniforms(camera);
+  RenderPass phasePerspective = lifetime.ownPass(
+    RenderPass("perspective", cgl),
+  );
   phasePerspective.clearColorBuffer = false;
-  Scene scenePerspective = Scene("objects", prog, [perspective]);
+  RenderBatch scenePerspective = lifetime.ownBatch(
+    RenderBatch("objects", prog, [perspective]),
+  );
   phasePerspective.add(scenePerspective);
 
-  final Material mat1 = Material("mat1")
+  final Material mat1 = lifetime.own(Material("mat1"))
     ..setUniform(uColor, colorBlue.toVector3());
-  final Material mat2 = Material("mat2")
+  final Material mat2 = lifetime.own(Material("mat2"))
     ..setUniform(uColor, colorRed.toVector3());
-  final Material mat3 = Material("mat3")
+  final Material mat3 = lifetime.own(Material("mat3"))
     ..setUniform(uColor, colorGreen.toVector3());
-  final Material mat4 = Material("mat4")
+  final Material mat4 = lifetime.own(Material("mat4"))
     ..setUniform(uColor, colorCyan.toVector3());
-  final Material mat5 = Material("plane")
+  final Material mat5 = lifetime.own(Material("plane"))
     ..setUniform(uColor, colorGray8.toVector3());
 
   final List<Node> nodes = [
-    Node("sphere", shapeIcosahedron(prog, subdivisions: 3), mat1)
-      ..setPos(0.0, 0.0, 0.0),
-    Node("cube", shapeCube(prog), mat2)..setPos(-5.0, 0.0, -5.0),
-    Node("cylinder", shapeCylinder(prog, 3.0, 6.0, 2.0, 32), mat3)
-      ..setPos(5.0, 0.0, -5.0),
-    Node("torus", shapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4), mat4)
-      ..setPos(5.0, 0.0, 5.0),
-    Node("cube", shapeCube(prog, x: 20.0, y: 0.1, z: 20.0), mat5)
-      ..setPos(0.0, -10.0, 0.0),
+    MeshNode(
+      "sphere",
+      lifetime.own(shapeIcosahedron(prog, subdivisions: 3)),
+      mat1,
+    )..setPos(0.0, 0.0, 0.0),
+    MeshNode("cube", lifetime.own(shapeCube(prog)), mat2)
+      ..setPos(-5.0, 0.0, -5.0),
+    MeshNode(
+      "cylinder",
+      lifetime.own(shapeCylinder(prog, 3.0, 6.0, 2.0, 32)),
+      mat3,
+    )..setPos(5.0, 0.0, -5.0),
+    MeshNode(
+      "torus",
+      lifetime.own(shapeTorusKnot(prog, radius: 1.0, tubeRadius: 0.4)),
+      mat4,
+    )..setPos(5.0, 0.0, 5.0),
+    MeshNode(
+      "cube",
+      lifetime.own(shapeCube(prog, x: 20.0, y: 0.1, z: 20.0)),
+      mat5,
+    )..setPos(0.0, -10.0, 0.0),
   ];
 
   for (Node n in nodes) {
@@ -64,42 +108,58 @@ void main() {
     scenePerspective.add(n);
   }
 
-  // This sets the viewports among other things
-  void resolutionChange(web.Event? ev) {
-    int w = canvas.clientWidth;
-    int h = canvas.clientHeight;
-    canvas.width = w;
-    canvas.height = h;
-    print("size change $w $h");
-    w = w ~/ 2;
-    perspective.adjustAspect(w, h);
-    orthographic.adjustAspect(w, h);
-    phaseOrthograhic.viewPortW = w;
-    phaseOrthograhic.viewPortH = h;
-    phasePerspective.viewPortW = w;
-    phasePerspective.viewPortH = h;
-    phaseOrthograhic.viewPortX = phasePerspective.viewPortW;
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phasePerspective,
+    ),
+  );
+  bool updateViewports() {
+    if (!viewport.update()) return false;
+    final width = viewport.drawingBufferWidthPixels ~/ 2;
+    final height = viewport.drawingBufferHeightPixels;
+    if (width == 0 || height == 0) return false;
+    viewport.setViewport(width: width, height: height);
+    orthographicCamera.setProjection(
+      left: -d,
+      right: d,
+      bottom: -d,
+      top: -d + 2 * d * height / width,
+      near: -d,
+      far: 100,
+    );
+    phaseOrthograhic.viewPortX = width;
+    phaseOrthograhic.viewPortW = width;
+    phaseOrthograhic.viewPortH = height;
+    return true;
   }
 
-  resolutionChange(null);
-  web.EventStreamProviders.resizeEvent
-      .forTarget(web.window)
-      .listen(resolutionChange);
-
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!updateViewports()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.update(elapsed / 1000);
+    orthographicCamera.setPositionFromVector(camera.worldPosition);
+    orthographicCamera.setRotation(camera.worldRotation);
     phaseOrthograhic.draw();
     phasePerspective.draw();
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

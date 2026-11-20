@@ -25,7 +25,7 @@ class _Fixture {
     final canvas = web.HTMLCanvasElement()
       ..width = 2
       ..height = 2;
-    cgl = ChronosGL(canvas, antialiasing: false);
+    cgl = ChronosGL.fromCanvas(canvas, antialiasing: false);
     addTearDown(() {
       (cgl.getExtension('WEBGL_lose_context') as web.WEBGL_lose_context?)
           ?.loseContext();
@@ -33,24 +33,31 @@ class _Fixture {
     cgl.disable(glDepthTest);
     cgl.disable(glDither);
     cgl.viewport(0, 0, 2, 2);
-    final vertex = ShaderObject('scene-v')
+    final vertex = ShaderObject.vertex('scene-v')
       ..addAttributeVars([aPosition])
       ..addUniformVars([uModelMatrix])
       ..setBodyWithMain([
         'gl_Position = $uModelMatrix * vec4($aPosition, 1.0);',
       ]);
-    final fragment = ShaderObject('scene-f')
+    final fragment = ShaderObject.fragment('scene-f')
       ..addUniformVars([uColor])
       ..setBodyWithMain(['$oFragColor = vec4($uColor, 1.0);']);
-    program = RenderProgram('scene', cgl, vertex, fragment);
-    final mesh = program.makeMeshData('triangle', glTriangles)
+    program = RenderProgram.create(
+      name: 'scene',
+      context: cgl,
+      vertexShader: vertex,
+      fragmentShader: fragment,
+    );
+    addTearDown(program.dispose);
+    final mesh = program.makeGpuMesh('triangle', glTriangles)
       ..addVertices(Float32List.fromList([-1, -1, 0, 3, -1, 0, -1, 3, 0]));
+    addTearDown(mesh.dispose);
     final red = Material.empty('red')..setUniform(uColor, vm.Vector3(1, 0, 0));
     final green = Material.empty('green')
       ..setUniform(uColor, vm.Vector3(0, 1, 0));
-    root = Node.container('root')
-      ..add(Node('first', mesh, red))
-      ..add(Node('second', mesh, green));
+    root = GroupNode('root')
+      ..add(MeshNode('first', mesh, red))
+      ..add(MeshNode('second', mesh, green));
   }
 
   late final ChronosGL cgl;
@@ -71,49 +78,53 @@ class _Fixture {
 void main() {
   for (final immutable in [false, true]) {
     for (final fail in [false, true]) {
-      test('Scene preserves uniforms (immutable=$immutable, fail=$fail)', () {
-        final fixture = _Fixture();
-        final observed = _ObservedUniforms();
-        final source = <UniformGroup>[observed];
-        final uniforms = immutable
-            ? List<UniformGroup>.unmodifiable(source)
-            : source;
-        final scene = Scene('scene', fixture.program, uniforms)
-          ..add(fixture.root);
-        final phase = RenderPhase('phase', fixture.cgl)
-          ..viewPortW = 2
-          ..viewPortH = 2
-          ..add(scene);
-        final failure = StateError('uniform read failed');
-        var reads = 0;
-        observed.onRead = () {
+      test(
+        'RenderBatch preserves uniforms (immutable=$immutable, fail=$fail)',
+        () {
+          final fixture = _Fixture();
+          final observed = _ObservedUniforms();
+          final source = <UniformGroup>[observed];
+          final uniforms = immutable
+              ? List<UniformGroup>.unmodifiable(source)
+              : source;
+          final scene = RenderBatch('scene', fixture.program, uniforms)
+            ..add(fixture.root);
+          final phase = RenderPass('phase', fixture.cgl)
+            ..viewPortW = 2
+            ..viewPortH = 2
+            ..add(scene);
+          final failure = StateError('uniform read failed');
+          var reads = 0;
+          observed.onRead = () {
+            expect(uniforms, [observed]);
+            reads++;
+            if (fail && reads == 2) throw failure;
+          };
+          final stats = <DrawStats>[];
+          if (fail) {
+            expect(() => phase.draw(stats), throwsA(same(failure)));
+            expect(stats.length, 1);
+          } else {
+            phase.draw(stats);
+            expect(stats.length, 2);
+            fixture.expectGreen();
+          }
           expect(uniforms, [observed]);
-          reads++;
-          if (fail && reads == 2) throw failure;
-        };
-        final stats = <DrawStats>[];
-        if (fail) {
-          expect(() => phase.draw(stats), throwsA(same(failure)));
-          expect(stats.length, 1);
-        } else {
-          phase.draw(stats);
-          expect(stats.length, 2);
+          expect(observed.getUniforms(), isEmpty);
+          observed.onRead = () => expect(uniforms, [observed]);
+          phase.draw();
           fixture.expectGreen();
-        }
-        expect(uniforms, [observed]);
-        expect(observed.getUniforms(), isEmpty);
-        observed.onRead = () => expect(uniforms, [observed]);
-        phase.draw();
-        fixture.expectGreen();
-        expect(uniforms, [observed]);
-      });
+          expect(uniforms, [observed]);
+        },
+      );
     }
   }
 
-  test('Scene accepts a const empty uniforms list', () {
+  test('RenderBatch accepts a const empty uniforms list', () {
     final fixture = _Fixture();
-    final scene = Scene('const', fixture.program, const [])..add(fixture.root);
-    final phase = RenderPhase('const', fixture.cgl)
+    final scene = RenderBatch('const', fixture.program, const [])
+      ..add(fixture.root);
+    final phase = RenderPass('const', fixture.cgl)
       ..viewPortW = 2
       ..viewPortH = 2
       ..add(scene);

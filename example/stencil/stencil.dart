@@ -7,15 +7,19 @@ import 'dart:typed_data';
 import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 final web.HTMLInputElement gStencil =
     web.document.querySelector('#stencil') as web.HTMLInputElement;
 
-final ShaderObject stencilVertexShader = ShaderObject("stencilV")
+final ShaderObject stencilVertexShader = ShaderObject.vertex("stencilV")
   ..addAttributeVars([aPosition, aTexUV])
   ..addVaryingVars([vTexUV])
   ..setBody([nullVertexShaderWithTextureForwardString]);
 
-final ShaderObject stencilFragmentShader = ShaderObject("stencilF")
+final ShaderObject stencilFragmentShader = ShaderObject.fragment("stencilF")
   ..addUniformVars([uTexture])
   ..addVaryingVars([vTexUV])
   ..setBody([
@@ -52,16 +56,18 @@ TypedTextureMutable makeStripedStencilBuffer(
     }
   }
 
-  return TypedTextureMutable(
-    cgl,
-    "frame::depth.stencil",
-    width,
-    height,
-    glRgba,
-    texturePropertiesFramebuffer,
-    glRgba,
-    glUnsignedByte,
-    data,
+  return lifetime.own(
+    TypedTextureMutable.allocate(
+      context: cgl,
+      name: "frame::depth.stencil",
+      width: width,
+      height: height,
+      internalFormat: glRgba,
+      properties: texturePropertiesFramebuffer,
+      format: glRgba,
+      dataType: glUnsignedByte,
+      data: data,
+    ),
   );
 }
 
@@ -88,116 +94,167 @@ const TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
 );
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(
+  ChronosGL cgl = ChronosGL.fromCanvas(
     canvas,
     faceCulling: true,
     preserveDrawingBuffer: true,
   );
-  OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 25.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
+  CameraUniforms perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
 
-  final int width = canvas.clientWidth;
-  final int height = canvas.clientHeight;
+  var width = viewport.drawingBufferWidthPixels;
+  var height = viewport.drawingBufferHeightPixels;
   canvas.width = width;
   canvas.height = height;
-  perspective.adjustAspect(width, height);
 
   // Initialize Stencil Buffer
   // Not we do not suppress writes to color/depth buffers which is
   // nice for debugging. These buffers will be cleared when we write
   // scene. Obviously, we preserve the stencil buffer.
 
-  final TypedTextureMutable stencilBuffer = makeStripedStencilBuffer(
+  TypedTextureMutable stencilBuffer = makeStripedStencilBuffer(
     cgl,
     width,
     height,
     8,
   );
 
-  final Material matGenStencil = Material("stencil")
+  final Material matGenStencil = lifetime.own(Material("stencil"))
     ..setUniform(uTexture, stencilBuffer)
     ..forceUniform(cStencilFunc, stencilAlways)
     ..forceUniform(cStencilOp, stencilWriteIfPixelSet)
     ..forceUniform(cStencilWrite, 0xff); // only write stencil
 
-  final RenderProgram stencilWriter = RenderProgram(
-    "stencil",
-    cgl,
-    stencilVertexShader,
-    stencilFragmentShader,
+  final RenderProgram stencilWriter = lifetime.own(
+    RenderProgram.create(
+      name: "stencil",
+      context: cgl,
+      vertexShader: stencilVertexShader,
+      fragmentShader: stencilFragmentShader,
+    ),
   );
 
-  cgl.viewport(0, 0, width, height);
-  stencilWriter.draw(shapeQuad(stencilWriter, 1), [matGenStencil]);
+  final stencilQuad = lifetime.own(shapeQuad(stencilWriter, 1));
 
-  RenderPhase phase = RenderPhase("main", cgl)
+  RenderPass phase = lifetime.ownPass(RenderPass("main", cgl))
     ..viewPortW = width
     ..viewPortH = height
     ..clearStencilBuffer = false;
 
-  final Material matRed = Material("red")
+  final Material matRed = lifetime.own(Material("red"))
     ..setUniform(uColor, colorRed.toVector3())
     ..forceUniform(cStencilFunc, stencilNotEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
     ..forceUniform(cStencilWrite, 0x0);
 
-  final Material matBlue = Material("blue")
+  final Material matBlue = lifetime.own(Material("blue"))
     ..setUniform(uColor, colorBlue.toVector3())
     ..forceUniform(cStencilFunc, stencilEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
     ..forceUniform(cStencilWrite, 0x0);
 
   {
-    Scene scene = Scene(
-      "solid",
-      RenderProgram(
+    RenderBatch scene = lifetime.ownBatch(
+      RenderBatch(
         "solid",
-        cgl,
-        solidColorVertexShader,
-        solidColorFragmentShader,
+        lifetime.own(
+          RenderProgram.create(
+            name: "solid",
+            context: cgl,
+            vertexShader: solidColorVertexShader,
+            fragmentShader: solidColorFragmentShader,
+          ),
+        ),
+        [perspective],
       ),
-      [perspective],
     );
     phase.add(scene);
 
     scene.add(
-      Node("sphere", shapeIcosahedron(scene.program, subdivisions: 3), matRed)
-        ..setPos(0.0, 0.0, 0.0),
+      MeshNode(
+        "sphere",
+        lifetime.own(shapeIcosahedron(scene.program, subdivisions: 3)),
+        matRed,
+      )..setPos(0.0, 0.0, 0.0),
     );
 
     scene.add(
-      Node("cube", shapeCube(scene.program), matBlue)..setPos(-5.0, 0.0, -5.0),
+      MeshNode("cube", lifetime.own(shapeCube(scene.program)), matBlue)
+        ..setPos(-5.0, 0.0, -5.0),
     );
 
     scene.add(
-      Node("cylinder", shapeCylinder(scene.program, 1.0, 3.0, 2.0, 32), matRed)
-        ..setPos(5.0, 0.0, -5.0),
+      MeshNode(
+        "cylinder",
+        lifetime.own(shapeCylinder(scene.program, 1.0, 3.0, 2.0, 32)),
+        matRed,
+      )..setPos(5.0, 0.0, -5.0),
     );
 
     scene.add(
-      Node(
+      MeshNode(
         "torus",
-        shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+        lifetime.own(
+          shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+        ),
         matBlue,
       )..setPos(5.0, 0.0, 5.0),
     );
   }
 
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    if (width != viewport.drawingBufferWidthPixels ||
+        height != viewport.drawingBufferHeightPixels) {
+      width = viewport.drawingBufferWidthPixels;
+      height = viewport.drawingBufferHeightPixels;
+      stencilBuffer.dispose();
+      stencilBuffer = makeStripedStencilBuffer(cgl, width, height, 8);
+      matGenStencil.forceUniform(uTexture, stencilBuffer);
+    }
+    cgl.viewport(0, 0, width, height);
+    cgl.depthMask(true);
+    cgl.stencilMask(0xff);
+    cgl.clear(glDepthBufferBit | glStencilBufferBit);
+    stencilWriter.draw(stencilQuad, [matGenStencil]);
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
+    phase.viewPortW = viewport.viewportWidthPixels;
+    phase.viewPortH = viewport.viewportHeightPixels;
 
     matBlue.forceUniform(
       cStencilFunc,
@@ -216,11 +273,11 @@ void main() {
       out.add(d.toString());
     }
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs, out.join("<br>"));
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

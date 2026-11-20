@@ -12,7 +12,11 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
-final ShaderObject instancedVertexShader = ShaderObject("InstancedV")
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
+final ShaderObject instancedVertexShader = ShaderObject.vertex("InstancedV")
   ..addAttributeVars([aPosition])
   ..addAttributeVars([iaRotation, iaTranslation])
   ..addVaryingVars([vColor])
@@ -34,7 +38,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject instancedFragmentShader = ShaderObject("InstancedF")
+final ShaderObject instancedFragmentShader = ShaderObject.fragment("InstancedF")
   ..addVaryingVars([vColor])
   ..setBody([
     """
@@ -44,22 +48,17 @@ void main() {
      """,
   ]);
 
-void addInstanceData(MeshData md) {
+void addInstanceData(GpuMesh md) {
   int count = 1000;
   Float32List translations = Float32List(count * 3);
   Float32List rotations = Float32List(count * 4);
 
-  Spatial spatial = Spatial("dummy");
   int pos = 0;
   for (int x = -5; x < 5; x++) {
     for (int y = -5; y < 5; y++) {
       for (int z = -5; z < 5; z++) {
-        spatial.setPos(x * 40.0, y * 40.0, z * 30.0);
-        translations.setAll(pos * 3, spatial.getPos().storage);
-        vm.Quaternion q = vm.Quaternion.fromRotation(
-          spatial.transform.getRotation(),
-        );
-        rotations.setAll(pos * 4, q.storage);
+        translations.setAll(pos * 3, [x * 40.0, y * 40.0, z * 30.0]);
+        rotations.setAll(pos * 4, vm.Quaternion.identity().storage);
         pos++;
       }
     }
@@ -70,66 +69,83 @@ void addInstanceData(MeshData md) {
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
 
-  ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  OrbitCamera orbit = OrbitCamera(265.0, 0.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
-    cgl,
-    canvas,
-    orbit,
-    0.1,
-    1000.0,
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 265.0,
+      azimuth: 0.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
   );
 
-  final RenderProgram progInstanced = RenderProgram(
-    "instanced",
-    cgl,
-    instancedVertexShader,
-    instancedFragmentShader,
+  final RenderProgram progInstanced = lifetime.own(
+    RenderProgram(
+      "instanced",
+      cgl,
+      instancedVertexShader,
+      instancedFragmentShader,
+    ),
   );
-  final Material mat = Material("mat")
+  final Material mat = lifetime.own(Material("mat"))
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
-  final MeshData md = shapeTorusKnot(progInstanced, radius: 12.0);
+  final GpuMesh md = lifetime.own(shapeTorusKnot(progInstanced, radius: 12.0));
   addInstanceData(md);
 
-  final RenderProgram progStars = RenderProgram(
-    "stars",
-    cgl,
-    pointSpritesVertexShader,
-    pointSpritesFragmentShader,
+  final RenderProgram progStars = lifetime.own(
+    RenderProgram(
+      "stars",
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
   );
-  final Material matStars = makeStarMaterial(cgl)
+  final Material matStars = lifetime.own(makeStarMaterial(cgl))
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
-  final MeshData mdStars = makeStarMesh(
-    progStars,
-    2000,
-    100.0,
-    random: math.Random(),
+  final GpuMesh mdStars = lifetime.own(
+    makeStarMesh(progStars, 2000, 100.0, random: math.Random()),
   );
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
 
     progInstanced.draw(md, [mat, perspective]);
     progStars.draw(mdStars, [matStars, perspective]);
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

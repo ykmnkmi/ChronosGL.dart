@@ -11,11 +11,15 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 String textureFile = "sphere.png";
 // https://cycling74.com/forums/topic/shader-help-recreating-gl_sphere_map/
 // https://www.opengl.org/wiki/Mathematics_of_glTexGen
 
-ShaderObject sphereVertexShader = ShaderObject("sphereV")
+ShaderObject sphereVertexShader = ShaderObject.vertex("sphereV")
   ..addAttributeVars([aPosition, aNormal])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
   ..addVaryingVars([vTexUV])
@@ -33,7 +37,7 @@ void main() {
   """,
   ]);
 
-ShaderObject sphereFragmentShader = ShaderObject("sphereF")
+ShaderObject sphereFragmentShader = ShaderObject.fragment("sphereF")
   ..addVaryingVars([vTexUV])
   ..addUniformVars([uTexture])
   ..setBody([
@@ -47,79 +51,98 @@ void main() {
 final List<Future<Object>> gLoadables = [];
 
 void main() {
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
 
-  final OrbitCamera orbit = OrbitCamera(5.0, 10.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
-    cgl,
-    canvas,
-    orbit,
-    0.1,
-    1000.0,
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 5.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
   );
 
-  final RenderProgram progSphere = RenderProgram(
-    "spheres",
-    cgl,
-    sphereVertexShader,
-    sphereFragmentShader,
+  final RenderProgram progSphere = lifetime.own(
+    RenderProgram("spheres", cgl, sphereVertexShader, sphereFragmentShader),
   );
-  final MeshData mdSphere = shapeIcosahedron(progSphere, subdivisions: 3);
+  final GpuMesh mdSphere = lifetime.own(
+    shapeIcosahedron(progSphere, subdivisions: 3),
+  );
   final vm.Matrix4 modelMat = vm.Matrix4.identity();
   final vm.Matrix3 normalMat = vm.Matrix3.identity();
 
-  final Material matSphere = Material.transparent("sphere", blendEquationMix)
-    ..setUniform(uNormalMatrix, normalMat)
-    ..setUniform(uModelMatrix, modelMat);
+  final Material matSphere =
+      lifetime.own(Material.transparent("sphere", blendEquationMix))
+        ..setUniform(uNormalMatrix, normalMat)
+        ..setUniform(uModelMatrix, modelMat);
   var future = loadImage(textureFile)
     ..then((img) {
-      Texture bubble = ImageTexture(cgl, textureFile, img);
+      if (lifetime.isDisposed) return;
+      Texture bubble = lifetime.own(
+        ImageTexture.fromImage(context: cgl, name: textureFile, image: img),
+      );
       matSphere.setUniform(uTexture, bubble);
     });
   gLoadables.add(future);
 
-  final RenderProgram progStars = RenderProgram(
-    "stars",
-    cgl,
-    pointSpritesVertexShader,
-    pointSpritesFragmentShader,
+  final RenderProgram progStars = lifetime.own(
+    RenderProgram(
+      "stars",
+      cgl,
+      pointSpritesVertexShader,
+      pointSpritesFragmentShader,
+    ),
   );
-  final Material matStars = makeStarMaterial(cgl)
+  final Material matStars = lifetime.own(makeStarMaterial(cgl))
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
-  final MeshData mdStars = makeStarMesh(
-    progStars,
-    2000,
-    100.0,
-    random: math.Random(),
+  final GpuMesh mdStars = lifetime.own(
+    makeStarMesh(progStars, 2000, 100.0, random: math.Random()),
   );
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
     modelMat.setIdentity();
     progSphere.draw(mdSphere, [matSphere, perspective]);
     modelMat.setTranslationRaw(1.5, 0.0, 0.0);
     progSphere.draw(mdSphere, [matSphere, perspective]);
     progStars.draw(mdStars, [matStars, perspective]);
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
   }
 
   onFrame = animate.toJS;
 
   Future.wait(gLoadables).then((list) {
-    animate(0.0);
+    if (lifetime.isDisposed) return;
+    lifetime.requestAnimationFrame(onFrame);
   });
 }

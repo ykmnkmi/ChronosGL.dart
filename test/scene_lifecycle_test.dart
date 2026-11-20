@@ -148,8 +148,8 @@ TypedTextureMutable _texture(ChronosGL cgl, List<int> color) {
   return texture;
 }
 
-MeshData _mesh(RenderProgram program) {
-  final mesh = program.makeMeshData('shared triangle', glTriangles);
+GpuMesh _mesh(RenderProgram program) {
+  final mesh = program.makeGpuMesh('shared triangle', glTriangles);
   addTearDown(mesh.dispose);
   mesh
     ..addVertices(Float32List.fromList([-1, -1, 0, 3, -1, 0, -1, 3, 0]))
@@ -157,8 +157,8 @@ MeshData _mesh(RenderProgram program) {
   return mesh;
 }
 
-RenderPhase _phase(ChronosGL cgl, Framebuffer target, List<Scene> scenes) {
-  final phase = RenderPhase('lifecycle', cgl, target)
+RenderPass _phase(ChronosGL cgl, Framebuffer target, List<RenderBatch> scenes) {
+  final phase = RenderPass('lifecycle', cgl, target)
     ..viewPortW = 2
     ..viewPortH = 2;
   for (final scene in scenes) {
@@ -167,7 +167,7 @@ RenderPhase _phase(ChronosGL cgl, Framebuffer target, List<Scene> scenes) {
   return phase;
 }
 
-void _expectDraw(RenderPhase phase, int draws, [List<int> color = _green]) {
+void _expectDraw(RenderPass phase, int draws, [List<int> color = _green]) {
   final stats = <DrawStats>[];
   phase.draw(stats);
   expect(stats, hasLength(draws));
@@ -258,7 +258,7 @@ void main() {
 
   for (final withDepth in [false, true]) {
     test(
-      'Scene cycles release all owned resources and input (depth=$withDepth)',
+      'RenderBatch cycles release all owned resources and input (depth=$withDepth)',
       () async {
         final previousInputs = <({Keyboard keyboard, Mouse mouse})>[];
         for (var cycle = 0; cycle < 5; cycle++) {
@@ -267,9 +267,9 @@ void main() {
           final sampler = _texture(cgl, _green);
           final material = Material.empty('shared')
             ..setUniform(uTexture, sampler);
-          final scene = Scene('cycle $cycle', program)
-            ..add(Node('first', mesh, material))
-            ..add(Node('second', mesh, material));
+          final scene = RenderBatch('cycle $cycle', program)
+            ..add(MeshNode('first', mesh, material))
+            ..add(MeshNode('second', mesh, material));
           final target = withDepth
               ? Framebuffer.defaultFramebuffer(cgl, 2, 2)
               : Framebuffer.effect(cgl, 2, 2);
@@ -300,7 +300,7 @@ void main() {
           _expectDraw(phase, 2);
 
           // The application owns this bundle. Stop input, remove graph links,
-          // then explicitly release GPU owners; Scene itself has no dispose().
+          // then explicitly release GPU owners; RenderBatch itself has no dispose().
           final keyboardDone = keyboard.dispose();
           final mouseDone = mouse.dispose();
           expect(identical(keyboard.dispose(), keyboardDone), isTrue);
@@ -366,16 +366,16 @@ void main() {
       final red = _texture(cgl, _red);
       final material = Material.empty('shared')..setUniform(uTexture, green);
       final node = MeshNode('shared', mesh, material);
-      final first = Scene('first', program);
-      final second = Scene('second', program);
-      final branch = Node.container('first branch', node);
+      final first = RenderBatch('first', program);
+      final second = RenderBatch('second', program);
+      final branch = GroupNode('first branch', node);
       late void Function() remove;
       late void Function() restore;
       switch (removal) {
         case 'scene.remove':
           first
             ..add(node)
-            ..add(Node('other consumer', mesh, material));
+            ..add(MeshNode('other consumer', mesh, material));
           remove = () => first.remove(node);
           restore = () => first.add(node);
         case 'scene.removeAll':
@@ -386,7 +386,7 @@ void main() {
         case 'DAG child':
           first
             ..add(branch)
-            ..add(Node.container('second branch', node));
+            ..add(GroupNode('second branch', node));
           remove = () => branch.children.remove(node);
           restore = () => branch.add(node);
       }
@@ -433,9 +433,9 @@ void main() {
       final mesh = _mesh(firstProgram);
       final sampler = _texture(cgl, _green);
       final material = Material.empty('shared')..setUniform(uTexture, sampler);
-      final node = Node('shared', mesh, material);
-      final first = Scene('first', firstProgram)..add(node);
-      final second = Scene('second', secondProgram)..add(node);
+      final node = MeshNode('shared', mesh, material);
+      final first = RenderBatch('first', firstProgram)..add(node);
+      final second = RenderBatch('second', secondProgram)..add(node);
       final color = TypedTexture(
         cgl,
         'shared output',

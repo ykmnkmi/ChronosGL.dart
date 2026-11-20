@@ -5,99 +5,154 @@ import 'package:web/web.dart' as web;
 import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 // This scene is responsible for filling the entire screen with a texture
 // gleaned from the camera
-Scene backgroundScene(ChronosGL cgl, ImageTexture texture) {
-  final Scene scene = Scene(
-    "bg",
-    RenderProgram(
+RenderBatch backgroundScene(ChronosGL cgl, ImageTexture texture) {
+  final RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
       "bg",
-      cgl,
-      scalingCopyVertexShader,
-      scalingCopyFragmentShader,
+      lifetime.own(
+        RenderProgram(
+          "bg",
+          cgl,
+          scalingCopyVertexShader,
+          scalingCopyFragmentShader,
+        ),
+      ),
+      [],
     ),
-    [],
   );
 
-  final Material matBackground = Material("bg")
+  final Material matBackground = lifetime.own(Material("bg"))
     ..forceUniform(cDepthWrite, false)
     ..setUniform(uTexture, texture);
 
-  scene.add(Node("bg", shapeQuad(scene.program, 1), matBackground));
+  scene.add(
+    MeshNode("bg", lifetime.own(shapeQuad(scene.program, 1)), matBackground),
+  );
   return scene;
 }
 
-Scene cubeScene(ChronosGL cgl, List<UniformGroup> uniforms) {
+RenderBatch cubeScene(ChronosGL cgl, List<UniformGroup> uniforms) {
   // This scene renders the a red cube in front of the background
-  Scene scene = Scene(
-    "objects",
-    RenderProgram(
-      "solid",
-      cgl,
-      solidColorVertexShader,
-      solidColorFragmentShader,
+  RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
+      "objects",
+      lifetime.own(
+        RenderProgram(
+          "solid",
+          cgl,
+          solidColorVertexShader,
+          solidColorFragmentShader,
+        ),
+      ),
+      uniforms,
     ),
-    uniforms,
   );
 
-  final Material matCube = Material("cube")
+  final Material matCube = lifetime.own(Material("cube"))
     ..setUniform(uColor, colorRed.toVector3());
 
   double dim = 0.2;
-  Node cube = Node(
+  Node cube = MeshNode(
     "cube",
-    shapeCube(scene.program, x: dim, y: dim, z: dim),
+    lifetime.own(shapeCube(scene.program, x: dim, y: dim, z: dim)),
     matCube,
   )..setPos(-5.0, 0.0, -5.0);
   scene.add(cube);
   return scene;
 }
 
+void releaseVideo(web.HTMLVideoElement video) {
+  video.pause();
+  final source = video.srcObject;
+  if (source != null && source.isA<web.MediaStream>()) {
+    for (final track in (source as web.MediaStream).getTracks().toDart) {
+      track.stop();
+    }
+  }
+  video.srcObject = null;
+  video.remove();
+}
+
 void main2(web.HTMLVideoElement? video) {
+  if (lifetime.isDisposed) {
+    if (video != null) releaseVideo(video);
+    return;
+  }
   if (video == null) {
     web.window.alert(
       "Could not access camera - do you have a camera installed?",
     );
     return;
   }
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  lifetime.onDispose(() => releaseVideo(video));
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
 
-  final ChronosGL cgl = ChronosGL(canvas);
-  final OrbitCamera orbit = OrbitCamera(15.0, 10.0, 0.0, canvas);
-  final Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 15.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
 
-  final ImageTexture texture = ImageTexture(
-    cgl,
-    "video",
-    video,
-    texturePropertiesVideo,
+  final ImageTexture texture = lifetime.own(
+    ImageTexture.fromVideo(
+      context: cgl,
+      name: "video",
+      video: video,
+      properties: texturePropertiesVideo,
+    ),
   );
 
-  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
-    "main",
-    cgl,
-    canvas,
-    perspective,
+  final RenderPass phase = lifetime.ownPass(RenderPass("main", cgl));
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
   );
 
   phase.add(backgroundScene(cgl, texture));
-  final Scene sceneCube = cubeScene(cgl, [perspective]);
+  final RenderBatch sceneCube = cubeScene(cgl, [perspective]);
   final Node cubeNode = sceneCube.nodes[0];
   phase.add(sceneCube);
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.animate(elapsed);
+    orbit.update(elapsed / 1000.0);
     cubeNode.rotX(0.01);
     cubeNode.rotY(0.01);
     try {
@@ -113,18 +168,22 @@ void main2(web.HTMLVideoElement? video) {
       out.add(d.toString());
     }
 
-    fps.updateFrameCount(lastTimeMs, out.join("<br>"));
+    fps.updateFrameCount(timeMs, out.join("<br>"));
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }
 
 void main() {
   makeVideoElementFromCamera().then(main2).catchError((Object error) {
-    web.window.alert("Camera error $error: - do you have a camera installed?");
+    if (!lifetime.isDisposed) {
+      web.window.alert(
+        "Camera error $error: - do you have a camera installed?",
+      );
+    }
   });
 }

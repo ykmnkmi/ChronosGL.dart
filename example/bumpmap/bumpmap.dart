@@ -9,11 +9,15 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const String dir = "../asset/leeperrysmith/";
 const String modelFile = "${dir}LeePerrySmith.js";
 const String bumpmapFile = "${dir}Infinite-Level_02_Disp_NoSmoothUV-4096.jpg";
 
-final ShaderObject vertexShader = ShaderObject("LightBlinnPhongFancyV")
+final ShaderObject vertexShader = ShaderObject.vertex("LightBlinnPhongFancyV")
   ..addAttributeVars([aPosition, aNormal, aTexUV])
   ..addVaryingVars([vPosition, vNormal, vTexUV])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uNormalMatrix])
@@ -29,14 +33,15 @@ void main() {
 """,
   ]);
 
-final ShaderObject fragmentShader = ShaderObject("LightBlinnPhongFancyF")
-  ..addVaryingVars([vPosition, vNormal, vTexUV])
-  ..addUniformVars([uLightDescs, uLightTypes, uShininess])
-  ..addUniformVars([uEyePosition, uColor])
-  ..addUniformVars([uBumpScale, uBumpMap])
-  ..setBody(
-    [
-      """
+final ShaderObject fragmentShader =
+    ShaderObject.fragment("LightBlinnPhongFancyF")
+      ..addVaryingVars([vPosition, vNormal, vTexUV])
+      ..addUniformVars([uLightDescs, uLightTypes, uShininess])
+      ..addUniformVars([uEyePosition, uColor])
+      ..addUniformVars([uBumpScale, uBumpMap])
+      ..setBody(
+        [
+          """
 void main() {
    vec3 normal = normalize($vNormal);
    vec2 uv = dHdxy_fwd($vTexUV, $uBumpScale, $uBumpMap);
@@ -53,9 +58,9 @@ void main() {
    $oFragColor.a = 1.0;
 }
 """,
-    ],
-    prolog: [stdLibShaderDerivative, stdLibShader],
-  );
+        ],
+        prolog: [stdLibShaderDerivative, stdLibShader],
+      );
 
 final vm.Vector3 colSkin = vm.Vector3(0.333, 0.157, 0.067);
 //const vm.Vector3 colGray = new vm.Vector3(0.2, 0.2, 0.2);
@@ -67,18 +72,24 @@ final double glossiness = 10.0;
 final double angle = math.pi / 6.0;
 
 void main() {
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
 
-  final OrbitCamera orbit = OrbitCamera(0.3, 0.0, 0.0, canvas)
-    ..mouseWheelFactor = -0.001;
-  final Perspective perspective = Perspective(orbit, 0.01, 1000.0);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.01, far: 1000);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(camera: camera, eventTarget: canvas, radius: 0.3),
+  );
+  final perspective = CameraUniforms(camera);
 
   final DirectionalLight light = DirectionalLight(
     "dir",
@@ -91,31 +102,42 @@ void main() {
   final Illumination illumination = Illumination();
   illumination.addLight(light);
 
-  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
-    "main",
-    cgl,
-    canvas,
-    perspective,
+  final phase = lifetime.ownPass(RenderPass("main", cgl));
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
   );
 
-  final Scene sceneMain = Scene(
-    "main",
-    RenderProgram("main", cgl, vertexShader, fragmentShader),
-    [perspective, illumination],
+  final RenderBatch sceneMain = lifetime.ownBatch(
+    RenderBatch(
+      "main",
+      lifetime.own(RenderProgram("main", cgl, vertexShader, fragmentShader)),
+      [perspective, illumination],
+    ),
   );
   phase.add(sceneMain);
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
     phase.draw();
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
   }
 
   onFrame = animate.toJS;
@@ -123,11 +145,19 @@ void main() {
   List<Future<Object>> futures = [loadJson(modelFile), loadImage(bumpmapFile)];
 
   Future.wait(futures).then((list) {
+    if (lifetime.isDisposed) return;
     // Setup Bumpmap
     final TextureProperties tp = const TextureProperties(clamp: true)
         .withMipmapLinear();
-    final Texture bumpmap = ImageTexture(cgl, bumpmapFile, list[1], tp);
-    final Material mat = Material("mat")
+    final Texture bumpmap = lifetime.own(
+      ImageTexture.fromImage(
+        context: cgl,
+        name: bumpmapFile,
+        image: list[1] as web.HTMLImageElement,
+        properties: tp,
+      ),
+    );
+    final Material mat = lifetime.own(Material("mat"))
       ..setUniform(uColor, colSkin)
       ..setUniform(uShininess, glossiness)
       ..setUniform(uBumpMap, bumpmap)
@@ -137,19 +167,17 @@ void main() {
       list[0] as Map<String, Object?>,
     );
     print(gbs[0]);
-    MeshData md = geometryBuilderToMeshData(
-      modelFile,
-      sceneMain.program,
-      gbs[0],
+    GpuMesh md = lifetime.own(
+      uploadGeometry(modelFile, sceneMain.program, gbs[0]),
     );
 
-    Node mesh = Node(md.name, md, mat);
-    Node n = Node.container("wrapper", mesh);
+    Node mesh = MeshNode(md.name, md, mat);
+    Node n = GroupNode("wrapper", mesh);
     //n.invert = true;
     n.lookAt(vm.Vector3(100.0, 0.0, 0.0));
     //n.matrix.scale(0.02);
     sceneMain.add(n);
     // GO!
-    animate(0.0);
+    lifetime.requestAnimationFrame(onFrame);
   });
 }

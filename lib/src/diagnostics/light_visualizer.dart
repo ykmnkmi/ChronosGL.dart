@@ -24,6 +24,17 @@ MeshData emptyLightVisualizer(RenderProgram prog, String name) {
   }
 }
 
+// Light types have different wireframe topologies. Fixed-size edits reuse the
+// existing buffer; topology changes replace owned storage through the mesh API.
+void _updateLightVertices(GpuMesh mesh, List<vm.Vector3> points) {
+  final vertices = flattenVector3List(points);
+  if (mesh.getAttribute(aPosition).length == vertices.length) {
+    mesh.changeVertexData(vertices);
+  } else {
+    mesh.addVertices(vertices);
+  }
+}
+
 void updateDirectionalLightVisualizer(
   MeshData md,
   double dim,
@@ -64,7 +75,7 @@ void updateDirectionalLightVisualizer(
     }
   }
 
-  md.changeVertexData(flattenVector3List(points));
+  _updateLightVertices(md, points);
   List<int> faces = List.generate(points.length, (index) => index);
   md.changeFaces(faces);
 }
@@ -121,7 +132,7 @@ void updateSpotLightVisualizer(
       faces.add(i);
     }
   }
-  md.changeVertexData(flattenVector3List(points));
+  _updateLightVertices(md, points);
   md.changeFaces(faces);
 }
 
@@ -146,7 +157,7 @@ void updatePointLightVisualizer2(MeshData md, vm.Vector3 pos, double range) {
     faces.add(f.a);
   }
 
-  md.changeVertexData(flattenVector3List(points));
+  _updateLightVertices(md, points);
   md.changeFaces(faces);
 }
 
@@ -160,7 +171,7 @@ void updatePointLightVisualizer(MeshData md, vm.Vector3 pos, double range) {
     points.add(pos + (v * range));
   }
   points.add(pos);
-  md.changeVertexData(flattenVector3List(points));
+  _updateLightVertices(md, points);
   md.changeFaces(faces);
 }
 

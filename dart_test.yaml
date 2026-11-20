@@ -43,6 +43,8 @@ presets:
       - test/shader_syntax.dart
       - test/show_extensions.dart
       - test/render_golden_test.dart
+      - test/golden_scene_lifecycle_test.dart
+      - test/example_lifetime_test.dart
       - test/golden_comparison_test.dart
       - test/type_boundaries_test.dart
       - test/legacy_dom_compatibility_test.dart

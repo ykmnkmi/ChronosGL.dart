@@ -6,6 +6,10 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const String uFreqMul = "uFreqMul";
 const String uAmplMul = "uAmplMul";
 
@@ -16,7 +20,7 @@ const String uAmpl3 = "uAmpl3";
 const String uMode = "uMode";
 const String uSpeed = "uSpeed";
 
-final ShaderObject nullVertexShader = ShaderObject("nullShaderV")
+final ShaderObject nullVertexShader = ShaderObject.vertex("nullShaderV")
   ..addAttributeVars([aPosition])
   ..setBody([nullVertexShaderString]);
 
@@ -82,7 +86,7 @@ String shader =
    }
  """;
 
-final ShaderObject noiseFragmentShader = ShaderObject("noiseShaderF")
+final ShaderObject noiseFragmentShader = ShaderObject.fragment("noiseShaderF")
   ..addUniformVars([
     uTime,
     uCanvasSize,
@@ -110,10 +114,12 @@ void main() {
   introduceNewShaderVar(uMode, const ShaderVarDesc("float", ""));
   introduceNewShaderVar(uSpeed, const ShaderVarDesc("float", ""));
 
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
@@ -122,18 +128,27 @@ void main() {
   canvas.width = w;
   canvas.height = h;
 
-  final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-
-  final RenderProgram programPerlin = RenderProgram(
-    "perlin",
-    cgl,
-    nullVertexShader,
-    noiseFragmentShader,
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: PerspectiveCamera(near: 0.1, far: 1000),
+    ),
   );
 
-  final MeshData quad = shapeQuad(programPerlin, 1);
+  final RenderProgram programPerlin = lifetime.own(
+    RenderProgram.create(
+      name: "perlin",
+      context: cgl,
+      vertexShader: nullVertexShader,
+      fragmentShader: noiseFragmentShader,
+    ),
+  );
 
-  final UniformGroup uniforms = UniformGroup("simplex")
+  final GpuMesh quad = lifetime.own(shapeQuad(programPerlin, 1));
+
+  final UniformGroup uniforms = lifetime.own(UniformGroup("simplex"))
     ..forceUniform(uTime, 0.0)
     ..forceUniform(uCanvasSize, vm.Vector2(w + 0.0, h + 0.0));
 
@@ -142,18 +157,20 @@ void main() {
     web.document.getElementsByTagName("input"),
   )) {
     web.HTMLElement input = node as web.HTMLElement;
-    input.onChange.listen((web.Event e) {
-      web.HTMLInputElement input = e.target as web.HTMLInputElement;
-      if (input.type == "range") {
-        web.HTMLOutputElement output =
-            web.document.getElementById(input.name) as web.HTMLOutputElement;
-        uniforms.forceUniform(input.name, double.parse(input.value));
-        output.value = input.value;
-      }
-      if (input.type == "radio") {
-        uniforms.forceUniform(input.name, double.parse(input.value));
-      }
-    });
+    lifetime.own(
+      input.onChange.listen((web.Event e) {
+        web.HTMLInputElement input = e.target as web.HTMLInputElement;
+        if (input.type == "range") {
+          web.HTMLOutputElement output =
+              web.document.getElementById(input.name) as web.HTMLOutputElement;
+          uniforms.forceUniform(input.name, double.parse(input.value));
+          output.value = input.value;
+        }
+        if (input.type == "radio") {
+          uniforms.forceUniform(input.name, double.parse(input.value));
+        }
+      }),
+    );
   }
 
   // Trigger handlers
@@ -168,16 +185,28 @@ void main() {
   double lastTimeMs = 0.0;
   late final JSFunction onFrame;
   void animate(double timeMs) {
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
     lastTimeMs = timeMs + 0.0;
 
+    uniforms.forceUniform(
+      uCanvasSize,
+      vm.Vector2(
+        viewport.viewportWidthPixels.toDouble(),
+        viewport.viewportHeightPixels.toDouble(),
+      ),
+    );
     uniforms.forceUniform(uTime, timeMs / 1000.0);
     programPerlin.draw(quad, [uniforms]);
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

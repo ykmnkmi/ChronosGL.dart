@@ -10,16 +10,24 @@ import '../shared/particles.dart';
 import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 
-Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
-  Scene scene = Scene(
-    "stars",
-    RenderProgram(
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
+RenderBatch makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
+  RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
       "stars",
-      cgl,
-      pointSpritesVertexShader,
-      pointSpritesFragmentShader,
+      lifetime.own(
+        RenderProgram(
+          "stars",
+          cgl,
+          pointSpritesVertexShader,
+          pointSpritesFragmentShader,
+        ),
+      ),
+      [perspective],
     ),
-    [perspective],
   );
   scene.add(makeParticles(scene.program, num, random: math.Random()));
   return scene;
@@ -27,77 +35,104 @@ Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
 
 final List<Future<Object>> gLoadables = [];
 
-Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
-  final Scene scene = Scene(
-    "objects",
-    RenderProgram(
-      "textured",
-      cgl,
-      texturedVertexShader,
-      texturedFragmentShader,
+RenderBatch makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
+  final RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
+      "objects",
+      lifetime.own(
+        RenderProgram(
+          "textured",
+          cgl,
+          texturedVertexShader,
+          texturedFragmentShader,
+        ),
+      ),
+      uniforms,
     ),
-    uniforms,
   );
   // textures will be set after they are loaded
-  final Material matWood = Material("wood")
+  final Material matWood = lifetime.own(Material("wood"))
     ..setUniform(uColor, colorBlack.toVector3());
   var f3 = loadImage("../wood.jpg")
     ..then((img) {
-      Texture wood = ImageTexture(cgl, "../wood.jpg", img);
+      if (lifetime.isDisposed) return;
+      Texture wood = lifetime.own(
+        ImageTexture.fromImage(context: cgl, name: "../wood.jpg", image: img),
+      );
       matWood.setUniform(uTexture, wood);
     });
   gLoadables.add(f3);
 
-  final Material matGradient = Material("gradient")
+  final Material matGradient = lifetime.own(Material("gradient"))
     ..setUniform(uColor, colorRed.toVector3());
   var f1 = loadImage("../gradient.jpg")
     ..then((img) {
-      Texture gradient = ImageTexture(cgl, "../gradient.jpg", img);
+      if (lifetime.isDisposed) return;
+      Texture gradient = lifetime.own(
+        ImageTexture.fromImage(
+          context: cgl,
+          name: "../gradient.jpg",
+          image: img,
+        ),
+      );
       matGradient.setUniform(uTexture, gradient);
     });
   gLoadables.add(f1);
 
-  final Material matTrans = Material("trans")
+  final Material matTrans = lifetime.own(Material("trans"))
     ..setUniform(uColor, colorGray4.toVector3())
     ..forceUniform(cBlendEquation, blendEquationStandard);
   var f2 = loadImage("../transparent.png")
     ..then((img) {
-      Texture trans = ImageTexture(cgl, "../transparent.png", img);
+      if (lifetime.isDisposed) return;
+      Texture trans = lifetime.own(
+        ImageTexture.fromImage(
+          context: cgl,
+          name: "../transparent.png",
+          image: img,
+        ),
+      );
       matTrans.setUniform(uTexture, trans);
     });
   gLoadables.add(f2);
 
   {
-    Node ico = Node(
+    Node ico = MeshNode(
       "sphere",
-      shapeIcosahedron(scene.program, subdivisions: 3),
+      lifetime.own(shapeIcosahedron(scene.program, subdivisions: 3)),
       matWood,
     )..setPos(0.0, 0.0, 0.0);
     scene.add(ico);
   }
   {
-    Node cube = Node("cube", shapeCube(scene.program), matGradient)
-      ..setPos(-5.0, 0.0, -5.0);
+    Node cube = MeshNode(
+      "cube",
+      lifetime.own(shapeCube(scene.program)),
+      matGradient,
+    )..setPos(-5.0, 0.0, -5.0);
     scene.add(cube);
   }
 
   {
-    Node cyl = Node(
+    Node cyl = MeshNode(
       "cylinder",
-      shapeCylinder(scene.program, 3.0, 6.0, 2.0, 32),
+      lifetime.own(shapeCylinder(scene.program, 3.0, 6.0, 2.0, 32)),
       matTrans,
     )..setPos(5.0, 0.0, -5.0);
     scene.add(cyl);
   }
   {
-    Node quad = Node("quad", shapeQuad(scene.program, 2), matTrans)
-      ..setPos(-5.0, 0.0, 5.0);
+    Node quad = MeshNode(
+      "quad",
+      lifetime.own(shapeQuad(scene.program, 2)),
+      matTrans,
+    )..setPos(-5.0, 0.0, 5.0);
     scene.add(quad);
   }
   {
-    Node torus = Node(
+    Node torus = MeshNode(
       "torus",
-      shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+      lifetime.own(shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4)),
       matGradient,
     )..setPos(5.0, 0.0, 5.0);
     scene.add(torus);
@@ -107,35 +142,57 @@ Scene makeMainScene(ChronosGL cgl, List<UniformGroup> uniforms) {
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 25.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
 
-  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
-    "main",
-    cgl,
-    canvas,
-    perspective,
+  final RenderPass phase = lifetime.ownPass(RenderPass("main", cgl));
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
   );
 
   phase.add(makeMainScene(cgl, [perspective]));
   phase.add(makeStarScene(cgl, perspective, 2000));
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
 
     List<DrawStats> stats = [];
     phase.draw(stats);
@@ -144,13 +201,14 @@ void main() {
       out.add(d.toString());
     }
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs, out.join("<br>"));
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs, out.join("<br>"));
   }
 
   onFrame = animate.toJS;
 
   Future.wait(gLoadables).then((list) {
-    animate(0.0);
+    if (lifetime.isDisposed) return;
+    lifetime.requestAnimationFrame(onFrame);
   });
 }

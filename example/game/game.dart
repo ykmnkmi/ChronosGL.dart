@@ -9,7 +9,11 @@ import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:chronosgl/chronosgl.dart';
 
-final ShaderObject demoVertexShader = ShaderObject("demoVertexShader")
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
+final ShaderObject demoVertexShader = ShaderObject.vertex("demoVertexShader")
   ..addAttributeVars([aPosition, aPointSize, aColor])
   ..addVaryingVars([vColor])
   ..setBody([
@@ -22,16 +26,17 @@ void main(void) {
 """,
   ]);
 
-final ShaderObject demoFragmentShader = ShaderObject("demoFragmentShader")
-  ..addVaryingVars([vColor])
-  ..setBody([
-    """
+final ShaderObject demoFragmentShader =
+    ShaderObject.fragment("demoFragmentShader")
+      ..addVaryingVars([vColor])
+      ..setBody([
+        """
 void main(void) {
     float r = length(gl_PointCoord.xy - vec2(0.5, 0.5));
     $oFragColor.rgb = r*r < 0.2 ? $vColor : vec3(0.0, 0.0, 0.0);
 }
 """,
-  ]);
+      ]);
 
 final vm.Vector2 middle = vm.Vector2(0.5, 0.5);
 
@@ -257,7 +262,7 @@ void main() {
   canvas.width = d;
   canvas.height = d;
 
-  final Keyboard input = Keyboard(null);
+  final Keyboard input = lifetime.own(Keyboard.forTarget(web.window));
   final Gamepad gamepad = Gamepad();
 
   final List<Sprite> sprites = [Sprite(true, 50.0, rng)];
@@ -265,13 +270,10 @@ void main() {
     sprites.add(Sprite(false, 20.0, rng));
   }
 
-  final ChronosGL cgl = ChronosGL(canvas, antialiasing: false);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, antialiasing: false);
   // Create the main shader program for displaying the torus.
-  final RenderProgram prog = RenderProgram(
-    "basic",
-    cgl,
-    demoVertexShader,
-    demoFragmentShader,
+  final RenderProgram prog = lifetime.own(
+    RenderProgram("basic", cgl, demoVertexShader, demoFragmentShader),
   );
 
   final Float32List points = Float32List(3 * (sprites.length + 2));
@@ -282,20 +284,21 @@ void main() {
   extractSpriteSizes(sprites, sizes);
   extractSpriteColors(sprites, colors);
 
-  final MeshData mesh = prog.makeMeshData("points", glPoints)
+  final GpuMesh mesh = lifetime.own(prog.makeGpuMesh("points", glPoints))
     ..addVertices(points)
     ..addAttribute(aPointSize, sizes, 1)
     ..addAttribute(aColor, colors, 3);
 
-  Material mat = Material("nodepth")
+  Material mat = lifetime.own(Material("nodepth"))
     ..forceUniform(cBlendEquation, blendEquationAdd)
     ..forceUniform(cDepthTest, false)
     ..forceUniform(cDepthWrite, false);
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
     for (Sprite s in sprites) {
       s.advanceTime(elapsed / 10000.0);
@@ -307,10 +310,10 @@ void main() {
     mesh.changeVertexData(points);
 
     prog.draw(mesh, [mat]);
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

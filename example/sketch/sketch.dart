@@ -11,6 +11,10 @@ import 'package:vector_math/vector_math.dart' as vm;
 
 import 'dart:math' as math;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 // Sketch shader based on:
 // http://www.thomaseichhorn.de/npr-sketch-shader-vvvv/
 // https://github.com/spite/npr-shading
@@ -19,7 +23,7 @@ import 'dart:math' as math;
 // Final Shader
 //
 
-final ShaderObject instancedVertexShader = ShaderObject("finalV")
+final ShaderObject instancedVertexShader = ShaderObject.vertex("finalV")
   ..addAttributeVars([aPosition, aNormal, aTexUV])
   ..addAttributeVars([iaRotation, iaTranslation, iaScale])
   ..addVaryingVars([vColor, vNormal, vTexUV, vPosition])
@@ -50,7 +54,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject instancedFragmentShader = ShaderObject("finalF")
+final ShaderObject instancedFragmentShader = ShaderObject.fragment("finalF")
   ..addVaryingVars([vColor, vNormal, vTexUV, vPosition])
   ..addUniformVars([
     uTexture,
@@ -112,7 +116,7 @@ void main() {
 // Preparation Shader
 //
 
-final ShaderObject preparationVertexShader = ShaderObject("preparationV")
+final ShaderObject preparationVertexShader = ShaderObject.vertex("preparationV")
   ..addAttributeVars([aPosition, aNormal, aTexUV])
   ..addAttributeVars([iaRotation, iaTranslation, iaScale])
   ..addVaryingVars([vNormal])
@@ -141,17 +145,18 @@ void main() {
 """,
   ]);
 
-final ShaderObject preparationFragmentShader = ShaderObject("preparationF")
-  ..addVaryingVars([vNormal])
-  ..setBody([
-    """
+final ShaderObject preparationFragmentShader =
+    ShaderObject.fragment("preparationF")
+      ..addVaryingVars([vNormal])
+      ..setBody([
+        """
 void main() {
   $oFragColor = vec4($vNormal, gl_FragCoord.w);
 }
   """,
-  ]);
+      ]);
 
-void addInstanceData(MeshData md, math.Random rand, int count) {
+void addInstanceData(GpuMesh md, math.Random rand, int count) {
   final Float32List scales = Float32List(count * 1);
   final Float32List translations = Float32List(count * 3);
   final Float32List rotations = Float32List(count * 4);
@@ -180,10 +185,10 @@ final vm.Vector3 dirLight = vm.Vector3(0.0, -50.0, 0.0);
 class Phase {
   Phase(this.program, this.md, this.fb);
 
-  final Framebuffer fb;
-  final Material mat = Material("mat");
+  Framebuffer fb;
+  final Material mat = lifetime.own(Material("mat"));
   final RenderProgram program;
-  final MeshData md;
+  final GpuMesh md;
 
   void run(int width, int height, [List<UniformGroup>? extra]) {
     fb.activate(glClearAll, 0, 0, width, height);
@@ -196,23 +201,34 @@ class Phase {
 }
 
 Framebuffer makePrepareFb(ChronosGL cgl, int width, int height) {
-  TypedTexture tex = TypedTexture(
-    cgl,
-    "float",
-    width,
-    height,
-    glRgba32f,
-    texturePropertiesFramebuffer,
+  TypedTexture tex = lifetime.own(
+    TypedTexture.allocate(
+      context: cgl,
+      name: "float",
+      width: width,
+      height: height,
+      internalFormat: glRgba32f,
+      properties: texturePropertiesFramebuffer,
+    ),
   );
-  TypedTexture depthTexture = TypedTexture(
-    cgl,
-    "frame::depth",
-    width,
-    height,
-    glDepthComponent24,
-    texturePropertiesShadowMap,
+  TypedTexture depthTexture = lifetime.own(
+    TypedTexture.allocate(
+      context: cgl,
+      name: "frame::depth",
+      width: width,
+      height: height,
+      internalFormat: glDepthComponent24,
+      properties: texturePropertiesShadowMap,
+    ),
   );
-  return Framebuffer(cgl, tex, depthTexture);
+  return lifetime.own(
+    Framebuffer.withAttachments(
+      cgl,
+      colorTexture: tex,
+      depthTexture: depthTexture,
+      takeOwnership: [tex, depthTexture],
+    ),
+  );
 }
 
 Texture makeNoiseTesture(ChronosGL cgl, math.Random rand) {
@@ -237,19 +253,28 @@ Texture makeNoiseTesture(ChronosGL cgl, math.Random rand) {
     0,
   );
 
-  return ImageTexture(cgl, "noise", canvas, texturePropertiesMipmap);
+  return lifetime.own(
+    ImageTexture.fromCanvas(
+      context: cgl,
+      name: "noise",
+      canvas: canvas,
+      properties: texturePropertiesMipmap,
+    ),
+  );
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
 
-  final ChronosGL cgl = ChronosGL(canvas, faceCulling: false)
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: false)
     ..clearColor(0.5, 0.5, 0.5, 1.0);
 
   Illumination illumination = Illumination()
@@ -267,33 +292,51 @@ void main() {
   if (ext == null) {
     web.window.alert("extension not available: EXT_color_buffer_float");
   }
-  OrbitCamera orbit = OrbitCamera(100.0, 0.0, 0.0, canvas);
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 100.0,
+      azimuth: 0.0,
+      polar: 0.0,
+    ),
+  );
 
-  final Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  final CameraUniforms perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
 
-  final width = canvas.clientWidth;
-  final height = canvas.clientHeight;
+  var width = viewport.drawingBufferWidthPixels;
+  var height = viewport.drawingBufferHeightPixels;
   canvas.width = width;
   canvas.height = height;
-  perspective.adjustAspect(width, height);
 
   final math.Random rand = math.Random(1);
 
-  final RenderProgram progPreparation = RenderProgram(
-    "preparation",
-    cgl,
-    preparationVertexShader,
-    preparationFragmentShader,
+  final RenderProgram progPreparation = lifetime.own(
+    RenderProgram.create(
+      name: "preparation",
+      context: cgl,
+      vertexShader: preparationVertexShader,
+      fragmentShader: preparationFragmentShader,
+    ),
   );
 
-  final RenderProgram progInstanced = RenderProgram(
-    "instanced",
-    cgl,
-    instancedVertexShader,
-    instancedFragmentShader,
+  final RenderProgram progInstanced = lifetime.own(
+    RenderProgram.create(
+      name: "instanced",
+      context: cgl,
+      vertexShader: instancedVertexShader,
+      fragmentShader: instancedFragmentShader,
+    ),
   );
 
-  final MeshData cubes = shapeCube(progInstanced, computeNormals: true);
+  final GpuMesh cubes = lifetime.own(
+    shapeCube(progInstanced, computeNormals: true),
+  );
   addInstanceData(cubes, rand, 80);
   print("instances: $cubes.GetNumInstances()}");
 
@@ -303,11 +346,12 @@ void main() {
     makePrepareFb(cgl, width, height),
   )..mat.setUniform(uModelMatrix, vm.Matrix4.identity());
 
-  final Phase render = Phase(progInstanced, cubes, Framebuffer.screen(cgl))
-    ..mat.setUniform(uModelMatrix, vm.Matrix4.identity())
-    ..mat.setUniform(uShininess, 10.0)
-    ..mat.setUniform(uTexture2, makeNoiseTesture(cgl, rand))
-    ..mat.setUniform(uTexture, prepare.fb.colorTexture!);
+  final Phase render =
+      Phase(progInstanced, cubes, lifetime.own(Framebuffer.screen(cgl)))
+        ..mat.setUniform(uModelMatrix, vm.Matrix4.identity())
+        ..mat.setUniform(uShininess, 10.0)
+        ..mat.setUniform(uTexture2, makeNoiseTesture(cgl, rand))
+        ..mat.setUniform(uTexture, prepare.fb.colorTexture!);
 
   /*
   // The lines show aliasing problems but the experiments below
@@ -321,7 +365,7 @@ void main() {
 
   final RenderProgram blurProg =
   RenderProgram("blur", cgl, effectVertexShader, blur1DShader9);
-  final MeshData unitQuad = shapeQuad(blurProg, 1);
+  final GpuMesh unitQuad = shapeQuad(blurProg, 1);
 
 
   final Phase horizontalBlur =
@@ -336,12 +380,28 @@ void main() {
 */
 
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    if (width != viewport.drawingBufferWidthPixels ||
+        height != viewport.drawingBufferHeightPixels) {
+      width = viewport.drawingBufferWidthPixels;
+      height = viewport.drawingBufferHeightPixels;
+      prepare.fb.dispose();
+      prepare.fb = makePrepareFb(cgl, width, height);
+      render.mat.forceUniform(uTexture, prepare.fb.colorTexture!);
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
 
     prepare.mat.forceUniform(uTime, lastTimeMs / 2000.0);
     prepare.run(width, height, [perspective]);
@@ -353,11 +413,11 @@ void main() {
     verticalBlur.run(width, height);
 */
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

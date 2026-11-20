@@ -3,6 +3,11 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+final _inputs = <String, web.MIDIInput>{};
+
 const midiNoteOff = 8;
 const midiNoteOn = 9;
 const midiControlChange = 11;
@@ -50,6 +55,10 @@ void eventHandler(int device, web.MIDIMessageEvent message) {
 }
 
 void initMidiInput(web.MIDIInput input) {
+  if (lifetime.isDisposed) return;
+  final previous = _inputs[input.id];
+  if (previous != null) previous.onmidimessage = null;
+  _inputs[input.id] = input;
   if (input.state != 'connected') {
     logEvent('Disconnected', input.id, input.name ?? 'MIDI input');
     return;
@@ -59,6 +68,7 @@ void initMidiInput(web.MIDIInput input) {
     () => gMidiIdToPortIndex.length,
   );
   input.onmidimessage = ((web.MIDIMessageEvent event) {
+    if (lifetime.isDisposed) return;
     eventHandler(index, event);
   }).toJS;
   logEvent('Input', '$index', input.name ?? input.id);
@@ -71,6 +81,7 @@ Future<void> initMidi() async {
     final access = await web.window.navigator
         .requestMIDIAccess(web.MIDIOptions(sysex: false, software: true))
         .toDart;
+    if (lifetime.isDisposed) return;
     gMidiAccess = access;
     access.onstatechange = ((web.MIDIConnectionEvent event) {
       final port = event.port;
@@ -81,14 +92,28 @@ Future<void> initMidi() async {
     (access.inputs as _MidiInputMap).forEach(initMidiInput.toJS);
     gInfo.textContent = 'MIDI connected. Play a note on an input device.';
   } catch (error) {
-    gInfo.textContent = 'Could not connect to MIDI: $error';
+    if (!lifetime.isDisposed) {
+      gInfo.textContent = 'Could not connect to MIDI: $error';
+    }
   } finally {
-    gConnect.disabled = false;
+    if (!lifetime.isDisposed) gConnect.disabled = false;
   }
 }
 
 void main() {
-  gConnect.onClick.listen((_) {
-    unawaited(initMidi());
+  lifetime.onDispose(() {
+    gMidiAccess?.onstatechange = null;
+    gMidiAccess = null;
+    for (final input in _inputs.values) {
+      input.onmidimessage = null;
+      unawaited(input.close().toDart);
+    }
+    _inputs.clear();
+    gMidiIdToPortIndex.clear();
   });
+  lifetime.own(
+    gConnect.onClick.listen((_) {
+      unawaited(initMidi());
+    }),
+  );
 }

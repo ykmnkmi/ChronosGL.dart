@@ -148,11 +148,11 @@ void main() {
       );
     });
 
-    test('$kind adapter works with RenderProgram.draw and Scene', () {
+    test('$kind adapter works with RenderProgram.draw and RenderBatch', () {
       final canvas = web.HTMLCanvasElement()
         ..width = 2
         ..height = 2;
-      final cgl = ChronosGL(canvas, antialiasing: false);
+      final cgl = ChronosGL.fromCanvas(canvas, antialiasing: false);
       addTearDown(() {
         (cgl.getExtension('WEBGL_lose_context') as web.WEBGL_lose_context?)
             ?.loseContext();
@@ -160,20 +160,25 @@ void main() {
       cgl.viewport(0, 0, 2, 2);
       cgl.disable(glDepthTest);
       cgl.disable(glDither);
-      final vertex = ShaderObject('camera-v')
+      final vertex = ShaderObject.vertex('camera-v')
         ..addAttributeVars([aPosition])
         ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
         ..setBodyWithMain([
           'gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4($aPosition, 1.0);',
         ]);
-      final fragment = ShaderObject('camera-f')
+      final fragment = ShaderObject.fragment('camera-f')
         ..addUniformVars([uEyePosition])
         ..setBodyWithMain([
           '$oFragColor = vec4($uEyePosition.z / 40.0, 0.0, 0.0, 1.0);',
         ]);
-      final program = RenderProgram('camera', cgl, vertex, fragment);
+      final program = RenderProgram.create(
+        name: 'camera',
+        context: cgl,
+        vertexShader: vertex,
+        fragmentShader: fragment,
+      );
       addTearDown(program.dispose);
-      final mesh = program.makeMeshData('triangle', glTriangles)
+      final mesh = program.makeGpuMesh('triangle', glTriangles)
         ..addVertices(
           Float32List.fromList([-100, -100, 0, 300, -100, 0, -100, 300, 0]),
         );
@@ -199,12 +204,12 @@ void main() {
       program.draw(mesh, groups);
       expectRed(128);
       expect(groups, [adapter, transforms]);
-      final scene = Scene(
+      final scene = RenderBatch(
         'camera',
         program,
         List<UniformGroup>.unmodifiable([adapter]),
-      )..add(Node('triangle', mesh, Material.empty('material')));
-      final phase = RenderPhase('camera', cgl)
+      )..add(MeshNode('triangle', mesh, Material.empty('material')));
+      final phase = RenderPass('camera', cgl)
         ..viewPortW = 2
         ..viewPortH = 2
         ..add(scene);

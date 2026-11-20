@@ -9,19 +9,23 @@ import '../shared/particles.dart';
 import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 // http://www.bidouille.org/prog/plasma
 // see also: https://www.shadertoy.com/view/XdX3Wn
 // and http://iq12.com/2013/04/fifty-shaders-of-grey/
 
 // TODO: Add www.shadertoy.com/view/4dlGDN www.shadertoy.com/view/lsfGzr
 
-final ShaderObject plasmaVertexShader1 = ShaderObject("Plasma1V")
+final ShaderObject plasmaVertexShader1 = ShaderObject.vertex("Plasma1V")
   ..addAttributeVars([aPosition, aTexUV])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
   ..addVaryingVars([vTexUV])
   ..setBody([stdVertexShaderWithTextureForwardString]);
 
-final ShaderObject plasmaFragmentShader1 = ShaderObject("Plasma1F")
+final ShaderObject plasmaFragmentShader1 = ShaderObject.fragment("Plasma1F")
   ..addVaryingVars([vTexUV])
   ..addUniformVars([uTime])
   ..setBody([
@@ -47,13 +51,13 @@ void main() {
 """,
   ]);
 
-final ShaderObject plasmaVertexShader2 = ShaderObject("Plasma2V")
+final ShaderObject plasmaVertexShader2 = ShaderObject.vertex("Plasma2V")
   ..addAttributeVars([aPosition, aTexUV])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
   ..addVaryingVars([vTexUV])
   ..setBody([stdVertexShaderWithTextureForwardString]);
 
-final ShaderObject plasmaFragmentShader2 = ShaderObject("Plasma2F")
+final ShaderObject plasmaFragmentShader2 = ShaderObject.fragment("Plasma2F")
   ..addVaryingVars([vTexUV])
   ..addUniformVars([uTime])
   ..setBody([
@@ -69,13 +73,13 @@ void main() {
   """,
   ]);
 
-final ShaderObject plasmaVertexShader3 = ShaderObject("Plasma3V")
+final ShaderObject plasmaVertexShader3 = ShaderObject.vertex("Plasma3V")
   ..addAttributeVars([aPosition, aTexUV])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
   ..addVaryingVars([vTexUV])
   ..setBody([stdVertexShaderWithTextureForwardString]);
 
-final ShaderObject plasmaFragmentShader3 = ShaderObject("Plasma3F")
+final ShaderObject plasmaFragmentShader3 = ShaderObject.fragment("Plasma3F")
   ..addVaryingVars([vTexUV])
   ..addUniformVars([uTime])
   ..setBody([
@@ -95,66 +99,114 @@ void main() {
   """,
   ]);
 
-Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
-  Scene scene = Scene(
-    "stars",
-    RenderProgram(
+RenderBatch makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
+  RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
       "stars",
-      cgl,
-      pointSpritesVertexShader,
-      pointSpritesFragmentShader,
+      lifetime.own(
+        RenderProgram.create(
+          name: "stars",
+          context: cgl,
+          vertexShader: pointSpritesVertexShader,
+          fragmentShader: pointSpritesFragmentShader,
+        ),
+      ),
+      [perspective],
     ),
-    [perspective],
   );
   scene.add(makeParticles(scene.program, num, random: math.Random()));
   return scene;
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  OrbitCamera orbit = OrbitCamera(65.0, 0.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 65.0,
+      azimuth: 0.0,
+      polar: 0.0,
+    ),
+  );
+  CameraUniforms perspective = CameraUniforms(camera);
 
-  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
-    "main",
-    cgl,
-    canvas,
-    perspective,
+  final RenderPass phase = lifetime.ownPass(RenderPass("main", cgl));
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
   );
   // A scene is tied to a single shader, so we must create a separate
   // shader for each plasma type.
-  List<Scene> scenes = [
-    Scene(
-      "plasma1",
-      RenderProgram("plasma1", cgl, plasmaVertexShader1, plasmaFragmentShader1),
-      [perspective],
+  List<RenderBatch> scenes = [
+    lifetime.ownBatch(
+      RenderBatch(
+        "plasma1",
+        lifetime.own(
+          RenderProgram.create(
+            name: "plasma1",
+            context: cgl,
+            vertexShader: plasmaVertexShader1,
+            fragmentShader: plasmaFragmentShader1,
+          ),
+        ),
+        [perspective],
+      ),
     ),
-    Scene(
-      "plasma2",
-      RenderProgram("plasma2", cgl, plasmaVertexShader2, plasmaFragmentShader2),
-      [perspective],
+    lifetime.ownBatch(
+      RenderBatch(
+        "plasma2",
+        lifetime.own(
+          RenderProgram.create(
+            name: "plasma2",
+            context: cgl,
+            vertexShader: plasmaVertexShader2,
+            fragmentShader: plasmaFragmentShader2,
+          ),
+        ),
+        [perspective],
+      ),
     ),
-    Scene(
-      "plasma3",
-      RenderProgram("plasma3", cgl, plasmaVertexShader3, plasmaFragmentShader3),
-      [perspective],
+    lifetime.ownBatch(
+      RenderBatch(
+        "plasma3",
+        lifetime.own(
+          RenderProgram.create(
+            name: "plasma3",
+            context: cgl,
+            vertexShader: plasmaVertexShader3,
+            fragmentShader: plasmaFragmentShader3,
+          ),
+        ),
+        [perspective],
+      ),
     ),
   ];
-  for (Scene s in scenes) {
+  for (RenderBatch s in scenes) {
     phase.add(s);
   }
 
-  Material mat = Material("mat");
-  MeshData md = shapeCube(scenes[0].program, x: 10.0, y: 10.0, z: 10.0);
+  Material mat = lifetime.own(Material("mat"));
+  GpuMesh md = lifetime.own(
+    shapeCube(scenes[0].program, x: 10.0, y: 10.0, z: 10.0),
+  );
 
-  Node cube = Node(md.name, md, mat)
+  Node cube = MeshNode(md.name, md, mat)
     ..setPos(0.0, 0.0, 0.0)
     ..lookUp(1.0)
     ..lookLeft(0.7);
@@ -165,43 +217,55 @@ void main() {
   scenes[activeScene].add(cube);
 
   // Advance scene when an arbitrary key is pressed
-  web.EventStreamProviders.keyPressEvent.forTarget(web.document).listen((
-    event,
-  ) {
-    scenes[activeScene % 3].remove(cube);
-    scenes[(activeScene + 1) % 3].add(cube);
-    activeScene = (activeScene + 1) % 3;
-  });
+  lifetime.own(
+    web.EventStreamProviders.keyPressEvent.forTarget(web.document).listen((
+      event,
+    ) {
+      scenes[activeScene % 3].remove(cube);
+      scenes[(activeScene + 1) % 3].add(cube);
+      activeScene = (activeScene + 1) % 3;
+    }),
+  );
 
   // Chose a specific scene
   web.HTMLSelectElement myselect =
       web.document.querySelector('#myselect') as web.HTMLSelectElement;
-  myselect.onChange.listen((web.Event e) {
-    scenes[activeScene].remove(cube);
-    activeScene = myselect.selectedIndex;
-    scenes[(activeScene)].add(cube);
-  });
+  lifetime.own(
+    myselect.onChange.listen((web.Event e) {
+      scenes[activeScene].remove(cube);
+      activeScene = myselect.selectedIndex;
+      scenes[(activeScene)].add(cube);
+    }),
+  );
 
   phase.add(makeStarScene(cgl, perspective, 2000));
 
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
 
     cube.rollLeft(elapsed * 0.0005);
     cube.lookLeft(elapsed * 0.0005);
     mat.forceUniform(uTime, timeMs / 1000.0);
 
     phase.draw();
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

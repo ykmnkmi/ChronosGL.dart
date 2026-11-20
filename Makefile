@@ -68,10 +68,10 @@ presubmit: tests buildall
 
 
 
-#@ documentation - Extract the class_glossary.md files from the source
+#@ documentation - Generate API reference pages in build/api/
 #@
 documentation:
-	dart  tool/generate_documentation.dart > class_glossary.md
+	dart doc --output=build/api
 
 ############################################################
 # TESTING

@@ -5,6 +5,10 @@ import 'package:chronosgl/debug.dart';
 
 import 'package:web/web.dart' as web;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const String uFlameHeight = "uFlameHeight";
 const String uFlameWidth = "uFlameWidth";
 const String uFlameTurbulence = "uFlameTurbulence";
@@ -15,11 +19,11 @@ const String uRandomSeed = "uRandomSeed";
 // Background:
 // http://lodev.org/cgtutor/fire.html
 
-final ShaderObject nullVertexShader = ShaderObject("nullShaderV")
+final ShaderObject nullVertexShader = ShaderObject.vertex("nullShaderV")
   ..addAttributeVars([aPosition])
   ..setBody([nullVertexShaderString]);
 
-final ShaderObject fireFragmentShader = ShaderObject("fireShaderF")
+final ShaderObject fireFragmentShader = ShaderObject.fragment("fireShaderF")
   ..addUniformVars([
     uTexture,
     uFlameThrottle,
@@ -61,7 +65,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject colorFragmentShader = ShaderObject("colorShaderF")
+final ShaderObject colorFragmentShader = ShaderObject.fragment("colorShaderF")
   ..addUniformVars([uTexture])
   ..setBody([
     colorFunctions,
@@ -87,10 +91,12 @@ void main() {
 
   introduceNewShaderVar(uRandomSeed, const ShaderVarDesc("float", ""));
 
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
@@ -99,52 +105,50 @@ void main() {
   canvas.width = w;
   canvas.height = h;
 
-  final ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  final Framebuffer screen = Framebuffer.screen(cgl);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  final Framebuffer screen = lifetime.own(Framebuffer.screen(cgl));
 
-  final TypedTextureMutable t1 = TypedTextureMutable(
-    cgl,
-    "t1",
-    w,
-    h,
-    glRgba,
-    texturePropertiesFramebuffer,
-    glRgba,
-    glUnsignedByte,
-    null,
+  final TypedTextureMutable t1 = lifetime.own(
+    TypedTextureMutable(
+      cgl,
+      "t1",
+      w,
+      h,
+      glRgba,
+      texturePropertiesFramebuffer,
+      glRgba,
+      glUnsignedByte,
+      null,
+    ),
   );
 
-  final TypedTextureMutable t2 = TypedTextureMutable(
-    cgl,
-    "t2",
-    w,
-    h,
-    glRgba,
-    texturePropertiesFramebuffer,
-    glRgba,
-    glUnsignedByte,
-    null,
+  final TypedTextureMutable t2 = lifetime.own(
+    TypedTextureMutable(
+      cgl,
+      "t2",
+      w,
+      h,
+      glRgba,
+      texturePropertiesFramebuffer,
+      glRgba,
+      glUnsignedByte,
+      null,
+    ),
   );
 
-  final RenderProgram programFire = RenderProgram(
-    "fire",
-    cgl,
-    nullVertexShader,
-    fireFragmentShader,
+  final RenderProgram programFire = lifetime.own(
+    RenderProgram("fire", cgl, nullVertexShader, fireFragmentShader),
   );
 
-  final RenderProgram programColor = RenderProgram(
-    "color",
-    cgl,
-    nullVertexShader,
-    colorFragmentShader,
+  final RenderProgram programColor = lifetime.own(
+    RenderProgram("color", cgl, nullVertexShader, colorFragmentShader),
   );
 
-  final MeshData unit = shapeQuad(programFire, 1);
+  final GpuMesh unit = lifetime.own(shapeQuad(programFire, 1));
 
   // Set up Ping-Ponging
-  final Framebuffer fb1 = Framebuffer(cgl, t1);
-  final Framebuffer fb2 = Framebuffer(cgl, t2);
+  final Framebuffer fb1 = lifetime.own(Framebuffer(cgl, t1));
+  final Framebuffer fb2 = lifetime.own(Framebuffer(cgl, t2));
   final UniformGroup ug = UniformGroup("ug")
     ..forceUniform(uRandomSeed, 0.0)
     ..forceUniform(uFlameTurbulence, 0.2)
@@ -157,16 +161,18 @@ void main() {
     web.document.getElementsByTagName("input"),
   )) {
     web.HTMLElement input = node as web.HTMLElement;
-    input.onChange.listen((web.Event e) {
-      web.HTMLInputElement input = e.target as web.HTMLInputElement;
-      if (input.type == "range") {
-        web.HTMLOutputElement output = web.document.getElementById(
-          "${input.id}2",
-        ) as web.HTMLOutputElement;
-        ug.forceUniform(input.id, double.parse(input.value));
-        output.value = input.value;
-      }
-    });
+    lifetime.own(
+      input.onChange.listen((web.Event e) {
+        web.HTMLInputElement input = e.target as web.HTMLInputElement;
+        if (input.type == "range") {
+          web.HTMLOutputElement output = web.document.getElementById(
+            "${input.id}2",
+          ) as web.HTMLOutputElement;
+          ug.forceUniform(input.id, double.parse(input.value));
+          output.value = input.value;
+        }
+      }),
+    );
   }
 
   // Trigger handlers
@@ -181,6 +187,7 @@ void main() {
   int frame = 0;
   late final JSFunction onFrame;
   void animate(double timeMs) {
+    if (lifetime.isDisposed) return;
     lastTimeMs = timeMs + 0.0;
     frame++;
     ug.forceUniform(uRandomSeed, lastTimeMs);
@@ -201,11 +208,11 @@ void main() {
       programColor.draw(unit, [ug]);
     }
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs, "$frame");
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

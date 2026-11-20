@@ -1,7 +1,7 @@
 @TestOn("vm")
 library;
 
-import 'package:chronosgl/src/polygon/lib.dart';
+import 'package:chronosgl/geometry.dart';
 import "package:test/test.dart";
 import 'package:vector_math/vector_math.dart' as vm;
 

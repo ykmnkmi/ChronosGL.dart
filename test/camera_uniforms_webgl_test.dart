@@ -63,7 +63,7 @@ class Fixture {
     final canvas = web.HTMLCanvasElement()
       ..width = 2
       ..height = 2;
-    cgl = ChronosGL(canvas, antialiasing: false);
+    cgl = ChronosGL.fromCanvas(canvas, antialiasing: false);
     addTearDown(() {
       (cgl.getExtension('WEBGL_lose_context') as web.WEBGL_lose_context?)
           ?.loseContext();
@@ -71,20 +71,25 @@ class Fixture {
     gl = canvas.getContext('webgl2') as web.WebGL2RenderingContext;
     cgl.viewport(0, 0, 2, 2);
     cgl.disable(glDepthTest);
-    final vertex = ShaderObject('camera readback-v')
+    final vertex = ShaderObject.vertex('camera readback-v')
       ..addAttributeVars([aPosition])
       ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
       ..setBodyWithMain([
         'gl_Position = $uPerspectiveViewMatrix * $uModelMatrix * vec4($aPosition, 1.0);',
       ]);
-    final fragment = ShaderObject('camera readback-f')
+    final fragment = ShaderObject.fragment('camera readback-f')
       ..addUniformVars([uEyePosition])
       ..setBodyWithMain([
         '$oFragColor = vec4(abs($uEyePosition) / vec3(16.0, 32.0, 64.0), 1.0);',
       ]);
-    program = RenderProgram('camera readback', cgl, vertex, fragment);
+    program = RenderProgram.create(
+      name: 'camera readback',
+      context: cgl,
+      vertexShader: vertex,
+      fragmentShader: fragment,
+    );
     addTearDown(program.dispose);
-    mesh = program.makeMeshData('triangle', glTriangles)
+    mesh = program.makeGpuMesh('triangle', glTriangles)
       ..addVertices(Float32List.fromList([-1, -1, 0, 1, -1, 0, 0, 1, 0]));
     addTearDown(mesh.dispose);
   }
@@ -92,7 +97,7 @@ class Fixture {
   late final ChronosGL cgl;
   late final web.WebGL2RenderingContext gl;
   late final RenderProgram program;
-  late final MeshData mesh;
+  late final GpuMesh mesh;
 
   final model = UniformGroup('model')
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
@@ -181,7 +186,7 @@ void main() {
     });
 
     test(
-      '$kind Scene keeps camera uniforms separate from object transforms',
+      '$kind RenderBatch keeps camera uniforms separate from object transforms',
       () {
         final fixture = Fixture();
         final eye = vm.Vector3(3, -4, 12);
@@ -190,17 +195,20 @@ void main() {
           ..setPositionFromVector(eye)
           ..lookAt(target);
         final adapter = CameraUniforms(camera);
-        final child = Node('triangle', fixture.mesh, Material.empty('material'))
-          ..setPos(1, 2, 3);
-        final parent = Node.container('parent', child)
+        final child = MeshNode(
+          'triangle',
+          fixture.mesh,
+          Material.empty('material'),
+        )..setPos(1, 2, 3);
+        final parent = GroupNode('parent', child)
           ..setPos(2, 0, -1)
           ..rotY(0.3);
-        final scene = Scene(
+        final scene = RenderBatch(
           'scene',
           fixture.program,
           List<UniformGroup>.unmodifiable([adapter]),
         )..add(parent);
-        final phase = RenderPhase('camera readback', fixture.cgl)
+        final phase = RenderPass('camera readback', fixture.cgl)
           ..viewPortW = 2
           ..viewPortH = 2
           ..add(scene);

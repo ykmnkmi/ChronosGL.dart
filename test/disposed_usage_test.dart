@@ -155,7 +155,6 @@ void main() {
 
   final helpers = <String, void Function(RenderProgram, MeshData)>{
     'extractWireframeNormals': (p, m) => extractWireframeNormals(p, m),
-    'extractWireframe': (p, m) => extractWireframe(p, m),
     'extractPointCloud': (p, m) => extractPointCloud(p, m, 1),
     'getMeshFaceArea': (_, m) => getMeshFaceArea(m),
   };

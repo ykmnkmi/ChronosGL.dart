@@ -6,22 +6,27 @@ import 'dart:typed_data';
 
 import 'package:chronosgl/chronosgl.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const int kDim = 500;
 
-final ShaderObject computeVertexShader = ShaderObject("computeVertexShader")
-  ..addAttributeVars([aPosition])
-  ..setBody([nullVertexShaderString]);
+final ShaderObject computeVertexShader =
+    ShaderObject.vertex("computeVertexShader")
+      ..addAttributeVars([aPosition])
+      ..setBody([nullVertexShaderString]);
 
-final ShaderObject computeFragmentShader = ShaderObject("computeFragmentShader")
-  ..setBody([
-    """
+final ShaderObject computeFragmentShader =
+    ShaderObject.fragment("computeFragmentShader")..setBody([
+      """
 void main() { 
     $oFragColor.b = gl_FragCoord.x / $kDim.0;
     $oFragColor.g = gl_FragCoord.y / $kDim.0;
     $oFragColor.r = 0.0;
 }
     """,
-  ]);
+    ]);
 
 String extractAndSummarizeBytes(Framebuffer fb, int w, int h) {
   Uint8List buf = fb.extractByteData(null, 0, 0, w, h);
@@ -67,19 +72,18 @@ void main() {
     ..width = kDim
     ..height = kDim;
 
-  final ChronosGL cgl = ChronosGL(canvas);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
 
-  final RenderProgram program = RenderProgram(
-    "program",
-    cgl,
-    computeVertexShader,
-    computeFragmentShader,
+  final RenderProgram program = lifetime.own(
+    RenderProgram("program", cgl, computeVertexShader, computeFragmentShader),
   );
 
-  final MeshData unitQuad = shapeQuad(program, 1);
+  final GpuMesh unitQuad = lifetime.own(shapeQuad(program, 1));
 
   {
-    final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, kDim, kDim);
+    final Framebuffer fb = lifetime.own(
+      Framebuffer.defaultFramebuffer(cgl, kDim, kDim),
+    );
 
     results.insertAdjacentHTML(
       'beforeend',
@@ -104,16 +108,18 @@ void main() {
       );
       return;
     }
-    TypedTexture tex = TypedTexture(
-      cgl,
-      "float",
-      kDim,
-      kDim,
-      glRgba32f,
-      texturePropertiesFramebuffer,
+    TypedTexture tex = lifetime.own(
+      TypedTexture(
+        cgl,
+        "float",
+        kDim,
+        kDim,
+        glRgba32f,
+        texturePropertiesFramebuffer,
+      ),
     );
 
-    Framebuffer fb = Framebuffer(cgl, tex);
+    Framebuffer fb = lifetime.own(Framebuffer(cgl, tex));
     fb.activate(glClearAll, 0, 0, kDim, kDim);
     program.draw(unitQuad, []);
     results.appendChild(

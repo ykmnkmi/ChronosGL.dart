@@ -24,7 +24,7 @@ th.active {
 </head>
 <h1> ChronosGL Examples</h1>
 <p>
-    <iframe id='iframe' width="100%" height="750" src="animation/animation.html"></iframe>
+    <iframe id='iframe' width="100%" height="750" src="minimal/minimal.html"></iframe>
 </p>
 <b>
     <button id="next">&darr;</button>
@@ -51,7 +51,7 @@ As of version 3.0.0 ChronosGL requires <b>WebGL2</b>.
 <p>
     To serve this page and the examples straight from the
     checked-out source run
-    <tt>$ pub serve --web-compiler dartdevc example/</tt>
+    <tt>dart run build_runner serve example:8080</tt>
 </p>
 
 If there are problems check the <b>JavaScript console</b> for output.
@@ -60,19 +60,20 @@ If there are problems check the <b>JavaScript console</b> for output.
 More info at <a href="http://chronosteam.github.io/ChronosGL/">main project page</a>
 
 Code for all examples can be found at
-<a href="https://github.com/ChronosTeam/ChronosGL/tree/master/example">
-    https://github.com/ChronosTeam/ChronosGL/tree/master/example
+<a href="https://github.com/ykmnkmi/ChronosGL.dart/tree/master/example">
+    https://github.com/ykmnkmi/ChronosGL.dart/tree/master/example
 </a>
 
 <script type="text/javascript">
 "use strict";
 
-let URL_CODE_PREFIX = "https://github.com/ChronosTeam/ChronosGL/blob/master/example/";
+let URL_CODE_PREFIX = "https://github.com/ykmnkmi/ChronosGL.dart/blob/master/example/";
 
 let table = document.getElementById("examples");
 let iframe = document.getElementById("iframe");
 
 let examples = [
+  ["minimal", "Minimal scene", "camera, controls, viewport, resource disposal"],
   ["simple", "Simple Example", "basics"],
   //
   ["animation", "Animation", "scenegraph, animation, assimp2json import"],
@@ -134,7 +135,8 @@ function populateExamples() {
     for (let e of examples) {
         s.push(`<tr>`);
         s.push(`<th name='ex's data-param=${n}>${e[1]}</th>`);
-        let code_url = URL_CODE_PREFIX + e[0] + '/' + e[0] + ".dart";
+        let dart_name = e[0] === "generateNormals" ? "generate_normals" : e[0];
+        let code_url = URL_CODE_PREFIX + e[0] + '/' + dart_name + ".dart";
         let pop_out_url =  e[0] + '/' + e[0] + ".html";
         s.push(`<td><a href="${code_url}">[code]</a> &nbsp; <a href="${pop_out_url}">[&#8599;]
 </a></td>`);

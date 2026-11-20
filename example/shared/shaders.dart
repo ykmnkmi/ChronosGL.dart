@@ -3,7 +3,7 @@ library;
 
 import 'package:chronosgl/chronosgl.dart';
 
-final ShaderObject demoVertexShader = ShaderObject("FixedVertexColorV")
+final ShaderObject demoVertexShader = ShaderObject.vertex("FixedVertexColorV")
   ..addAttributeVars([aPosition])
   ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix])
   ..addVaryingVars([vColor])
@@ -12,6 +12,7 @@ final ShaderObject demoVertexShader = ShaderObject("FixedVertexColorV")
     prolog: [stdLibShader],
   );
 
-final ShaderObject demoFragmentShader = ShaderObject("FixedVertexColorF")
-  ..addVaryingVars([vColor])
-  ..setBodyWithMain(["$oFragColor = vec4( $vColor, 1.0 );"]);
+final ShaderObject demoFragmentShader =
+    ShaderObject.fragment("FixedVertexColorF")
+      ..addVaryingVars([vColor])
+      ..setBodyWithMain(["$oFragColor = vec4( $vColor, 1.0 );"]);

@@ -51,7 +51,7 @@ web.HTMLCanvasElement _canvas([String width = '80px', String height = '40px']) {
 }
 
 ChronosGL _context(web.HTMLCanvasElement canvas) {
-  final cgl = ChronosGL(canvas, antialiasing: false);
+  final cgl = ChronosGL.fromCanvas(canvas, antialiasing: false);
   addTearDown(() {
     final extension = cgl.getExtension('WEBGL_lose_context');
     if (extension != null) (extension as web.WEBGL_lose_context).loseContext();
@@ -74,7 +74,7 @@ void main() {
     final canvas = _canvas();
     final cgl = _context(canvas);
     final camera = _camera()..setPosition(1, 2, 3);
-    final phase = RenderPhase('screen', cgl);
+    final phase = RenderPass('screen', cgl);
     final viewport = CanvasViewport(
       cgl,
       canvas,
@@ -137,7 +137,7 @@ void main() {
       final canvas = _canvas();
       final cgl = _context(canvas);
       final camera = _camera();
-      final phase = RenderPhase('screen', cgl);
+      final phase = RenderPass('screen', cgl);
       final viewport = CanvasViewport(
         cgl,
         canvas,
@@ -174,7 +174,7 @@ void main() {
       final canvas = _canvas();
       final cgl = _context(canvas);
       final camera = _camera();
-      final phase = RenderPhase('screen', cgl);
+      final phase = RenderPass('screen', cgl);
       final viewport = CanvasViewport(
         cgl,
         canvas,
@@ -259,7 +259,7 @@ void main() {
     final canvas = _canvas();
     final cgl = _context(canvas);
     final camera = _camera();
-    final phase = RenderPhase('screen', cgl);
+    final phase = RenderPass('screen', cgl);
     final viewport = CanvasViewport(
       cgl,
       canvas,

@@ -6,6 +6,10 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 final web.HTMLInputElement gLuminance =
     web.document.querySelector('#luminance') as web.HTMLInputElement;
 final web.HTMLInputElement gIntensity =
@@ -22,27 +26,37 @@ class BloomEffect {
     this.fbOut,
   ) : wSmall = w ~/ scale,
       hSmall = h ~/ scale,
-      fb1 = Framebuffer.defaultFramebuffer(cgl, w ~/ scale, h ~/ scale),
-      fb2 = Framebuffer.defaultFramebuffer(cgl, w ~/ scale, h ~/ scale) {
-    progHighPass = RenderProgram(
-      "highpass",
-      cgl,
-      uvPassthruVertexShader,
-      scaledLuminosityHighPassFragmentShader,
+      fb1 = lifetime.own(
+        Framebuffer.defaultFramebuffer(cgl, w ~/ scale, h ~/ scale),
+      ),
+      fb2 = lifetime.own(
+        Framebuffer.defaultFramebuffer(cgl, w ~/ scale, h ~/ scale),
+      ) {
+    progHighPass = lifetime.own(
+      RenderProgram(
+        "highpass",
+        cgl,
+        uvPassthruVertexShader,
+        scaledLuminosityHighPassFragmentShader,
+      ),
     );
 
-    progBloom = RenderProgram(
-      "bloom",
-      cgl,
-      uvPassthruVertexShader,
-      createBloomTextureFragmentShader(radius, radius * 1.0),
+    progBloom = lifetime.own(
+      RenderProgram(
+        "bloom",
+        cgl,
+        uvPassthruVertexShader,
+        createBloomTextureFragmentShader(radius, radius * 1.0),
+      ),
     );
 
-    progApplyBloom = RenderProgram(
-      "bloom",
-      cgl,
-      uvPassthruVertexShader,
-      applyBloomEffectFragmentShader,
+    progApplyBloom = lifetime.own(
+      RenderProgram(
+        "bloom",
+        cgl,
+        uvPassthruVertexShader,
+        applyBloomEffectFragmentShader,
+      ),
     );
 
     assert(
@@ -53,7 +67,7 @@ class BloomEffect {
       progApplyBloom.hasCompatibleAttributesTo(progBloom),
       "bloom incompatible attributes",
     );
-    unitQuad = shapeQuad(progApplyBloom, 1);
+    unitQuad = lifetime.own(shapeQuad(progApplyBloom, 1));
 
     // Note: the input uTexture varies between the various UniformGroups
     uniformsHighPass = UniformGroup("uniformsHighPass")
@@ -88,9 +102,14 @@ class BloomEffect {
       uniformsBloomH,
       uniformsBloomV,
       uniformsApply;
-  late MeshData unitQuad;
+  late GpuMesh unitQuad;
 
-  void draw(double luminosity, double intensity) {
+  void draw(
+    double luminosity,
+    double intensity, {
+    required int outputWidth,
+    required int outputHeight,
+  }) {
     // Copy high intensity areas from fb to fb2
     fb2.activate(glClearAll, 0, 0, wSmall, hSmall);
     uniformsHighPass.forceUniform(
@@ -108,67 +127,97 @@ class BloomEffect {
     progBloom.draw(unitQuad, [uniformsBloomV]);
 
     // Put all together: combine un-bloomed fb with fb2 and show result on screen
-    fbOut.activate(glClearAll, 0, 0, w, h);
+    fbOut.activate(glClearAll, 0, 0, outputWidth, outputHeight);
     uniformsApply.forceUniform(uScale, intensity);
     progApplyBloom.draw(unitQuad, [uniformsApply]);
   }
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  OrbitCamera orbit = OrbitCamera(165.0, 0.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 165.0,
+      azimuth: 0.0,
+      polar: 0.0,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
 
   final width = canvas.clientWidth;
   final height = canvas.clientHeight;
   canvas.width = width;
   canvas.height = height;
-  perspective.adjustAspect(width, height);
 
-  final Framebuffer screen = Framebuffer.screen(cgl);
-  final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, width, height);
-
-  final RenderProgram progPerlinNoise = RenderProgram(
-    "perlin",
-    cgl,
-    perlinNoiseVertexShader,
-    makePerlinNoiseColorFragmentShader(true),
+  final Framebuffer screen = lifetime.own(Framebuffer.screen(cgl));
+  final Framebuffer fb = lifetime.own(
+    Framebuffer.defaultFramebuffer(cgl, width, height),
   );
 
-  final Material material = Material("mat")
+  final RenderProgram progPerlinNoise = lifetime.own(
+    RenderProgram(
+      "perlin",
+      cgl,
+      perlinNoiseVertexShader,
+      makePerlinNoiseColorFragmentShader(true),
+    ),
+  );
+
+  final Material material = lifetime.own(Material("mat"))
     ..setUniform(uTransformationMatrix, vm.Matrix4.identity())
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
-  final MeshData torus = shapeTorusKnot(progPerlinNoise);
+  final GpuMesh torus = lifetime.own(shapeTorusKnot(progPerlinNoise));
 
   final BloomEffect bloom = BloomEffect(cgl, width, height, 6, 4, fb, screen);
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.01;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.6 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
     material.forceUniform(uTime, timeMs / 1000.0);
 
     // Draw un-bloomed object to fb
     fb.activate(glClearAll, 0, 0, width, height);
     progPerlinNoise.draw(torus, [perspective, material]);
-    bloom.draw(gLuminance.valueAsNumber * 1.0, gIntensity.valueAsNumber * 1.0);
+    bloom.draw(
+      gLuminance.valueAsNumber * 1.0,
+      gIntensity.valueAsNumber * 1.0,
+      outputWidth: canvas.width,
+      outputHeight: canvas.height,
+    );
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

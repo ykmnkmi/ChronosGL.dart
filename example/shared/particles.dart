@@ -11,7 +11,11 @@ import 'package:web/web.dart' as web;
 cg.Texture createParticleTexture(
   cg.ChronosGL cgl, [
   String name = 'example::particles',
-]) => cg.ImageTexture(cgl, name, createParticleCanvas());
+]) => cg.ImageTexture.fromCanvas(
+  context: cgl,
+  name: name,
+  canvas: createParticleCanvas(),
+);
 
 /// Paints a 64 by 64 radial sprite for demonstration particles.
 web.HTMLCanvasElement createParticleCanvas() {

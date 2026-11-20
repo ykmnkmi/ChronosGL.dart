@@ -15,6 +15,73 @@ Run `dart pub get` and `dart analyze` after updating names and imports. For Wasm
 replace all legacy SDK browser imports in your application as well as upgrading
 ChronosGL; legacy DOM compatibility is available only for JavaScript builds.
 
+## Camera semantics and resource lifetimes
+
+Migrate camera pose, input and rendering together. All gallery examples now use
+the supported API; [minimal.dart](example/minimal/minimal.dart) is a standalone
+starting point with explicit cleanup.
+
+| Previous use | Supported replacement |
+| --- | --- |
+| `Spatial` or `OrbitCamera` as the camera | `PerspectiveCamera` or `OrthographicCamera` with a world-space pose |
+| `Perspective(orbit, near, far)` | `CameraUniforms(camera)`, with projection parameters on the camera |
+| `orbit.animate(elapsedMs)` | `controls.update(elapsedMs / 1000)` on `OrbitControls.forCamera` |
+| A fixed orbit increment per frame | Radians per second multiplied by elapsed seconds |
+| `PerspectiveResizeAware`, `RenderPhaseResizeAware` | `CanvasViewport.forCanvas` and an optional screen `RenderPass` |
+| `Node(...)`, `Scene`, `RenderPhase`, `MeshData` | `MeshNode`, `RenderBatch`, `RenderPass`, `GpuMesh` |
+| Upload helpers named `geometryBuilderToMeshData*` | `uploadGeometry`, `uploadWireframeGeometry` |
+
+Camera matrices describe distinct coordinate changes. `worldMatrix` maps
+camera-local coordinates to world coordinates; `viewMatrix` is its inverse;
+`viewProjectionMatrix` is `projection * view`. `lookAt(target)` changes only
+orientation and preserves the world eye position. `CameraUniforms` sends that
+position as `uEyePosition`, independent of the view matrix's translation.
+
+The legacy `Spatial.lookAt` path also preserves its local/world pose now.
+If application code previously treated `spatial.transform` after `lookAt()` as
+a view matrix, call `getViewMatrix(output)` or migrate to `camera.viewMatrix`.
+The output must not alias the spatial's matrix storage. Lighting and reflections
+that relied on the previous incorrect eye position can change; do not compensate
+by moving the camera or negating the uploaded world eye.
+
+New camera, projection and transform reads return independent snapshots.
+Mutating `camera.worldPosition`, `camera.worldMatrix` or `transform.matrix`
+does not edit their owners. Use `setPosition`, `setRotation`, `setProjection`,
+`lookAt` and transform setters; copy into caller-owned matrices with `copy*Into`
+methods. Legacy `Spatial.transform` remains writable for scene objects.
+
+Programs, GPU meshes, textures and framebuffers have explicit, repeat-safe
+`dispose()` operations. Passes, batches, nodes, programs and materials borrow
+their supplied resources. Removing a node or replacing a material does not
+dispose a shared mesh or texture. Factory-created meshes belong to the caller.
+Framebuffers created with `defaultFramebuffer`/`effect` own their attachments;
+external attachments are borrowed unless transferred explicitly. Dispose
+diagnostic visualizers before the resources they borrow.
+
+At teardown, stop animation frames and asynchronous callbacks, detach controls
+with `await controls.dispose()`, disconnect the viewport and dispose owned GPU
+resources after their last consumer. Stop media tracks and close MIDI ports
+owned by an application. Asynchronous asset callbacks must check whether their
+scene is still alive before creating resources or drawing. The gallery's
+`example/shared/lifetime.dart` implements this policy with explicit registration.
+Its `ownPass` and `ownBatch` opt into ownership of reachable resources; this is
+an example helper and does not alter engine borrowing contracts. Register
+removed or replaced resources separately so teardown can still find them.
+
+### Legacy DOM compatibility
+
+Use `package:web` for new browser code. Typed constructors include
+`ChronosGL.fromCanvas`, `ImageTexture.fromCanvas/fromImage/fromVideo`,
+`Keyboard.forTarget`, `Mouse.forTarget`, `OrbitControls.forCamera`,
+`CanvasViewport.forCanvas`, `StatsPanel.attach` and `FpsPanel.attach`.
+The previous Object-based context, texture, input, panel, orbit and resize
+constructors remain deprecated migration adapters. They accept legacy SDK DOM
+objects only in JavaScript; they do not make `dart:html`, `dart:web_gl` or other
+SDK browser libraries available to Wasm applications. Use `dart:js_interop`
+callbacks/promises and `package:web` throughout the application and its browser
+dependencies before selecting `dart2wasm`. CPU imports such as `core.dart` and
+`camera.dart` remain usable on the Dart VM without these browser dependencies.
+
 ## Supported public API (refactoring phase 7)
 
 Import supported modules rather than implementation paths under `src/`:
@@ -748,7 +815,14 @@ dart analyze
 dart test -P all
 dart test -P all -p golden_chrome -c dart2wasm
 dart run tool/goldens.dart --self-check
+dart run build_runner build --release --output=example:build/example
 ```
+
+These are release checks for a complete migration. For routine development,
+select the affected suites as described in [README.md](README.md#tests-and-rendering-goldens).
+The self-check uses deliberately changed renders to confirm regression detection;
+it does not accept new reference images. Reference updates require a separate
+explicit decision and visual review.
 
 The legacy DOM compatibility test intentionally retains SDK browser imports
 and runs only with JavaScript. See [the golden test guide](test/goldens/README.md)

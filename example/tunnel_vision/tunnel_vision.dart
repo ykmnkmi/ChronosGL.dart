@@ -10,6 +10,10 @@ import 'package:vector_math/vector_math.dart' as vm;
 
 import 'shader.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const double musicSlowBegin = 95.0;
 const double musicSlowEnd = 123.0;
 
@@ -67,7 +71,7 @@ class TheNodes {
   late Node icoBig;
   late Node icoSmall;
   late Node ctLogo;
-  late Spatial camera;
+  late PerspectiveCamera camera;
   final vm.Vector3 cameraIntroStartPoint = vm.Vector3(60.0, -70.0, 150.0);
   final vm.Vector3 cameraIntroEndPoint = vm.Vector3.zero();
   bool switched = false;
@@ -88,7 +92,7 @@ class TheNodes {
       // icoSmall.enabled = true;
       final double frac = now / 30.0; // 30.0 is close to musicBeatsBegin
       vm.Vector3.mix(cameraIntroStartPoint, cameraIntroEndPoint, frac, _p1);
-      camera.setPosFromVec(_p1);
+      camera.setPositionFromVector(_p1);
       camera.lookAt(cameraIntroEndPoint);
     } else {
       knot.enabled = true;
@@ -99,7 +103,7 @@ class TheNodes {
       final double pos = now / flySpeedDivider - tweenAmount;
       positionInTorus(pos, _p1);
       positionInTorus(pos + cameraTargetDistance, _p2);
-      camera.setPosFromVec(_p1);
+      camera.setPositionFromVector(_p1);
       camera.lookAt(_p2);
     }
 
@@ -150,91 +154,107 @@ void main() {
       web.document.getElementById("webgl-canvas") as web.HTMLCanvasElement;
   final web.HTMLAudioElement musicElement =
       web.document.getElementById("music") as web.HTMLAudioElement;
-  final ChronosGL cgl = ChronosGL(canvas);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
   final theNodes = TheNodes();
 
-  theNodes.camera = Spatial("camera");
+  theNodes.camera = PerspectiveCamera(near: 0.1, far: 1000);
 
-  Perspective perspective = Perspective(theNodes.camera, 0.1, 1000.0);
+  final perspective = CameraUniforms(theNodes.camera);
 
-  final width = canvas.clientWidth;
-  final height = canvas.clientHeight;
-  canvas.width = width;
-  canvas.height = height;
-  perspective.adjustAspect(width, height);
-  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
-    "main",
-    cgl,
-    canvas,
-    perspective,
+  final phase = lifetime.ownPass(RenderPass('main', cgl));
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: theNodes.camera,
+      renderPass: phase,
+    ),
   );
 
-  theNodes.material = Material("matLogo")..setUniform(uFadeFactor, 0.0);
+  theNodes.material = lifetime.own(Material("matLogo"))
+    ..setUniform(uFadeFactor, 0.0);
 
   // =========================================
-  final Scene scenePnvc = Scene("", makeVertexColorShader(cgl), [perspective]);
+  final RenderBatch scenePnvc = lifetime.ownBatch(
+    RenderBatch("", makeVertexColorShader(cgl), [perspective]),
+  );
   phase.add(scenePnvc);
 
-  theNodes.knot = Node(
+  theNodes.knot = MeshNode(
     "knot",
-    shapeTorusKnot(scenePnvc.program, segmentsR: 512, segmentsT: 64),
+    lifetime.own(
+      shapeTorusKnot(scenePnvc.program, segmentsR: 512, segmentsT: 64),
+    ),
     theNodes.material,
   )..enabled = false;
   scenePnvc.add(theNodes.knot);
 
   // =========================================
-  final RenderProgram pncNovertexmovement = RenderProgram(
-    "flying_logo",
-    cgl,
-    perlinNoiseVertexShader,
-    makePerlinNoiseColorFragmentShader(false),
+  final RenderProgram pncNovertexmovement = lifetime.own(
+    RenderProgram.create(
+      name: "flying_logo",
+      context: cgl,
+      vertexShader: perlinNoiseVertexShader,
+      fragmentShader: makePerlinNoiseColorFragmentShader(false),
+    ),
   );
 
-  final Scene scenePncNovertexmovement = Scene("", pncNovertexmovement, [
-    perspective,
-  ]);
+  final RenderBatch scenePncNovertexmovement = lifetime.ownBatch(
+    RenderBatch("", pncNovertexmovement, [perspective]),
+  );
   phase.add(scenePncNovertexmovement);
 
   // =========================================
-  final RenderProgram pncb = RenderProgram(
-    "background",
-    cgl,
-    perlinNoiseVertexShader,
-    makePerlinNoiseColorFragmentShader(true),
+  final RenderProgram pncb = lifetime.own(
+    RenderProgram.create(
+      name: "background",
+      context: cgl,
+      vertexShader: perlinNoiseVertexShader,
+      fragmentShader: makePerlinNoiseColorFragmentShader(true),
+    ),
   );
 
-  final Scene scenePncb = Scene("", pncb, [perspective]);
+  final RenderBatch scenePncb = lifetime.ownBatch(
+    RenderBatch("", pncb, [perspective]),
+  );
   phase.add(scenePncb);
 
-  theNodes.icoBig = Node(
+  theNodes.icoBig = MeshNode(
     "large_sphere",
-    shapeIcosahedron(scenePncb.program, subdivisions: 3, scale: 500),
+    lifetime.own(
+      shapeIcosahedron(scenePncb.program, subdivisions: 3, scale: 500),
+    ),
     theNodes.material,
   )..enabled = false;
   scenePncb.add(theNodes.icoBig);
 
   // =========================================
-  final RenderProgram pnc = RenderProgram(
-    "flying_deformaning_ball",
-    cgl,
-    deformingPerlinNoiseVertexShader,
-    makePerlinNoiseColorFragmentShader(false),
+  final RenderProgram pnc = lifetime.own(
+    RenderProgram.create(
+      name: "flying_deformaning_ball",
+      context: cgl,
+      vertexShader: deformingPerlinNoiseVertexShader,
+      fragmentShader: makePerlinNoiseColorFragmentShader(false),
+    ),
   );
 
-  final Scene scenePnc = Scene("", pnc, [perspective]);
+  final RenderBatch scenePnc = lifetime.ownBatch(
+    RenderBatch("", pnc, [perspective]),
+  );
   phase.add(scenePnc);
-  theNodes.icoSmall = Node(
+  theNodes.icoSmall = MeshNode(
     "small_sphere",
-    shapeIcosahedron(scenePnc.program, subdivisions: 4),
+    lifetime.own(shapeIcosahedron(scenePnc.program, subdivisions: 4)),
     theNodes.material,
   )..enabled = false;
   scenePnc.add(theNodes.icoSmall);
 
   var future = loadRaw(modelFile)
     ..then((String content) {
+      if (lifetime.isDisposed) return;
       GeometryBuilder gb = importGeometryFromWavefront(content);
-      MeshData md = geometryBuilderToMeshData("", pncNovertexmovement, gb);
-      theNodes.ctLogo = Node(md.name, md, theNodes.material)
+      GpuMesh md = lifetime.own(uploadGeometry("", pncNovertexmovement, gb));
+      theNodes.ctLogo = MeshNode(md.name, md, theNodes.material)
         ..rotX(math.pi / 2.0)
         ..rotZ(math.pi)
         ..transform.scaleByDouble(0.25, 0.25, 0.25, 1.0)
@@ -247,6 +267,11 @@ void main() {
   double startMs = -1.0;
   late final JSFunction onFrame;
   void animate(double timeMs) {
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
     if (startMs < 0.0) startMs = timeMs.toDouble();
     //final double now = (timeMs - startMs) * 0.001 *  2.0 + 20;
     final double now = musicElement.currentTime.toDouble();
@@ -260,20 +285,26 @@ void main() {
     theNodes.material.forceUniform(uTime, timeMs / 1000.0);
     phase.draw();
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  musicElement.onPlaying.listen((_) {
-    infoElement.textContent = '';
-  });
+  lifetime.own(
+    musicElement.onPlaying.listen((_) {
+      infoElement.textContent = '';
+    }),
+  );
+  lifetime.onDispose(() => musicElement.pause());
   Future.wait(gLoadables).then((list) async {
-    animate(0.0);
+    if (lifetime.isDisposed) return;
+    lifetime.requestAnimationFrame(onFrame);
     try {
       await musicElement.play().toDart;
+      if (lifetime.isDisposed) return;
       infoElement.textContent = '';
     } catch (error) {
+      if (lifetime.isDisposed) return;
       infoElement.textContent = 'Use the audio controls to start playback.';
     }
   });

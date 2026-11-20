@@ -11,6 +11,10 @@ import 'package:vector_math/vector_math.dart' as vm;
 
 import 'torus_knot_controls.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 void updateTorusTexture(double time, web.HTMLCanvasElement canvas) {
   web.CanvasRenderingContext2D ctx =
       canvas.getContext('2d') as web.CanvasRenderingContext2D;
@@ -43,7 +47,7 @@ final List<vm.Vector2> T = [
   vm.Vector2(0.0, 0.7),
 ];
 
-MeshData torusKnotWithCustumUV(RenderProgram program) {
+GpuMesh torusKnotWithCustumUV(RenderProgram program) {
   final int w = 17; // Try different values
   final int h = 128;
 
@@ -64,7 +68,7 @@ MeshData torusKnotWithCustumUV(RenderProgram program) {
 
   gb.addAttributesVector2(aTexUV, uvs);
 
-  return geometryBuilderToMeshData("torusknot", program, gb);
+  return lifetime.own(uploadGeometry("torusknot", program, gb));
 }
 
 void addHexagonalWireframeCenters(GeometryBuilder gb) {
@@ -124,20 +128,24 @@ class SimpleScene {
 
   late Material mat;
   late RenderProgram program;
-  late MeshData mesh;
+  late GpuMesh mesh;
 }
 
 class SceneStars extends SimpleScene {
   SceneStars(ChronosGL cgl, int num, double dim) {
-    program = RenderProgram(
-      "stars",
-      cgl,
-      pointSpritesVertexShader,
-      pointSpritesFragmentShader,
+    program = lifetime.own(
+      RenderProgram.create(
+        name: "stars",
+        context: cgl,
+        vertexShader: pointSpritesVertexShader,
+        fragmentShader: pointSpritesFragmentShader,
+      ),
     );
-    mat = makeStarMaterial(cgl)
+    mat = lifetime.own(makeStarMaterial(cgl))
       ..setUniform(uModelMatrix, vm.Matrix4.identity());
-    mesh = makeStarMesh(program, 2000, dim, random: math.Random());
+    mesh = lifetime.own(
+      makeStarMesh(program, 2000, dim, random: math.Random()),
+    );
   }
 }
 
@@ -145,16 +153,20 @@ class SceneTextured extends SimpleScene {
   SceneTextured(ChronosGL cgl) {
     canvas2d = web.document.querySelector('#texture') as web.HTMLCanvasElement;
     updateTorusTexture(0.0, canvas2d);
-    generatedTexture = ImageTexture(cgl, "gen", canvas2d);
-    mat = Material.transparent("torus", blendEquationMix)
+    generatedTexture = lifetime.own(
+      ImageTexture.fromCanvas(context: cgl, name: "gen", canvas: canvas2d),
+    );
+    mat = lifetime.own(Material.transparent("torus", blendEquationMix))
       ..setUniform(uTexture, generatedTexture)
       ..setUniform(uModelMatrix, vm.Matrix4.identity())
       ..setUniform(uColor, vm.Vector3.zero());
-    program = RenderProgram(
-      "textured",
-      cgl,
-      texturedVertexShader,
-      texturedFragmentShader,
+    program = lifetime.own(
+      RenderProgram.create(
+        name: "textured",
+        context: cgl,
+        vertexShader: texturedVertexShader,
+        fragmentShader: texturedFragmentShader,
+      ),
     );
     mesh = torusKnotWithCustumUV(program);
   }
@@ -172,7 +184,7 @@ class SceneTextured extends SimpleScene {
 
 class SceneWireframe extends SimpleScene {
   SceneWireframe(ChronosGL cgl, GeometryBuilder torus) {
-    mat = Material("wf")
+    mat = lifetime.own(Material("wf"))
       ..setUniform(uModelMatrix, vm.Matrix4.identity())
       //..setUniform(uWidth, 1.5)
       ..forceUniform(cBlendEquation, blendEquationStandard)
@@ -180,14 +192,16 @@ class SceneWireframe extends SimpleScene {
       ..setUniform(uColorAlpha, vm.Vector4(0.0, 0.0, 1.0, 1.0))
       ..setUniform(uColorAlpha2, vm.Vector4(0.0, 0.0, 0.1, 0.1));
 
-    program = RenderProgram(
-      "wf",
-      cgl,
-      wireframeVertexShader,
-      wireframeFragmentShader,
+    program = lifetime.own(
+      RenderProgram.create(
+        name: "wf",
+        context: cgl,
+        vertexShader: wireframeVertexShader,
+        fragmentShader: wireframeFragmentShader,
+      ),
     );
 
-    mesh = geometryBuilderToMeshData("wf", program, torus);
+    mesh = lifetime.own(uploadGeometry("wf", program, torus));
   }
 
   factory SceneWireframe.quad(ChronosGL cgl) {
@@ -230,7 +244,7 @@ void main() {
       web.document.querySelector('#mode') as web.HTMLSelectElement;
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  final ChronosGL cgl = ChronosGL(canvas);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
   final camera = PerspectiveCamera(
     fovYRadians: 100 * math.pi / 180,
     near: 0.1,
@@ -242,7 +256,9 @@ void main() {
         torusKnotGetPos(parameter, 3, 2, 20, 1, out),
   );
   final perspective = CameraUniforms(camera);
-  final viewport = CanvasViewport(cgl, canvas, camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
 
   final SceneStars sceneStars = SceneStars(cgl, 2000, 1000);
   final SceneTextured sceneTextures = SceneTextured(cgl);
@@ -279,10 +295,10 @@ void main() {
           print("unexpected mode ${modeInput.value}");
       }
     }
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  web.window.requestAnimationFrame(onFrame);
+  lifetime.requestAnimationFrame(onFrame);
 }

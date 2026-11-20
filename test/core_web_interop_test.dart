@@ -4,7 +4,7 @@ library;
 import 'dart:js_interop';
 import 'dart:typed_data';
 
-import 'package:chronosgl/src/core/lib.dart';
+import 'package:chronosgl/chronosgl.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
@@ -13,7 +13,7 @@ web.HTMLCanvasElement _canvas() => web.HTMLCanvasElement()
   ..height = 2;
 
 ChronosGL _context([web.HTMLCanvasElement? canvas]) {
-  final cgl = ChronosGL(
+  final cgl = ChronosGL.fromCanvas(
     canvas ?? _canvas(),
     antialiasing: false,
     preserveDrawingBuffer: true,
@@ -47,6 +47,7 @@ void main() {
       expect(cgl.getParameter(glColorWritemask), [true, false, true, false]);
       expect(cgl.getParameter(glArrayBufferBinding), isNull);
       final buffer = cgl.createBuffer();
+      addTearDown(() => cgl.deleteBuffer(buffer));
       cgl.bindBuffer(glArrayBuffer, buffer);
       final bound = cgl.getParameter(glArrayBufferBinding) as JSObject;
       expect(bound.strictEquals(buffer).toDart, isTrue);
@@ -61,6 +62,7 @@ void main() {
   test('Buffer uploads and readbacks preserve typed-data view boundaries', () {
     final cgl = _context();
     final buffer = cgl.createBuffer();
+    addTearDown(() => cgl.deleteBuffer(buffer));
     final input = Uint16List.fromList([999, 1, 512, 65535, 999]);
     cgl.changeArrayBuffer(buffer, Uint16List.sublistView(input, 1, 4));
     final output = Uint16List.fromList([777, 0, 0, 0, 777]);
@@ -82,13 +84,15 @@ void main() {
     final paint = image.getContext('2d') as web.CanvasRenderingContext2D;
     paint.fillStyle = '#336699'.toJS;
     paint.fillRect(0, 0, 2, 2);
-    final texture = ImageTexture(
-      cgl,
-      'canvas',
-      image,
-      texturePropertiesFramebuffer,
+    final texture = ImageTexture.fromCanvas(
+      context: cgl,
+      name: 'canvas',
+      canvas: image,
+      properties: texturePropertiesFramebuffer,
     );
-    final framebuffer = Framebuffer(cgl, texture);
+    addTearDown(texture.dispose);
+    final framebuffer = Framebuffer.withAttachments(cgl, colorTexture: texture);
+    addTearDown(framebuffer.dispose);
     expect(framebuffer.extractByteData(null, 0, 0, 1, 1), [51, 102, 153, 255]);
     paint.fillStyle = '#ff0000'.toJS;
     paint.fillRect(0, 0, 2, 2);
@@ -130,7 +134,9 @@ void main() {
       glFloat,
       Float32List.sublistView(input, 1, 5),
     );
-    final framebuffer = Framebuffer(cgl, texture);
+    addTearDown(texture.dispose);
+    final framebuffer = Framebuffer.withAttachments(cgl, colorTexture: texture);
+    addTearDown(framebuffer.dispose);
     final output = Float32List.fromList([777, 0, 0, 0, 0, 777]);
     framebuffer.extractFloatData(
       Float32List.sublistView(output, 1, 5),
@@ -164,6 +170,7 @@ void main() {
     cgl.clearColor(1, 0, 0, 1);
     cgl.clear(glColorBufferBit);
     final buffer = cgl.createBuffer();
+    addTearDown(() => cgl.deleteBuffer(buffer));
     cgl.bufferDataSetSize(glPixelPackBuffer, buffer, 24, glStreamRead);
     expect(cgl.getError(), glNoError, reason: 'Allocate pixel pack buffer');
     cgl.bindBuffer(glPixelPackBuffer, buffer);
@@ -195,33 +202,40 @@ void main() {
     'Transform feedback registers JS varying names and returns GPU output',
     () {
       final cgl = _context();
-      final vertex = ShaderObject('feedback-v')
+      final vertex = ShaderObject.vertex('feedback-v')
         ..addAttributeVars([aPosition])
         ..addTransformVars([vPosition])
         ..setBodyWithMain([
           '$vPosition = $aPosition * 2.0;',
           'gl_Position = vec4($aPosition, 1.0);',
         ]);
-      final fragment = ShaderObject('feedback-f')
+      final fragment = ShaderObject.fragment('feedback-f')
         ..setBodyWithMain(['$oFragColor = vec4(1.0);']);
       final program = cgl.compileWholeProgram(
         vertex.shader!,
         fragment.shader!,
         [vPosition],
       );
-      cgl.bindVertexArray(cgl.createVertexArray());
+      addTearDown(() => cgl.deleteProgram(program));
+      final vao = cgl.createVertexArray();
+      addTearDown(() => cgl.deleteVertexArray(vao));
+      cgl.bindVertexArray(vao);
       final input = cgl.createBuffer();
+      addTearDown(() => cgl.deleteBuffer(input));
       cgl.changeArrayBuffer(input, Float32List.fromList([1, 2, 3, 4, 5, 6]));
       cgl.vertexAttribPointer(input, 0, 3, glFloat, false, 0, 0);
       cgl.enableVertexAttribArray(0, 0);
       final output = cgl.createBuffer();
+      addTearDown(() => cgl.deleteBuffer(output));
       cgl.bufferDataSetSize(
         glTransformFeedbackBuffer,
         output,
         24,
         glDynamicDraw,
       );
-      cgl.bindTransformFeedback(cgl.createTransformFeedback());
+      final feedback = cgl.createTransformFeedback();
+      addTearDown(() => cgl.deleteTransformFeedback(feedback));
+      cgl.bindTransformFeedback(feedback);
       cgl.bindBufferBase(glTransformFeedbackBuffer, 0, output);
       cgl.useProgram(program);
       cgl.enable(glRasterizerDiscard);

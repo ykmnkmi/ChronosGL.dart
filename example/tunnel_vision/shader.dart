@@ -1,9 +1,13 @@
 import 'package:chronosgl/chronosgl.dart';
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const String uFadeFactor = "uFadeFactor";
 
 final ShaderObject _perlinNoiseVertexShader =
-    ShaderObject("perlinNoiseVertexShader")
+    ShaderObject.vertex("perlinNoiseVertexShader")
       ..addAttributeVars([aPosition])
       ..addVaryingVars([vColor])
       ..addUniformVars([
@@ -46,7 +50,7 @@ void main() {
       ]);
 
 final ShaderObject _perlinNoiseFragmentShader =
-    ShaderObject("perlinNoiseFragmentShader")
+    ShaderObject.fragment("perlinNoiseFragmentShader")
       ..addVaryingVars([vColor])
       ..setBody([
         """
@@ -58,16 +62,18 @@ void main(void) {
       ]);
 
 RenderProgram makeVertexColorShader(ChronosGL cgl) {
-  return RenderProgram(
-    "basic",
-    cgl,
-    _perlinNoiseVertexShader,
-    _perlinNoiseFragmentShader,
+  return lifetime.own(
+    RenderProgram.create(
+      name: "basic",
+      context: cgl,
+      vertexShader: _perlinNoiseVertexShader,
+      fragmentShader: _perlinNoiseFragmentShader,
+    ),
   );
 }
 
 final ShaderObject deformingPerlinNoiseVertexShader =
-    ShaderObject("PerlinNoiseV")
+    ShaderObject.vertex("PerlinNoiseV")
       ..addAttributeVars([aPosition])
       ..addVaryingVars([vNormal])
       ..addUniformVars([uPerspectiveViewMatrix, uModelMatrix, uTime])

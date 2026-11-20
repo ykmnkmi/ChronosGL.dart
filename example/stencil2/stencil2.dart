@@ -8,11 +8,15 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
-final ShaderObject stencilVertexShader = ShaderObject("stencilV")
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
+final ShaderObject stencilVertexShader = ShaderObject.vertex("stencilV")
   ..addAttributeVars([aPosition])
   ..setBody([nullVertexShaderString]);
 
-final ShaderObject stencilFragmentShader = ShaderObject("stencilF")
+final ShaderObject stencilFragmentShader = ShaderObject.fragment("stencilF")
   ..addUniformVars([uTime, uCanvasSize])
   ..setBody([
     """
@@ -53,29 +57,43 @@ const TheStencilOp stencilWriteIfPixelSet = TheStencilOp(
 const TheStencilOp stencilWriteNever = TheStencilOp(glKeep, glKeep, glKeep);
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
-  OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 25.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
+  CameraUniforms perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
 
-  final int width = canvas.clientWidth;
-  final int height = canvas.clientHeight;
+  final int width = viewport.drawingBufferWidthPixels;
+  final int height = viewport.drawingBufferHeightPixels;
   canvas.width = width;
   canvas.height = height;
-  perspective.adjustAspect(width, height);
 
-  final RenderPhase phase = RenderPhase("main", cgl)
+  final RenderPass phase = lifetime.ownPass(RenderPass("main", cgl))
     ..viewPortW = width
     ..viewPortH = height;
 
-  final Material matGenStencil = Material("stencil")
+  final Material matGenStencil = lifetime.own(Material("stencil"))
     ..setUniform(uTime, 1.0)
     ..setUniform(uCanvasSize, vm.Vector2(0.0 + width, 0.0 + height))
     ..forceUniform(cStencilFunc, stencilAlways)
@@ -85,16 +103,31 @@ void main() {
     ..forceUniform(cColorWrite, [false, false, false, false])
     ..forceUniform(cDepthTest, false);
   {
-    Scene scene = Scene(
-      "stencil",
-      RenderProgram("stencil", cgl, stencilVertexShader, stencilFragmentShader),
-      [],
+    RenderBatch scene = lifetime.ownBatch(
+      RenderBatch(
+        "stencil",
+        lifetime.own(
+          RenderProgram.create(
+            name: "stencil",
+            context: cgl,
+            vertexShader: stencilVertexShader,
+            fragmentShader: stencilFragmentShader,
+          ),
+        ),
+        [],
+      ),
     );
     phase.add(scene);
-    scene.add(Node("unit", shapeQuad(scene.program, 1), matGenStencil));
+    scene.add(
+      MeshNode(
+        "unit",
+        lifetime.own(shapeQuad(scene.program, 1)),
+        matGenStencil,
+      ),
+    );
   }
 
-  final Material matOnStencil = Material("onstencil")
+  final Material matOnStencil = lifetime.own(Material("onstencil"))
     ..setUniform(uColor, colorRed.toVector3())
     ..forceUniform(cStencilFunc, stencilNotEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
@@ -103,7 +136,7 @@ void main() {
     ..forceUniform(cColorWrite, [true, true, true, true])
     ..forceUniform(cDepthTest, true);
 
-  final Material matOffStencil = Material("offstencil")
+  final Material matOffStencil = lifetime.own(Material("offstencil"))
     ..setUniform(uColor, colorBlue.toVector3())
     ..forceUniform(cStencilFunc, stencilEqualZero)
     ..forceUniform(cStencilOp, stencilWriteNever)
@@ -113,59 +146,84 @@ void main() {
     ..forceUniform(cDepthTest, true);
 
   {
-    Scene scene = Scene(
-      "onstencil",
-      RenderProgram(
+    RenderBatch scene = lifetime.ownBatch(
+      RenderBatch(
         "onstencil",
-        cgl,
-        solidColorVertexShader,
-        solidColorFragmentShader,
+        lifetime.own(
+          RenderProgram.create(
+            name: "onstencil",
+            context: cgl,
+            vertexShader: solidColorVertexShader,
+            fragmentShader: solidColorFragmentShader,
+          ),
+        ),
+        [perspective],
       ),
-      [perspective],
     );
     phase.add(scene);
     scene.add(
-      Node(
+      MeshNode(
         "cylinder",
-        shapeCylinder(scene.program, 2.0, 4.0, 4.0, 32),
+        lifetime.own(shapeCylinder(scene.program, 2.0, 4.0, 4.0, 32)),
         matOnStencil,
       )..setPos(10.0, 0.0, -10.0),
     );
 
     scene.add(
-      Node(
+      MeshNode(
         "torus",
-        shapeTorusKnot(scene.program, radius: 2.5, tubeRadius: 0.8),
+        lifetime.own(
+          shapeTorusKnot(scene.program, radius: 2.5, tubeRadius: 0.8),
+        ),
         matOnStencil,
       )..setPos(10.0, 0.0, 10.0),
     );
 
     scene.add(
-      Node(
+      MeshNode(
         "sphere",
-        shapeIcosahedron(scene.program, subdivisions: 3, scale: 5.0),
+        lifetime.own(
+          shapeIcosahedron(scene.program, subdivisions: 3, scale: 5.0),
+        ),
         matOffStencil,
       )..setPos(0.0, 0.0, 0.0),
     );
 
     scene.add(
-      Node(
+      MeshNode(
         "cube",
-        shapeCube(scene.program, x: 2.0, y: 2.0, z: 2.0),
+        lifetime.own(shapeCube(scene.program, x: 2.0, y: 2.0, z: 2.0)),
         matOffStencil,
       )..setPos(-10.0, 0.0, -10.0),
     );
   }
   orbit.azimuth = 1.1;
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
+    phase.viewPortW = viewport.viewportWidthPixels;
+    phase.viewPortH = viewport.viewportHeightPixels;
 
     //print ("@@ ${timeMs / 2000.0 % 1.0} ");
+    matGenStencil.forceUniform(
+      uCanvasSize,
+      vm.Vector2(
+        viewport.viewportWidthPixels.toDouble(),
+        viewport.viewportHeightPixels.toDouble(),
+      ),
+    );
     matGenStencil.forceUniform(uTime, (math.sin(timeMs / 2000.0) + 1.0) * 0.25);
 
     List<DrawStats> stats = [];
@@ -175,11 +233,11 @@ void main() {
       out.add(d.toString());
     }
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs, out.join("<br>"));
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

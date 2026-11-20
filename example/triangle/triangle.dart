@@ -2,53 +2,60 @@ import 'dart:js_interop';
 
 import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
+import 'package:vector_math/vector_math.dart' as vm;
 
 import 'package:web/web.dart' as web;
 
 import 'dart:math' as math;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 Node triangle(RenderProgram program) {
-  final Material mat1 = Material("mat1")
+  final Material mat1 = lifetime.own(Material("mat1"))
     ..setUniform(uColor, colorBlue.toVector3());
 
-  final Material mat2 = Material("mat2")
+  final Material mat2 = lifetime.own(Material("mat2"))
     ..setUniform(uColor, colorRed.toVector3());
 
-  final Material mat3 = Material("mat3")
+  final Material mat3 = lifetime.own(Material("mat3"))
     ..setUniform(uColor, colorGreen.toVector3());
 
   double thickness = 3.0;
   double length = 5.0 * thickness;
 
-  Node side1 = Node(
+  Node side1 = MeshNode(
     "side1",
-    shapeCube(program, x: length, y: thickness, z: thickness),
+    lifetime.own(shapeCube(program, x: length, y: thickness, z: thickness)),
     mat1,
   )..setPos(-thickness, 0.0, 0.0);
 
-  Node side2 = Node(
+  Node side2 = MeshNode(
     "side2",
-    shapeCube(program, x: thickness, y: thickness, z: length),
+    lifetime.own(shapeCube(program, x: thickness, y: thickness, z: length)),
     mat2,
   )..setPos(-length, 0.0, length + thickness);
 
   double length3 = length - thickness;
-  Node side3a = Node(
+  Node side3a = MeshNode(
     "side3a",
-    shapeCube(program, x: thickness, y: length3, z: thickness),
+    lifetime.own(shapeCube(program, x: thickness, y: length3, z: thickness)),
     mat3,
   )..setPos(length, length3 - 1 * thickness, 0.0);
 
   Node side3b =
-      Node(
+      MeshNode(
           "side3b",
-          shapeWedge(program, x: thickness, y: thickness, z: thickness),
+          lifetime.own(
+            shapeWedge(program, x: thickness, y: thickness, z: thickness),
+          ),
           mat3,
         )
         ..rotY(math.pi)
         ..setPos(length, length + length3 - thickness, 0.0);
 
-  return Node.container("triangle")
+  return GroupNode("triangle")
     ..add(side1)
     ..add(side2)
     ..add(side3a)
@@ -57,49 +64,59 @@ Node triangle(RenderProgram program) {
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas);
 
-  OrbitCamera orbit = OrbitCamera(20.0, 0.0, 0.0, canvas);
-  double d = 40.0;
-  Orthographic orthographic = Orthographic(orbit, -d, d, -d, -d, 100.0);
-  RenderPhase phase = RenderPhase("shadow", cgl);
+  const d = 40.0;
+  final camera = OrthographicCamera(
+    left: -d,
+    right: d,
+    bottom: -d,
+    top: d,
+    near: -d,
+    far: 100,
+  );
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(camera: camera, eventTarget: canvas, radius: 20),
+  );
+  final orthographic = CameraUniforms(camera);
+  RenderPass phase = lifetime.ownPass(RenderPass("shadow", cgl));
 
-  Scene scene = Scene(
-    "objects",
-    RenderProgram(
-      "textured",
-      cgl,
-      solidColorVertexShader,
-      solidColorFragmentShader,
+  RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
+      "objects",
+      lifetime.own(
+        RenderProgram.create(
+          name: "textured",
+          context: cgl,
+          vertexShader: solidColorVertexShader,
+          fragmentShader: solidColorFragmentShader,
+        ),
+      ),
+      [orthographic],
     ),
-    [orthographic],
   );
   phase.add(scene);
 
   scene.add(triangle(scene.program));
 
-  void resolutionChange(web.Event? ev) {
-    int w = canvas.clientWidth;
-    int h = canvas.clientHeight;
-    canvas.width = w;
-    canvas.height = h;
-    print("size change $w $h");
-    orthographic.adjustAspect(w, h);
-    phase.viewPortW = w;
-    phase.viewPortH = h;
-  }
-
-  resolutionChange(null);
-  web.EventStreamProviders.resizeEvent
-      .forTarget(web.window)
-      .listen(resolutionChange);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
+  );
 
   // 35deg is slightly too large.
   // Need to find a math reference for actual real angle.
@@ -107,23 +124,45 @@ void main() {
   orbit.polar = 35.0 * math.pi / 180.0;
   orbit.azimuth = -45.0 * math.pi / 180.0;
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
+  double roll = 0.0;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    camera.setProjection(
+      left: -d,
+      right: d,
+      bottom: -d,
+      top:
+          -d +
+          2 * d * viewport.viewportHeightPixels / viewport.viewportWidthPixels,
+      near: -d,
+      far: 100,
+    );
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
     //orbit.azimuth += 0.001;
     //orbit.rotZ(0.001);
-    orbit.animate(elapsed);
-    orbit.roll += 0.01;
+    orbit.update(elapsed / 1000);
+    roll += 0.6 * elapsed / 1000;
+    camera.setRotation(
+      camera.worldRotation * vm.Quaternion.axisAngle(vm.Vector3(0, 0, 1), roll),
+    );
     double polar = orbit.polar * 180.0 / math.pi;
     double azimuth = orbit.azimuth * 180.0 / math.pi;
     phase.draw();
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs, "$polar<br>$azimuth");
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

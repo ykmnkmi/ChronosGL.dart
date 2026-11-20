@@ -6,6 +6,10 @@ import 'package:web/web.dart' as web;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 // Simple Gyroid Isosurface (spherical crop)
 //
 // Mikael Hvidtfeldt Christensen
@@ -195,13 +199,14 @@ void main()
 
 """;
 
-final ShaderObject gyroidVertexShader = ShaderObject("SphericalGyroid")
+final ShaderObject gyroidVertexShader = ShaderObject.vertex("SphericalGyroid")
   ..addAttributeVars([aPosition])
   ..setBody([nullVertexShaderString]);
 
-final ShaderObject gyroidFragmentShader = ShaderObject("SphericalGyroidF")
-  ..addUniformVars([uCanvasSize, uTime])
-  ..setBody([_fragmentShader]);
+final ShaderObject gyroidFragmentShader =
+    ShaderObject.fragment("SphericalGyroidF")
+      ..addUniformVars([uCanvasSize, uTime])
+      ..setBody([_fragmentShader]);
 
 void main() {
   web.HTMLCanvasElement canvas =
@@ -211,26 +216,24 @@ void main() {
   final int h = canvas.clientHeight;
   canvas.width = w;
   canvas.height = h;
-  ChronosGL cgl = ChronosGL(canvas);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas);
 
-  RenderProgram program = RenderProgram(
-    "gyroid",
-    cgl,
-    gyroidVertexShader,
-    gyroidFragmentShader,
+  RenderProgram program = lifetime.own(
+    RenderProgram("gyroid", cgl, gyroidVertexShader, gyroidFragmentShader),
   );
   UniformGroup uniforms = UniformGroup("plain");
-  MeshData unitQuad = shapeQuad(program, 1);
+  GpuMesh unitQuad = lifetime.own(shapeQuad(program, 1));
 
   late final JSFunction onFrame;
   void animate(double timeMs) {
+    if (lifetime.isDisposed) return;
     uniforms.forceUniform(uTime, timeMs / 1000.0);
     uniforms.forceUniform(uCanvasSize, vm.Vector2(0.0 + w, 0.0 + h));
     program.draw(unitQuad, [uniforms]);
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

@@ -13,6 +13,10 @@ import 'dart:typed_data';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const double kMaxDistance = 100.1;
 const double kMinDistance = 0.2;
 
@@ -27,7 +31,7 @@ final web.HTMLSelectElement gParticles =
 final web.HTMLInputElement gCpuCompute =
     web.document.querySelector('#cpucompute') as web.HTMLInputElement;
 
-final ShaderObject particleVertexShader = ShaderObject("ParticleV")
+final ShaderObject particleVertexShader = ShaderObject.vertex("ParticleV")
   ..addAttributeVars([aPosition])
   ..addUniformVars([
     uPerspectiveViewMatrix,
@@ -93,7 +97,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject particleFragmentShader = ShaderObject("ParticleF")
+final ShaderObject particleFragmentShader = ShaderObject.fragment("ParticleF")
   ..addUniformVars([uTexture])
   ..setBody([
     """
@@ -213,10 +217,12 @@ void main() {
     const ShaderVarDesc(varTypeVec3, "", arraySize: 5),
   );
 
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   final math.Random rng = math.Random(0);
@@ -228,22 +234,38 @@ void main() {
   canvas.width = width;
   canvas.height = height;
 
-  final ChronosGL cgl = ChronosGL(canvas);
-  final OrbitCamera orbit = OrbitCamera(15.0, 0.5, 0.5, canvas);
-  final Perspective perspective = Perspective(orbit, 0.1, 1000.0)
-    ..adjustAspect(width, height);
-
-  final RenderProgram programJS = RenderProgram(
-    "CPU",
-    cgl,
-    pointSpritesVertexShader,
-    pointSpritesFragmentShader,
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 15.0,
+      azimuth: 0.5,
+      polar: 0.5,
+    ),
   );
-  final RenderProgram programGPU = RenderProgram(
-    "GPU",
-    cgl,
-    particleVertexShader,
-    particleFragmentShader,
+  final CameraUniforms perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
+
+  final RenderProgram programJS = lifetime.own(
+    RenderProgram.create(
+      name: "CPU",
+      context: cgl,
+      vertexShader: pointSpritesVertexShader,
+      fragmentShader: pointSpritesFragmentShader,
+    ),
+  );
+  final RenderProgram programGPU = lifetime.own(
+    RenderProgram.create(
+      name: "GPU",
+      context: cgl,
+      vertexShader: particleVertexShader,
+      fragmentShader: particleFragmentShader,
+    ),
   );
   final int bindingIndex = programGPU.getTransformBindingIndex(tPosition);
   print("@@@@ $bindingIndex");
@@ -266,24 +288,25 @@ void main() {
   extractIonPos(ions, ionsPos);
 
   // JS version setup
-  Material matJS = Material.transparent("stars", blendEquationMix)
+  Material matJS = lifetime.own(Material.transparent("stars", blendEquationMix))
     ..setUniform(uTexture, createParticleTexture(cgl))
     ..setUniform(uModelMatrix, vm.Matrix4.identity())
     ..setUniform(uPointSize, 200.0);
-  MeshData mdJS = programJS.makeMeshData("mdJS", glPoints)
+  GpuMesh mdJS = lifetime.own(programJS.makeGpuMesh("mdJS", glPoints))
     ..addVertices(ionsPos);
 
   // GPU version setup
-  Material matGPU = Material.transparent("stars", blendEquationMix)
-    ..setUniform(uTexture, createParticleTexture(cgl))
-    ..setUniform(uModelMatrix, vm.Matrix4.identity())
-    ..setUniform(uPointSize, 200.0)
-    ..setUniform(uSources, extractPolePos(srcPoles))
-    ..setUniform(uSinks, extractPolePos(dstPoles));
+  Material matGPU =
+      lifetime.own(Material.transparent("stars", blendEquationMix))
+        ..setUniform(uTexture, createParticleTexture(cgl))
+        ..setUniform(uModelMatrix, vm.Matrix4.identity())
+        ..setUniform(uPointSize, 200.0)
+        ..setUniform(uSources, extractPolePos(srcPoles))
+        ..setUniform(uSinks, extractPolePos(dstPoles));
 
-  MeshData mdOut = programGPU.makeMeshData("ionsOut", glPoints)
+  GpuMesh mdOut = lifetime.own(programGPU.makeGpuMesh("ionsOut", glPoints))
     ..addVertices(ionsPos);
-  MeshData mdIn = programGPU.makeMeshData("ionsIn", glPoints)
+  GpuMesh mdIn = lifetime.own(programGPU.makeGpuMesh("ionsIn", glPoints))
     ..addVertices(ionsPos);
 
   void resizeIons(web.Event? ev) {
@@ -298,8 +321,11 @@ void main() {
     extractIonPos(ions, ionsPos);
     cgl.bindBuffer(glArrayBuffer, null);
     cgl.bindBufferBase(glTransformFeedbackBuffer, bindingIndex, null);
-    mdOut.changeVertexData(ionsPos);
-    mdIn.changeVertexData(ionsPos);
+    // A new particle count replaces storage for both GPU and CPU rendering.
+    // Per-frame updates below retain the current count and update in place.
+    mdOut.addVertices(ionsPos);
+    mdIn.addVertices(ionsPos);
+    mdJS.addVertices(ionsPos);
     cgl.bindBufferBase(
       glTransformFeedbackBuffer,
       bindingIndex,
@@ -317,13 +343,23 @@ void main() {
 
   var transform = cgl.createTransformFeedback();
   cgl.bindTransformFeedback(transform);
+  lifetime.onDispose(() => cgl.deleteTransformFeedback(transform));
 
   resizeIons(null);
 
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    orbit.azimuth += 0.002;
-    orbit.animate(0.0); // argument is not used
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = null;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
+    lastTimeMs = timeMs;
+    orbit.azimuth += 0.12 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
 
     if (gCpuCompute.checked) {
       updateIonsJS(0.06);
@@ -341,12 +377,12 @@ void main() {
         ions.length * 3 * 4,
       );
     }
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(timeMs + 0.0);
   }
 
   onFrame = animate.toJS;
 
-  gParticles.onChange.listen(resizeIons);
-  animate(0.0);
+  lifetime.own(gParticles.onChange.listen(resizeIons));
+  lifetime.requestAnimationFrame(onFrame);
 }

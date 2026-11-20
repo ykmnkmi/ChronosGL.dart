@@ -8,9 +8,13 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const String aCurrentPosition = "aCurrentPosition";
 
-final ShaderObject fireworksVertexShader = ShaderObject("FireWorksV")
+final ShaderObject fireworksVertexShader = ShaderObject.vertex("FireWorksV")
   ..addAttributeVars([aPosition, aCurrentPosition, aNormal])
   ..addVaryingVars([vColor])
   ..addTransformVars([tPosition])
@@ -74,7 +78,7 @@ void main() {
 """,
   ]);
 
-final ShaderObject fireworksFragmentShader = ShaderObject("FireWorksF")
+final ShaderObject fireworksFragmentShader = ShaderObject.fragment("FireWorksF")
   ..addVaryingVars([vColor])
   ..setBody([
     """
@@ -87,53 +91,66 @@ void main() {
 void main() {
   introduceNewShaderVar(aCurrentPosition, const ShaderVarDesc(varTypeVec3, ""));
 
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  final ChronosGL cgl = ChronosGL(canvas);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
 
-  final OrbitCamera orbit = OrbitCamera(7.0, 0.0, 0.0, web.document.body!);
-
-  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
-    cgl,
-    canvas,
-    orbit,
-    0.1,
-    1000.0,
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 7.0,
+      azimuth: 0.0,
+      polar: 0.0,
+    ),
   );
 
-  final RenderProgram prog = RenderProgram(
-    "fireworks",
-    cgl,
-    fireworksVertexShader,
-    fireworksFragmentShader,
+  final CameraUniforms perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
+
+  final RenderProgram prog = lifetime.own(
+    RenderProgram.create(
+      name: "fireworks",
+      context: cgl,
+      vertexShader: fireworksVertexShader,
+      fragmentShader: fireworksFragmentShader,
+    ),
   );
   final int bindingIndex = prog.getTransformBindingIndex(tPosition);
 
-  final Material material = Material("torus-mat")
+  final Material material = lifetime.own(Material("torus-mat"))
     ..setUniform(uPointSize, 20.0)
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
   final detail = 2;
-  final MeshData torus = shapeTorusKnot(
-    prog,
-    radius: 1.0,
-    tubeRadius: 0.2,
-    computeNormals: true,
-    segmentsR: 256 * detail,
-    segmentsT: 16 * detail,
+  final GpuMesh torus = lifetime.own(
+    shapeTorusKnot(
+      prog,
+      radius: 1.0,
+      tubeRadius: 0.2,
+      computeNormals: true,
+      segmentsR: 256 * detail,
+      segmentsT: 16 * detail,
+    ),
   );
-  final MeshData points = extractPointCloud(prog, torus, 200000);
+  final GpuMesh points = lifetime.own(extractPointCloud(prog, torus, 200000));
   points.addAttribute(aCurrentPosition, points.getAttribute(aPosition), 3);
 
-  MeshData out0 = prog.makeMeshData("out", glPoints)
+  GpuMesh out0 = lifetime.own(prog.makeGpuMesh("out", glPoints))
     ..addVertices(points.getAttribute(aPosition) as Float32List);
-  MeshData out1 = prog.makeMeshData("out", glPoints)
+  GpuMesh out1 = lifetime.own(prog.makeGpuMesh("out", glPoints))
     ..addVertices(points.getAttribute(aPosition) as Float32List);
 
   cgl.bindBufferBase(
@@ -143,14 +160,22 @@ void main() {
   );
 
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
     // animate the camera a little
-    orbit.azimuth += 0.003;
+    orbit.azimuth += 0.18 * elapsed / 1000;
     // allow the camera to also reflect mouse movement.
-    orbit.animate(elapsed);
+    orbit.update(elapsed / 1000);
 
     material.forceUniform(uTime, timeMs / 1000.0);
     cgl.bindBufferBase(
@@ -164,11 +189,11 @@ void main() {
     out0 = out1;
     out1 = t;
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(timeMs + 0.0);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

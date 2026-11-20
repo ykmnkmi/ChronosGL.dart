@@ -12,6 +12,10 @@ import '../shared/shaders.dart';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const String modelFile = "../ct_logo.obj";
 
 web.HTMLSelectElement gEffect =
@@ -28,7 +32,9 @@ double rangeOverTime(double a, double b, double interval, double t) {
 class Effect {
   Effect(ChronosGL cgl, ShaderObject shader, this.uniforms)
     : name = uniforms.name,
-      program = RenderProgram(uniforms.name, cgl, effectVertexShader, shader) {
+      program = lifetime.own(
+        RenderProgram(uniforms.name, cgl, effectVertexShader, shader),
+      ) {
     all[uniforms.name] = this;
   }
 
@@ -268,10 +274,12 @@ void registerEffects(ChronosGL cgl, Texture fb) {
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   final web.HTMLCanvasElement canvas =
@@ -281,39 +289,57 @@ void main() {
   canvas.width = width;
   canvas.height = height;
 
-  final ChronosGL cgl = ChronosGL(canvas);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
 
-  final OrbitCamera orbit = OrbitCamera(15.0, -45.0, 0.3, canvas);
-  final Perspective perspective = Perspective(orbit, 0.1, 2520.0)
-    ..adjustAspect(width, height);
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 2520.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 15.0,
+      azimuth: -45.0,
+      polar: 0.3,
+    ),
+  );
+  final perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
 
-  final Framebuffer screen = Framebuffer.screen(cgl);
+  final Framebuffer screen = lifetime.own(Framebuffer.screen(cgl));
 
-  final Framebuffer fb = Framebuffer.defaultFramebuffer(cgl, width, height);
+  final Framebuffer fb = lifetime.own(
+    Framebuffer.defaultFramebuffer(cgl, width, height),
+  );
 
   registerEffects(cgl, fb.colorTexture!);
 
-  final RenderProgram progDemo = RenderProgram(
-    "demo",
-    cgl,
-    demoVertexShader,
-    demoFragmentShader,
+  final RenderProgram progDemo = lifetime.own(
+    RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
   );
 
-  MeshData unitQuad = shapeQuad(Effect.all["dot"]!.program, 1);
-  late MeshData ctLogo;
+  GpuMesh unitQuad = lifetime.own(shapeQuad(Effect.all["dot"]!.program, 1));
+  late GpuMesh ctLogo;
 
-  Material material = Material("mat")
+  Material material = lifetime.own(Material("mat"))
     ..setUniform(uColor, colorGray8.toVector3())
     ..setUniform(uModelMatrix, vm.Matrix4.identity()..rotateX(math.pi / 2));
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.01;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.6 * elapsed / 1000.0;
+    orbit.update(elapsed / 1000.0);
 
     Effect active = Effect.all[gEffect.value]!;
     final double timeSec = timeMs / 1000.0;
@@ -336,7 +362,7 @@ void main() {
         rangeOverTime(4.0, 30.0, 20.0, timeSec),
       );
     } else if (gEffect.value == "water") {
-      active.uniforms.forceUniform(uTime, lastTimeMs / 1000.0);
+      active.uniforms.forceUniform(uTime, timeMs / 1000.0);
     }
 
     // Draw logo to fb
@@ -344,11 +370,11 @@ void main() {
     progDemo.draw(ctLogo, [perspective, material]);
 
     // Apply currently active effect/program to fb and show result on screen
-    screen.activate(glClearAll, 0, 0, width, height);
+    screen.activate(glClearAll, 0, 0, canvas.width, canvas.height);
     active.program.draw(unitQuad, [active.uniforms]);
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
   }
 
   onFrame = animate.toJS;
@@ -356,9 +382,10 @@ void main() {
   List<Future<Object>> futures = [loadRaw(modelFile)];
 
   Future.wait(futures).then((list) {
+    if (lifetime.isDisposed) return;
     // Setup Mesh
     GeometryBuilder gb = importGeometryFromWavefront(list[0] as String);
-    ctLogo = geometryBuilderToMeshData("", progDemo, gb);
-    animate(0.0);
+    ctLogo = lifetime.own(uploadGeometry("", progDemo, gb));
+    lifetime.requestAnimationFrame(onFrame);
   });
 }

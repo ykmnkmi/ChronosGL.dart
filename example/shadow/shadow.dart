@@ -8,11 +8,15 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 const double kShadowBias1 = 0.001;
 const double kShadowBias2 = 0.001;
 
 final ShaderObject lightVertexShaderBlinnPhongWithShadow =
-    ShaderObject("LightBlinnPhongShadowV")
+    ShaderObject.vertex("LightBlinnPhongShadowV")
       ..addAttributeVars([aPosition, aNormal])
       ..addVaryingVars([vPosition, vNormal, vPositionFromLight])
       ..addUniformVars([
@@ -34,7 +38,7 @@ void main() {
       ]);
 
 final ShaderObject lightFragmentShaderBlinnPhongWithShadow =
-    ShaderObject("LightBlinnPhongShadowF")
+    ShaderObject.fragment("LightBlinnPhongShadowF")
       ..addVaryingVars([vPosition, vNormal, vPositionFromLight])
       ..addUniformVars([uLightDescs, uLightTypes, uShininess])
       ..addUniformVars([
@@ -165,50 +169,57 @@ void swallowEvent(web.Event e) {
   e.stopPropagation();
 }
 
-final Material matGray = Material("matGray")
+final Material matGray = lifetime.own(Material("matGray"))
   ..setUniform(uColor, colorGray4.toVector3())
   ..setUniform(uShininess, glossiness);
 
-final Material matObjects = Material("objects")
+final Material matObjects = lifetime.own(Material("objects"))
   ..setUniform(uColor, colorGray2.toVector3())
   ..setUniform(uShininess, glossiness);
 
-final Material matNormals = Material("normals")
+final Material matNormals = lifetime.own(Material("normals"))
   ..setUniform(uColor, colorRed.toVector3())
   ..setUniform(uShininess, glossiness);
 
-final Material lightSourceMat = Material("light")
+final Material lightSourceMat = lifetime.own(Material("light"))
   ..setUniform(uColor, colorYellow.toVector3());
 
-void addShapesToScene(Scene scene) {
+void addShapesToScene(RenderBatch scene) {
   scene.add(
-    Node("sphere", shapeIcosahedron(scene.program, subdivisions: 3), matObjects)
-      ..setPos(0.0, 0.0, 0.0),
+    MeshNode(
+      "sphere",
+      lifetime.own(shapeIcosahedron(scene.program, subdivisions: 3)),
+      matObjects,
+    )..setPos(0.0, 0.0, 0.0),
   );
 
   scene.add(
-    Node("cube", shapeCube(scene.program), matObjects)..setPos(-5.0, 0.0, -5.0),
+    MeshNode("cube", lifetime.own(shapeCube(scene.program)), matObjects)
+      ..setPos(-5.0, 0.0, -5.0),
   );
 
   scene.add(
-    Node(
+    MeshNode(
       "cylinder",
-      shapeCylinder(scene.program, 3.0, 6.0, 2.0, 32),
+      lifetime.own(shapeCylinder(scene.program, 3.0, 6.0, 2.0, 32)),
       matObjects,
     )..setPos(5.0, 0.0, -5.0),
   );
 
   scene.add(
-    Node(
+    MeshNode(
       "torusknot",
-      shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4),
+      lifetime.own(shapeTorusKnot(scene.program, radius: 1.0, tubeRadius: 0.4)),
       matObjects,
     )..setPos(5.0, 0.0, 5.0),
   );
 
   scene.add(
-    Node("plane", shapeCube(scene.program, x: 30.0, y: 0.1, z: 30.0), matGray)
-      ..setPos(0.0, -10.0, 0.0),
+    MeshNode(
+      "plane",
+      lifetime.own(shapeCube(scene.program, x: 30.0, y: 0.1, z: 30.0)),
+      matGray,
+    )..setPos(0.0, -10.0, 0.0),
   );
 }
 
@@ -216,63 +227,82 @@ double kNear = 0.1;
 double kFar = 50.0;
 
 void main() {
-  final StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  final FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  final ChronosGL cgl = ChronosGL(canvas, faceCulling: false);
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: false);
 
-  final OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
+  final camera = PerspectiveCamera(near: kNear, far: kFar);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 25.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
 
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 
-  final Perspective perspective = Perspective(orbit, kNear, kFar);
+  final CameraUniforms perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
+  );
 
   final Illumination illumination = Illumination();
   for (Light l in lightSources.values) {
     illumination.addLight(l);
   }
 
-  final ShadowMap shadowMap = ShadowMap(cgl, 512, 512, 0.5, 20.0);
-  final ShadowMapVisualizer shadowVisualizer = ShadowMapVisualizer(shadowMap);
-  web.EventStreamProviders.beforeUnloadEvent.forTarget(web.window).listen((_) {
-    shadowVisualizer.dispose();
-    shadowMap.dispose();
-    fps.dispose();
-  });
-
-  final UniformGroup uniforms = UniformGroup("plain")
+  final ShadowMap shadowMap = lifetime.own(ShadowMap(cgl, 512, 512, 0.5, 20.0));
+  final ShadowMapVisualizer shadowVisualizer = lifetime.own(
+    ShadowMapVisualizer(shadowMap),
+  );
+  final UniformGroup uniforms = lifetime.own(UniformGroup("plain"))
     ..setUniform(uShadowMap, shadowMap.getMapTexture())
     ..setUniform(uCanvasSize, shadowMap.getMapSize())
     ..setUniform(uShadowBias, 0.03);
 
   // display scene with shadow on left part of screen.
-  final RenderPhase phaseMain = RenderPhase("main", cgl);
-  final Scene sceneBasic = Scene(
-    "solid",
-    RenderProgram(
+  final RenderPass phaseMain = lifetime.ownPass(RenderPass("main", cgl));
+  final RenderBatch sceneBasic = lifetime.ownBatch(
+    RenderBatch(
       "solid",
-      cgl,
-      lightVertexShaderBlinnPhongWithShadow,
-      lightFragmentShaderBlinnPhongWithShadow,
+      lifetime.own(
+        RenderProgram.create(
+          name: "solid",
+          context: cgl,
+          vertexShader: lightVertexShaderBlinnPhongWithShadow,
+          fragmentShader: lightFragmentShaderBlinnPhongWithShadow,
+        ),
+      ),
+      [perspective, illumination, uniforms],
     ),
-    [perspective, illumination, uniforms],
   );
   phaseMain.add(sceneBasic);
 
-  final Scene sceneFixed = Scene(
-    "solid",
-    RenderProgram(
+  final RenderBatch sceneFixed = lifetime.ownBatch(
+    RenderBatch(
       "solid",
-      cgl,
-      solidColorVertexShader,
-      solidColorFragmentShader,
+      lifetime.own(
+        RenderProgram.create(
+          name: "solid",
+          context: cgl,
+          vertexShader: solidColorVertexShader,
+          fragmentShader: solidColorFragmentShader,
+        ),
+      ),
+      [perspective, illumination],
     ),
-    [perspective, illumination],
   );
   phaseMain.add(sceneFixed);
 
@@ -285,38 +315,44 @@ void main() {
   }
 
   // Same order as lightSources
-  final MeshData mdLight = emptyLightVisualizer(sceneFixed.program, "light");
-  sceneFixed.add(Node("light", mdLight, lightSourceMat));
+  final GpuMesh mdLight = lifetime.own(
+    emptyLightVisualizer(sceneFixed.program, "light"),
+  );
+  sceneFixed.add(MeshNode("light", mdLight, lightSourceMat));
 
   // Event Handling
   for (web.Node node in web.JSImmutableListWrapper(
     web.document.getElementsByTagName("input"),
   )) {
     web.HTMLInputElement input = node as web.HTMLInputElement;
-    input.onChange.listen((web.Event e) {
-      web.HTMLInputElement input = e.target as web.HTMLInputElement;
-      if (input.type == "radio") {
-        eventRadioChanged(input.id);
-      }
-    });
-
-    input.onInput.listen((web.Event e) {
-      web.HTMLInputElement input = e.target as web.HTMLInputElement;
-      if (input.type == "range") {
-        String name = input.id;
-        double value = getInputValue(input);
-        if (name.startsWith("pos")) {
-          eventPositionChanged(name, value);
-        } else if (name.startsWith("dir")) {
-          eventDirectionChanged(name, value);
-        } else if (name == "cutoff") {
-          print("set cutoff $value");
-          //copyToScreen.ForceInput(uCutOff, value);
+    lifetime.own(
+      input.onChange.listen((web.Event e) {
+        web.HTMLInputElement input = e.target as web.HTMLInputElement;
+        if (input.type == "radio") {
+          eventRadioChanged(input.id);
         }
-      }
-    });
+      }),
+    );
 
-    input.onMouseMove.listen(swallowEvent);
+    lifetime.own(
+      input.onInput.listen((web.Event e) {
+        web.HTMLInputElement input = e.target as web.HTMLInputElement;
+        if (input.type == "range") {
+          String name = input.id;
+          double value = getInputValue(input);
+          if (name.startsWith("pos")) {
+            eventPositionChanged(name, value);
+          } else if (name.startsWith("dir")) {
+            eventDirectionChanged(name, value);
+          } else if (name == "cutoff") {
+            print("set cutoff $value");
+            //copyToScreen.ForceInput(uCutOff, value);
+          }
+        }
+      }),
+    );
+
+    lifetime.own(input.onMouseMove.listen(swallowEvent));
   }
 
   for (web.Node node in web.JSImmutableListWrapper(
@@ -328,36 +364,36 @@ void main() {
     input.dispatchEvent(web.Event("input"));
   }
 
-  void resolutionChange(web.Event? ev) {
-    int w = canvas.clientWidth;
-    int h = canvas.clientHeight;
-    canvas.width = w;
-    canvas.height = h;
-    print("size change $w $h");
-    w = w ~/ 2;
-    perspective.adjustAspect(w, h);
-    phaseMain.viewPortW = w;
-    phaseMain.viewPortH = h;
-    // display shadowmap on right part of screen.
-    shadowVisualizer.setViewport(phaseMain.viewPortW, 0, w, h);
+  bool updateViewports() {
+    final width = viewport.drawingBufferWidthPixels ~/ 2;
+    final height = viewport.drawingBufferHeightPixels;
+    if (width == 0 || height == 0) return false;
+    viewport.setViewport(width: width, height: height);
+    phaseMain.viewPortW = width;
+    phaseMain.viewPortH = height;
+    shadowVisualizer.setViewport(width, 0, width, height);
+    return true;
   }
 
-  resolutionChange(null);
-  web.EventStreamProviders.resizeEvent
-      .forTarget(web.window)
-      .listen(resolutionChange);
-
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
 
   //web.document.getElementById("posx").onChange.listen((web.Event ev) =>
   //light.pos.x = getInputValue(ev));
 
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update() || !updateViewports()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
-    //orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    //orbit.azimuth += 0.06 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
 
     vm.Matrix4 lm = gActiveLight.extractShadowProjViewMatrix();
     updateLightVisualizer(mdLight, gActiveLight);
@@ -369,11 +405,11 @@ void main() {
     phaseMain.draw();
     shadowVisualizer.draw();
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

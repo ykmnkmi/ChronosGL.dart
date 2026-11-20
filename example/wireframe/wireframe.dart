@@ -6,39 +6,67 @@ import 'package:chronosgl/chronosgl.dart';
 import 'package:chronosgl/debug.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 // TODO: the 2torusknot cannot be seen through the other objects -why
 
 final web.HTMLInputElement gOpaque =
     web.document.querySelector('#opaque') as web.HTMLInputElement;
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas, faceCulling: true);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas, faceCulling: true);
 
-  OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
-  Perspective perspective = Perspective(orbit, 0.1, 1000.0);
-  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
-    "main",
-    cgl,
-    canvas,
-    perspective,
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 25.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
+  );
+  CameraUniforms perspective = CameraUniforms(camera);
+  final RenderPass phase = lifetime.ownPass(RenderPass("main", cgl));
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
   );
 
-  Scene scene = Scene(
-    "wireframe",
-    RenderProgram("main", cgl, wireframeVertexShader, wireframeFragmentShader),
-    [perspective],
+  RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
+      "wireframe",
+      lifetime.own(
+        RenderProgram.create(
+          name: "main",
+          context: cgl,
+          vertexShader: wireframeVertexShader,
+          fragmentShader: wireframeFragmentShader,
+        ),
+      ),
+      [perspective],
+    ),
   );
   phase.add(scene);
 
-  final Material matWireframe = Material("wire")
+  final Material matWireframe = lifetime.own(Material("wire"))
     ..setUniform(uThickness, 2.0)
     ..setUniform(uColorAlpha, vm.Vector4(1.0, 1.0, 0.0, 1.0))
     ..setUniform(uColorAlpha2, vm.Vector4(0.0, 0.0, 0.0, 0.5));
@@ -46,9 +74,9 @@ void main() {
   {
     GeometryBuilder gb = icosahedronGeometry(subdivisions: 2)
       ..generateWireframeCenters();
-    Node ico = Node(
+    Node ico = MeshNode(
       "sphere",
-      geometryBuilderToMeshData("icosahedron", scene.program, gb),
+      lifetime.own(uploadGeometry("icosahedron", scene.program, gb)),
       matWireframe,
     )..setPos(0.0, 0.0, 0.0);
     scene.add(ico);
@@ -56,9 +84,9 @@ void main() {
 
   {
     GeometryBuilder gb = cubeGeometry()..generateWireframeCenters();
-    Node cube = Node(
+    Node cube = MeshNode(
       "cube",
-      geometryBuilderToMeshData("cube", scene.program, gb),
+      lifetime.own(uploadGeometry("cube", scene.program, gb)),
       matWireframe,
     )..setPos(-5.0, 0.0, -5.0);
     scene.add(cube);
@@ -66,9 +94,9 @@ void main() {
 
   {
     GeometryBuilder gb = wedgeGeometry()..generateWireframeCenters();
-    Node wedge = Node(
+    Node wedge = MeshNode(
       "wedge",
-      geometryBuilderToMeshData("wedge", scene.program, gb),
+      lifetime.own(uploadGeometry("wedge", scene.program, gb)),
       matWireframe,
     )..setPos(0.0, -5.0, 0.0);
     scene.add(wedge);
@@ -77,9 +105,9 @@ void main() {
   {
     GeometryBuilder gb = cylinderGeometryWireframeFriendly(3.0, 4.0, 2.0, 16)
       ..generateWireframeCenters();
-    Node cyl = Node(
+    Node cyl = MeshNode(
       "cylinder",
-      geometryBuilderToMeshData("cylinder", scene.program, gb),
+      lifetime.own(uploadGeometry("cylinder", scene.program, gb)),
       matWireframe,
     )..setPos(5.0, 0.0, -5.0);
     scene.add(cyl);
@@ -87,9 +115,9 @@ void main() {
 
   {
     GeometryBuilder gb = quadGeometry(2)..generateWireframeCenters();
-    Node quad = Node(
+    Node quad = MeshNode(
       "quad",
-      geometryBuilderToMeshData("quad", scene.program, gb),
+      lifetime.own(uploadGeometry("quad", scene.program, gb)),
       matWireframe,
     )..setPos(-5.0, 0.0, 5.0);
     scene.add(quad);
@@ -100,9 +128,9 @@ void main() {
       radius: 1.0,
       tubeRadius: 0.4,
     )..generateWireframeCenters();
-    Node torus = Node(
+    Node torus = MeshNode(
       "torus",
-      geometryBuilderToMeshData("torus", scene.program, gb),
+      lifetime.own(uploadGeometry("torus", scene.program, gb)),
       matWireframe,
     )..setPos(5.0, 0.0, 5.0);
     scene.add(torus);
@@ -113,32 +141,40 @@ void main() {
       radius: 1.0,
       tubeRadius: 0.4,
     )..generateWireframeCenters();
-    Node torus = Node(
+    Node torus = MeshNode(
       "torus",
-      geometryBuilderToMeshData("torus", scene.program, gb),
+      lifetime.own(uploadGeometry("torus", scene.program, gb)),
       matWireframe,
     )..setPos(0.0, 5.0, 0.0);
     scene.add(torus);
   }
 
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
     matWireframe.forceUniform(
       cBlendEquation,
       gOpaque.checked ? blendEquationNone : blendEquationStandard,
     );
     phase.draw();
 
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
     fps.updateFrameCount(lastTimeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }

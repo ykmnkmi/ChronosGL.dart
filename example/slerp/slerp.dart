@@ -14,16 +14,24 @@ import 'dart:math' as math;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
-Scene makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
-  Scene scene = Scene(
-    "stars",
-    RenderProgram(
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
+RenderBatch makeStarScene(ChronosGL cgl, UniformGroup perspective, int num) {
+  RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
       "stars",
-      cgl,
-      pointSpritesVertexShader,
-      pointSpritesFragmentShader,
+      lifetime.own(
+        RenderProgram.create(
+          name: "stars",
+          context: cgl,
+          vertexShader: pointSpritesVertexShader,
+          fragmentShader: pointSpritesFragmentShader,
+        ),
+      ),
+      [perspective],
     ),
-    [perspective],
   );
   scene.add(makeParticles(scene.program, num, random: math.Random()));
   return scene;
@@ -72,39 +80,64 @@ final List<Future<Object>> gLoadables = [];
 void main() {
   final web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  final ChronosGL cgl = ChronosGL(canvas);
-  final OrbitCamera orbit = OrbitCamera(15.0, -45.0, 0.3, canvas);
-  final Perspective perspective = Perspective(orbit, 1.0, 1000.0);
-  final RenderPhaseResizeAware phase = RenderPhaseResizeAware(
-    "main",
-    cgl,
-    canvas,
-    perspective,
+  final ChronosGL cgl = ChronosGL.fromCanvas(canvas);
+  final camera = PerspectiveCamera(near: 1.0, far: 1000.0);
+  canvas.tabIndex = 0;
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 15.0,
+      azimuth: -45.0,
+      polar: 0.3,
+    ),
+  );
+  final CameraUniforms perspective = CameraUniforms(camera);
+  final RenderPass phase = lifetime.ownPass(RenderPass("main", cgl));
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(
+      cgl: cgl,
+      canvas: canvas,
+      camera: camera,
+      renderPass: phase,
+    ),
   );
 
-  final Scene scene = Scene(
-    "demo",
-    RenderProgram("demo", cgl, demoVertexShader, demoFragmentShader),
-    [perspective],
+  final RenderBatch scene = lifetime.ownBatch(
+    RenderBatch(
+      "demo",
+      lifetime.own(
+        RenderProgram.create(
+          name: "demo",
+          context: cgl,
+          vertexShader: demoVertexShader,
+          fragmentShader: demoFragmentShader,
+        ),
+      ),
+      [perspective],
+    ),
   );
   phase.add(scene);
 
   phase.add(makeStarScene(cgl, perspective, 2000));
 
-  final Material mat = Material("mat");
+  final Material mat = lifetime.own(Material("mat"));
   final math.Random rng = math.Random();
   final vm.Quaternion start = vm.Quaternion.identity();
   final vm.Quaternion end = vm.Quaternion.identity();
   final vm.Vector3 axis = vm.Vector3(0.0, 0.0, 1.0);
-  final Node node = Node.container("wrapper");
+  final Node node = GroupNode("wrapper");
   scene.add(node);
   node.lookAt(vm.Vector3(100.0, 0.0, -100.0));
 
   var future = loadRaw(modelFile)
     ..then((String content) {
+      if (lifetime.isDisposed) return;
       final GeometryBuilder gb = importGeometryFromWavefront(content);
-      final MeshData ctLogo = geometryBuilderToMeshData("", scene.program, gb);
-      final Node mesh = Node(ctLogo.name, ctLogo, mat)
+      final GpuMesh ctLogo = lifetime.own(
+        uploadGeometry("", scene.program, gb),
+      );
+      final Node mesh = MeshNode(ctLogo.name, ctLogo, mat)
         ..rotX(3.14 / 2)
         ..rotZ(3.14);
 
@@ -144,21 +177,30 @@ void main() {
   }
 
   double lastTimeMs = 0.0;
+  bool firstFrame = true;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      firstFrame = true;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = firstFrame ? 0.0 : timeMs - lastTimeMs;
+    firstFrame = false;
     lastTimeMs = timeMs + 0.0;
-    orbit.azimuth += 0.001;
-    orbit.animate(elapsed);
+    orbit.azimuth += 0.06 * elapsed / 1000;
+    orbit.update(elapsed / 1000);
     animateNode(elapsed);
 
     phase.draw();
-    web.window.requestAnimationFrame(onFrame);
+    lifetime.requestAnimationFrame(onFrame);
   }
 
   onFrame = animate.toJS;
 
   Future.wait(gLoadables).then((list) {
-    animate(0.0);
+    if (lifetime.isDisposed) return;
+    lifetime.requestAnimationFrame(onFrame);
   });
 }

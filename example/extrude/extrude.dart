@@ -7,6 +7,10 @@ import 'package:chronosgl/debug.dart';
 
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../shared/lifetime.dart';
+
+final lifetime = ExampleLifetime();
+
 final web.HTMLInputElement gWidth =
     web.document.querySelector('#width') as web.HTMLInputElement;
 final web.HTMLInputElement gHeight =
@@ -21,7 +25,7 @@ final web.HTMLSelectElement gEasingHeight =
 final List<vm.Vector2> gBase = contourCircle(20, 10.0);
 final List<vm.Vector2> gGrad = getContourGradient(gBase);
 
-MeshData makeBevelMesh(RenderProgram prog) {
+GpuMesh makeBevelMesh(RenderProgram prog) {
   double width = gWidth.valueAsNumber + 0.0;
   double height = gHeight.valueAsNumber + 0.0;
   Easing easingWidth = mapStringToEasing[gEasingWidth.value]!;
@@ -42,54 +46,77 @@ MeshData makeBevelMesh(RenderProgram prog) {
   );
   GeometryBuilder gb = GeometryBuilder();
   gb.addFaces4Strips(strips, true);
-  return geometryBuilderToMeshDataWireframe("", prog, gb);
+  return uploadWireframeGeometry("", prog, gb);
 }
 
 void main() {
-  StatsFps fps = StatsFps(
-    web.document.getElementById("stats")!,
-    "blue",
-    "gray",
+  FpsPanel fps = lifetime.own(
+    FpsPanel.attach(
+      root: web.document.getElementById("stats")! as web.HTMLElement,
+      foreground: "blue",
+      background: "gray",
+    ),
   );
 
   web.HTMLCanvasElement canvas =
       web.document.querySelector('#webgl-canvas') as web.HTMLCanvasElement;
-  ChronosGL cgl = ChronosGL(canvas);
+  ChronosGL cgl = ChronosGL.fromCanvas(canvas);
 
-  OrbitCamera orbit = OrbitCamera(25.0, 10.0, 0.0, canvas);
-  final PerspectiveResizeAware perspective = PerspectiveResizeAware(
-    cgl,
-    canvas,
-    orbit,
-    0.1,
-    1000.0,
+  canvas.tabIndex = 0;
+  canvas.focus();
+  final camera = PerspectiveCamera(near: 0.1, far: 1000.0);
+  final orbit = lifetime.own(
+    OrbitControls.forCamera(
+      camera: camera,
+      eventTarget: canvas,
+      radius: 25.0,
+      azimuth: 10.0,
+      polar: 0.0,
+    ),
   );
-  final RenderProgram prog = RenderProgram(
-    "basic",
-    cgl,
-    solidColorVertexShader,
-    solidColorFragmentShader,
+  final perspective = CameraUniforms(camera);
+  final viewport = lifetime.own(
+    CanvasViewport.forCanvas(cgl: cgl, canvas: canvas, camera: camera),
   );
 
-  final Material matWire = Material("wire")
+  final RenderProgram prog = lifetime.own(
+    RenderProgram(
+      "basic",
+      cgl,
+      solidColorVertexShader,
+      solidColorFragmentShader,
+    ),
+  );
+
+  final Material matWire = lifetime.own(Material("wire"))
     ..setUniform(uColor, colorYellow.toVector3())
     ..setUniform(uModelMatrix, vm.Matrix4.identity());
 
-  double lastTimeMs = 0.0;
+  double? lastTimeMs;
   late final JSFunction onFrame;
   void animate(double timeMs) {
-    double elapsed = timeMs - lastTimeMs;
+    if (lifetime.isDisposed) return;
+    if (!viewport.update()) {
+      lastTimeMs = timeMs;
+      lifetime.requestAnimationFrame(onFrame);
+      return;
+    }
+    final elapsed = lastTimeMs == null ? 0.0 : timeMs - lastTimeMs!;
     lastTimeMs = timeMs + 0.0;
+    orbit.update(elapsed / 1000.0);
     // For simplicity we create a new mesh every frame.
-    MeshData wire = makeBevelMesh(prog);
-    orbit.animate(elapsed);
-    prog.draw(wire, [perspective, matWire]);
+    GpuMesh wire = makeBevelMesh(prog);
+    try {
+      prog.draw(wire, [perspective, matWire]);
+    } finally {
+      wire.dispose();
+    }
 
-    web.window.requestAnimationFrame(onFrame);
-    fps.updateFrameCount(lastTimeMs);
+    lifetime.requestAnimationFrame(onFrame);
+    fps.updateFrameCount(timeMs);
   }
 
   onFrame = animate.toJS;
 
-  animate(0.0);
+  lifetime.requestAnimationFrame(onFrame);
 }
