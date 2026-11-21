@@ -228,13 +228,12 @@ void main() {
           vm.Vector3(3, -1, 0),
           vm.Vector3(-1, 3, 0),
         ])
-        ..addFace3(0, 1, 2)
-        ..enableAttribute(ids)
-        ..addAttributesUvec4(ids, [
-          [255, 128, 0, 42],
-          [255, 128, 0, 42],
-          [255, 128, 0, 42],
-        ]);
+        ..addFace3(0, 1, 2);
+      gb.attributes[ids] = <Object>[
+        [255, 128, 0, 42],
+        [255, 128, 0, 42],
+        [255, 128, 0, 42],
+      ];
       final gpu = uploadGeometry('integer', prog, gb);
       addTearDown(gpu.dispose);
       expect(gpu.attributeLayout.attributes[ids]!.isInteger, isTrue);
@@ -293,12 +292,51 @@ void main() {
     },
   );
 
+  test('Empty triangle geometry uploads with an index buffer', () {
+    final gpu = uploadGeometry(
+      'empty',
+      program([aPosition]),
+      GeometryBuilder(),
+    );
+    addTearDown(gpu.dispose);
+    expect(gpu.drawMode, glTriangles);
+    expect(gpu.elementArrayBufferType, glUnsignedByte);
+    expect(gpu.getNumItems(), 0);
+    expect(cgl.getError(), glNoError);
+  });
+
+  test(
+    'Normal lines allocate only after validation and release failed uploads',
+    () {
+      final prog = program([aPosition]);
+      final missing = cubeGeometry(computeNormals: false);
+      expect(
+        () => geometryBuilderToWireframeNormals(prog, missing),
+        throwsStateError,
+      );
+      expect(cgl.vaos, isEmpty);
+      expect(cgl.buffers, isEmpty);
+
+      final geometry = cubeGeometry();
+      cgl.failBufferNumber = 2;
+      expect(
+        () => geometryBuilderToWireframeNormals(prog, geometry),
+        throwsA(same(cgl.failure)),
+      );
+      expect(cgl.buffers, hasLength(1));
+      expect(cgl.vaos, hasLength(1));
+      expect(cgl.deletedBuffers, cgl.buffers);
+      expect(cgl.deletedVaos, cgl.vaos);
+    },
+  );
+
   for (final wireframe in [false, true]) {
     test(
       'Upload ${wireframe ? 'wireframe' : 'triangles'} snapshots CPU geometry',
       () {
         final prog = program([aPosition, aTexUV]);
         final gb = quadGeometry(1);
+        gb.attributes[aTexUV] = List<Object>.of(gb.attributes[aTexUV]!);
         final gpu = wireframe
             ? uploadWireframeGeometry('quad', prog, gb)
             : uploadGeometry('quad', prog, gb);

@@ -127,6 +127,10 @@ void main() {
     final matrix = vm.Matrix4.zero();
     track.setBoneMatrixAtTick(0.5, matrix);
     expect(matrix.getTranslation(), vm.Vector3(2, 3, 4));
+    for (final tick in [1.0, 2.0]) {
+      track.setBoneMatrixAtTick(tick, matrix);
+      expect(matrix.getTranslation(), vm.Vector3(5, 6, 7));
+    }
     expect(
       () => track.setBoneMatrixAtTick(double.nan, matrix),
       throwsArgumentError,

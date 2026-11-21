@@ -635,46 +635,50 @@ class GpuMesh extends NamedEntity {
 typedef MeshData = GpuMesh;
 
 void _geometryBuilderAttributesToMeshData(GeometryBuilder gb, MeshData md) {
-  for (String canonical in gb.attributes.keys) {
+  for (final entry in gb.attributes.entries) {
+    final canonical = entry.key;
     if (!md.supportsAttribute(canonical)) {
       logInfo("Dropping unnecessary attribute: $canonical");
       continue;
     }
-    List<Object> lst = gb.attributes[canonical]!;
+    final values = entry.value;
     final type = md.attributeLayout.attributes[canonical]!.type;
 
-    //print("${md.name} ${canonical} ${lst}");
     switch (type) {
       case varTypeVec2:
         md.addAttribute(
           canonical,
-          flattenVector2List(lst as List<vm.Vector2>),
+          flattenVector2List(values.cast<vm.Vector2>()),
           2,
         );
         break;
       case varTypeVec3:
         md.addAttribute(
           canonical,
-          flattenVector3List(lst as List<vm.Vector3>),
+          flattenVector3List(values.cast<vm.Vector3>()),
           3,
         );
         break;
       case varTypeVec4:
         md.addAttribute(
           canonical,
-          flattenVector4List(lst as List<vm.Vector4>),
+          flattenVector4List(values.cast<vm.Vector4>()),
           4,
         );
         break;
       case varTypeFloat:
         md.addAttribute(
           canonical,
-          Float32List.fromList(lst as List<double>),
+          Float32List.fromList(values.cast<double>()),
           1,
         );
         break;
       case varTypeUvec4:
-        md.addAttribute(canonical, flattenUvec4List(lst as List<List<int>>), 4);
+        md.addAttribute(
+          canonical,
+          flattenUvec4List(values.cast<List<int>>()),
+          4,
+        );
         break;
       default:
         throw ArgumentError('Unsupported geometry attribute $canonical: $type');
@@ -712,7 +716,8 @@ MeshData geometryBuilderToMeshData(
 ) => uploadGeometry(name, prog, gb);
 
 MeshData _extractWireframeNormals(
-  MeshData out,
+  RenderProgram prog,
+  String name,
   List<double> vertices,
   List<double> normals,
   double scale,
@@ -729,12 +734,17 @@ MeshData _extractWireframeNormals(
     v[2 * i + 4] = vertices[i + 1] + scale * normals[i + 1];
     v[2 * i + 5] = vertices[i + 2] + scale * normals[i + 2];
   }
-  out.addVertices(v);
-
   final int n = 2 * vertices.length ~/ 3;
   List<int> lines = List.generate(n, (i) => i);
 
-  out.addFaces(lines);
+  final out = prog.makeMeshData(name, glLines);
+  try {
+    out.addVertices(v);
+    out.addFaces(lines);
+  } catch (_) {
+    _cleanupAfterFailure([out.dispose]);
+    rethrow;
+  }
   return out;
 }
 
@@ -743,11 +753,16 @@ MeshData geometryBuilderToWireframeNormals(
   GeometryBuilder gb, [
   double scale = 1.0,
 ]) {
-  MeshData out = prog.makeMeshData("norm", glLines);
+  prog._checkNotDisposed();
+  final normals = gb.attributes[aNormal];
+  if (normals == null) {
+    throw StateError('Geometry has no normals');
+  }
   return _extractWireframeNormals(
-    out,
+    prog,
+    'norm',
     flattenVector3List(gb.vertices),
-    flattenVector3List(gb.attributes[aNormal] as List<vm.Vector3>),
+    flattenVector3List(normals.cast<vm.Vector3>()),
     scale,
   );
 }
@@ -803,8 +818,7 @@ MeshData extractWireframeNormals(
   }
   final Float32List vertices = md.getAttribute(aPosition) as Float32List;
   final Float32List normals = md.getAttribute(aNormal) as Float32List;
-  MeshData out = prog.makeMeshData(md.name, glLines);
-  return _extractWireframeNormals(out, vertices, normals, scale);
+  return _extractWireframeNormals(prog, md.name, vertices, normals, scale);
 }
 
 MeshData extractWireframe(RenderProgram prog, MeshData md) {

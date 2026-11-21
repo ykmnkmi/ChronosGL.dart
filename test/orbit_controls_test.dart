@@ -159,7 +159,9 @@ void main() {
   );
 
   test('mouse totals are independent of update frequency and time step', () {
-    target.dispatchEvent(_mouse('mousedown', 0, 0));
+    final primaryDown = _mouse('mousedown', 0, 0);
+    target.dispatchEvent(primaryDown);
+    expect(primaryDown.defaultPrevented, isFalse);
     target.dispatchEvent(_mouse('mousemove', 5, 5));
     target.dispatchEvent(_wheel(20));
     controls.update(0.01);

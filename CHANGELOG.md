@@ -5,6 +5,17 @@
 This release migrates ChronosGL to `package:web` and introduces source-breaking
 API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 
+### Fixes
+
+- Clear framebuffer depth after a fullscreen pass and restore the previous
+  depth write mask before drawing the next pass.
+- Upload empty indexed geometry and accept attribute lists whose elements
+  pass `GeometryBuilder.validate()`. Validate wireframe normals before
+  allocating GPU resources and release partial meshes if an upload fails.
+- Let a primary click focus an orbit-controlled canvas for keyboard input.
+- Hold each bone track's final keyframe from its timestamp onward.
+- Keep Tunnel Vision running while its fade begins after 180 seconds.
+
 ### Examples and release migration
 
 - Migrate the complete gallery to mathematical cameras, `CameraUniforms`,
@@ -258,8 +269,8 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 ### Development and validation
 
 - Use the Dart CLI directly for local development and selected regression tests.
-  Remove Git-aware development orchestration, full-check Make targets, and
-  automatic builds of all examples. Keep Make for project-specific tasks.
+  Remove Git-aware development orchestration. Make's `presubmit` still runs
+  `tests` and `buildall`, and CI still builds the full example gallery.
 - Add deterministic WebGL rendering goldens, failure images, and a regression
   self-check using Chrome with SwiftShader.
 - Run the VM and JavaScript tests, Wasm browser tests, and regression self-check

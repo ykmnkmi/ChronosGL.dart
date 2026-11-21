@@ -176,7 +176,8 @@ class OrbitControls {
           _buttons.add(event.button);
           _lastX = event.clientX.toDouble();
           _lastY = event.clientY.toDouble();
-          event.preventDefault();
+          // Allow primary clicks to focus the target and suppress autoscroll.
+          if (event.button == 1) event.preventDefault();
         }).toJS,
       );
       _listen(

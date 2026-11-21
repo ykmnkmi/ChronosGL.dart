@@ -522,12 +522,9 @@ class GeometryBuilder {
     }
   }
 
-  // generateFaces is usually only called once to initialize _faces.
-  // Its main purpose is to convert Face4 into two triangles
+  /// Returns triangle indices, splitting each quad into two triangles.
+  /// Returns an empty list when the geometry has no faces.
   List<int> generateFaceIndices() {
-    if (faces3.isEmpty && faces4.isEmpty) {
-      throw StateError('Geometry has no faces');
-    }
     List<int> faces = List.generate(
       faces3.length * 3 + faces4.length * 6,
       (i) => 0,

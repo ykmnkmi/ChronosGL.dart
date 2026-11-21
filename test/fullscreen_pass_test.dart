@@ -1,6 +1,8 @@
 @TestOn('chrome')
 library;
 
+import 'dart:typed_data';
+
 import 'package:chronosgl/chronosgl.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
@@ -128,6 +130,46 @@ void main() {
       expect(cgl.getError(), glNoError);
     },
   );
+
+  test('RenderPass clears depth after fullscreen postprocessing', () {
+    final program = _program(cgl);
+    addTearDown(program.dispose);
+    final target = Framebuffer.defaultFramebuffer(cgl, 2, 2);
+    addTearDown(target.dispose);
+    final screen = Framebuffer.screen(cgl);
+    addTearDown(screen.dispose);
+    final post = FullscreenPass(program);
+    addTearDown(post.dispose);
+
+    Float32List positions(double z) =>
+        Float32List.fromList([-1, -1, z, 3, -1, z, -1, 3, z]);
+    final triangle = program.makeGpuMesh('triangle', glTriangles)
+      ..addVertices(positions(-0.5))
+      ..addAttribute(aTexUV, const [0, 1, 0, 1, 0, 1], 2);
+    addTearDown(triangle.dispose);
+    final material = Material('triangle');
+    final batch = RenderBatch('objects', program)
+      ..add(MeshNode('triangle', triangle, material));
+    final scene = RenderPass('scene', cgl, target)
+      ..viewPortW = 2
+      ..viewPortH = 2
+      ..add(batch);
+    scene.draw();
+    expect(target.extractByteData(null, 0, 0, 1, 1), [0, 255, 0, 255]);
+
+    screen.activate(0, 0, 0, 2, 2);
+    post.draw();
+    expect(cgl.getParameter(glDepthWritemask), isFalse);
+
+    triangle
+      ..changeVertexData(positions(0.5))
+      ..addAttribute(aTexUV, const [1, 0, 1, 0, 1, 0], 2);
+    material.removeUniform(cDepthWrite);
+    scene.draw();
+    expect(target.extractByteData(null, 0, 0, 1, 1), [255, 0, 0, 255]);
+    expect(cgl.getParameter(glDepthWritemask), isFalse);
+    expect(cgl.getError(), glNoError);
+  });
 
   test('Passes own independent meshes and default materials', () {
     final program = _program(cgl);

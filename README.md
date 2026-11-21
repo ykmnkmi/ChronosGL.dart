@@ -87,6 +87,8 @@ Mathematics and CPU geometry are available on the Dart VM through these imports:
 - `package:chronosgl/geometry.dart` exports `GeometryBuilder`, shape factories,
   polygon algorithms, and vertex attribute names. Call `geometry.validate()`
   before using or uploading edited CPU data.
+- `package:chronosgl/animation.dart` exports skeletal animation. Each bone
+  track holds its final keyframe from its timestamp onward.
 
 These imports can be used together without DOM, WebGL, or rendering adapters.
 For example:
@@ -157,8 +159,12 @@ Create a `GroupNode` for a container and a `MeshNode` for a drawable object.
 Only mesh nodes expose `mesh` and `material`; both resources are required and
 borrowed. `RenderBatch` draws ordered roots with one program. `RenderPass`
 draws ordered batches into its framebuffer, clearing selected buffers once
-before drawing. Set its viewport dimensions before drawing; an empty viewport
-or disabled pass performs no framebuffer work.
+before drawing. If depth writes are disabled, a depth clear temporarily enables
+them and restores the mask before drawing. Set the viewport dimensions before
+drawing. An empty viewport or disabled pass performs no framebuffer work.
+
+`uploadGeometry` accepts empty triangle builders and attribute lists whose
+elements pass `GeometryBuilder.validate()`.
 
 ```dart
 final geometry = cubeGeometry()..validate();
@@ -264,10 +270,11 @@ controls.update(deltaSeconds);
 if (viewport.update()) phase.draw();
 ```
 
-`OrbitControls` listens on the supplied event target. Keyboard movement uses
-seconds; mouse drag and wheel events accumulate until the next update and are
-consumed once. `disable()` detaches input and clears pending state; `enable()`
-attaches fresh listeners. Call `await controls.dispose()` when finished.
+`OrbitControls` listens on the supplied event target. Set `canvas.tabIndex = 0`
+so a primary click can focus the canvas for keyboard input. Keyboard movement
+uses seconds. Mouse drag and wheel events accumulate until the next update and
+are consumed once. `disable()` detaches input and clears pending state.
+`enable()` attaches fresh listeners. Call `await controls.dispose()` when finished.
 
 `CanvasViewport` observes the canvas content size and device pixel ratio,
 updates the drawing buffer, viewport and perspective aspect together, and keeps

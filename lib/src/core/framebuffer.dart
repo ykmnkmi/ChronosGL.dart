@@ -435,6 +435,8 @@ class Framebuffer {
     }
   }
 
+  /// Binds the framebuffer, sets the viewport and clears the selected buffers.
+  /// A depth clear temporarily enables depth writes when needed.
   void activate(
     int clearMode,
     int viewPortX,
@@ -449,7 +451,16 @@ class Framebuffer {
     _cgl.bindFramebuffer(glFramebuffer, _framebuffer);
     _cgl.viewport(viewPortX, viewPortY, viewPortW, viewPortH);
 
-    if (clearMode != 0) {
+    if (clearMode == 0) return;
+    if ((clearMode & glDepthBufferBit) != 0 &&
+        _cgl.getParameter(glDepthWritemask) == false) {
+      _cgl.depthMask(true);
+      try {
+        _cgl.clear(clearMode);
+      } finally {
+        _cgl.depthMask(false);
+      }
+    } else {
       _cgl.clear(clearMode);
     }
   }

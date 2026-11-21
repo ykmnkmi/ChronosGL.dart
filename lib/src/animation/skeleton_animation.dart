@@ -156,6 +156,7 @@ Float32List createAnimationTable(
 /// represents Key frame animation data for a single bone in a skeleton.
 class BoneAnimation {
   /// Times use animation ticks; values are copied and held until the next key.
+  /// The final value is held for the rest of the track.
   BoneAnimation.keyframes({
     required Bone bone,
     List<double> positionTimes = const [],
@@ -246,7 +247,7 @@ class BoneAnimation {
         return i;
       }
     }
-    return 0;
+    return timeList.length - 1;
   }
 
   /// Set [boneMatrix] to correspond to bone animation at time [t].

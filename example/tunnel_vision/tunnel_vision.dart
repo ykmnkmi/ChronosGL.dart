@@ -98,7 +98,7 @@ class TheNodes {
       knot.enabled = true;
       icoBig.enabled = false;
       if (now > 180.0) {
-        material.setUniform(uFadeFactor, getTweenFactor(180.0, 192.0, now));
+        material.forceUniform(uFadeFactor, getTweenFactor(180.0, 192.0, now));
       }
       final double pos = now / flySpeedDivider - tweenAmount;
       positionInTorus(pos, _p1);
