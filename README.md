@@ -427,9 +427,10 @@ and camera-to-rendering integration. [Orbit controls](test/orbit_controls_test.d
 · [Camera integration](test/camera_controls_integration_test.dart)
 
 Add `-c dart2wasm` when the changes affect Wasm. Set `CHROME_EXECUTABLE` if Dart
-cannot discover Chrome/Chromium. CI runs analysis, the configured VM/JavaScript
-and Wasm browser suites, the golden regression self-check and a release build
-of the gallery. [CI workflow](.github/workflows/tests.yml)
+cannot discover Chrome/Chromium. CI runs analysis, VM and JavaScript tests, the
+browser-only `wasm` preset, the golden regression self-check and a release build
+of the gallery. CI uploads golden failure images from the JavaScript and Wasm
+suites. [CI workflow](.github/workflows/tests.yml)
 
 Generate the API reference from source with `dart doc --output=build/api`.
 For the supported API and architecture, see the [class glossary](class_glossary.md).

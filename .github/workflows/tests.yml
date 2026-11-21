@@ -13,7 +13,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: '3.14.0'
@@ -38,27 +38,27 @@ jobs:
         env:
           CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
       - name: Test Wasm
-        run: dart test -P all -p golden_chrome -c dart2wasm
-        env:
-          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
-      - name: Verify golden regression detection
-        run: dart run tool/goldens.dart --self-check
+        run: dart test -P wasm
         env:
           CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
       - name: Upload failure images
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: golden-failures
           path: build/golden_failures/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Verify golden regression detection
+        run: dart run tool/goldens.dart --self-check
+        env:
+          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
 
   examples:
     runs-on: windows-2025
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: '3.14.0'

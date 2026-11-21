@@ -10,7 +10,8 @@ No Node.js packages, Playwright, Docker, or external image tools are needed.
 
 ## Run
 
-From the package root, with Dart 3.13.5 and Chrome installed:
+From the package root, with a Dart SDK that satisfies `pubspec.yaml` and Chrome
+installed:
 
 ```sh
 dart pub get --enforce-lockfile
@@ -30,13 +31,14 @@ now runs in Chrome and checks renderer information when the browser exposes it.
 The interactive contour demo remains a manual check.
 The `goldens` preset is also available directly as `dart test -P goldens`.
 
-To run the migrated browser suites with Wasm, including the same rendering goldens:
+To run the browser suites with Wasm, including the same rendering goldens:
 
 ```sh
-dart test -P all -p golden_chrome -c dart2wasm
+dart test -P wasm
 ```
 
-The polygon tests retain their normal VM compiler. The JavaScript-only
+The `wasm` preset uses the same suite paths as `all` and selects Chrome with
+SwiftShader and the Wasm compiler. The JavaScript-only
 `test/legacy_dom_compatibility_test.dart` is excluded by its compiler selector.
 That file intentionally keeps the legacy `dart:html` and `dart:web_gl` imports
 to verify existing canvas, texture, and helper callers.
@@ -117,7 +119,7 @@ Other operating systems and browser versions have not been validated against
 these references. When changing the reference environment, review the images
 explicitly rather than automatically accepting differences.
 
-The GitHub Actions workflow uses Windows and pins Dart 3.13.5 and
+The GitHub Actions workflow uses Windows and pins Dart 3.14.0 and
 [Chrome for Testing 155.0.8059.84](https://googlechromelabs.github.io/chrome-for-testing/155.0.8059.84.json).
 The original desktop Chrome version, 155.0.8059.80, is not available from
 Chrome for Testing. The workflow compares against the original reference PNGs;
@@ -128,7 +130,6 @@ Chrome directory so its Windows sandbox processes can start. See
 [Chromium's sandbox filesystem requirements](https://chromium.googlesource.com/chromium/src/+/main/docs/design/sandbox.md#lpac-file-system-permissions).
 The permissions apply only to the CI browser installation.
 
-CI runs the browser suites with JavaScript and Wasm, runs the VM tests and
-regression self-check, and uploads genuine failure images as an artifact. The
-workflow must run on GitHub to validate the hosted runner environment; local
-checks cannot verify that environment.
+CI runs the browser suites with JavaScript and Wasm and runs the VM tests. It
+uploads golden failure images from the test suites before the regression
+self-check. A GitHub Actions run validates the hosted Windows environment.

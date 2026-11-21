@@ -17,7 +17,7 @@ presets:
     timeout: 60s
   all:
     platforms: [vm, golden_chrome]
-    paths:
+    paths: &all_paths
       - test/polygon.dart
       - test/transform_test.dart
       - test/math_imports_test.dart
@@ -80,5 +80,11 @@ presets:
       - test/render_program_uniforms_test.dart
       - test/scene_uniforms_test.dart
       - test/webhelper_interop_test.dart
+    concurrency: 1
+    timeout: 60s
+  wasm:
+    platforms: [golden_chrome]
+    compilers: [dart2wasm]
+    paths: *all_paths
     concurrency: 1
     timeout: 60s

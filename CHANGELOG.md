@@ -213,6 +213,9 @@ See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
   self-check using Chrome with SwiftShader.
 - Run analysis, VM and JavaScript tests, Wasm browser tests, and the golden
   self-check in CI. Build the full example gallery for release.
+- Use a browser-only Wasm preset and upload golden failure images before the
+  regression self-check. Use Node 24 versions of the checkout and artifact
+  actions.
 - Configure Windows sandbox access to the downloaded CI browser.
 - Enable strict analysis and recommended Dart lints.
 - Maintain the public module and ownership guide alongside the API reference
