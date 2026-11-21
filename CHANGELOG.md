@@ -3,7 +3,9 @@
 ## 5.0.0 (unreleased)
 
 This release migrates ChronosGL to `package:web` and introduces source-breaking
-API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
+API changes. It adds VM-compatible camera and transform APIs, separates camera
+input and canvas sizing, and makes GPU resource ownership explicit.
+See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 
 ### Fixes
 
@@ -12,11 +14,15 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 - Upload empty indexed geometry and accept attribute lists whose elements
   pass `GeometryBuilder.validate()`. Validate wireframe normals before
   allocating GPU resources and release partial meshes if an upload fails.
+- Correct rectangular grid indexing and compute height from the Y length.
+  The fix applies to both `gridGeometry` and `shapeGrid`.
+- Ignore uniforms optimized out by the shader linker, including inactive
+  samplers. Continue reporting missing active inputs.
 - Let a primary click focus an orbit-controlled canvas for keyboard input.
 - Hold each bone track's final keyframe from its timestamp onward.
 - Keep Tunnel Vision running while its fade begins after 180 seconds.
 
-### Examples and release migration
+### Examples
 
 - Migrate the complete gallery to mathematical cameras, `CameraUniforms`,
   elapsed-second controls, `CanvasViewport` and supported scene/mesh names.
@@ -35,12 +41,6 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 - Preserve all seven rendering references across the JavaScript and Wasm
   fixture migration. The intentional color-regression self-check still detects
   mismatches and produces comparison images; no reference updates are needed.
-- Rewrite the class and architecture guide around supported modules, dependency
-  direction and ownership. Document camera-local/world/view semantics, snapshot
-  mutation and the JavaScript-only legacy DOM boundary in the migration guide.
-- Build all release examples in CI alongside analysis, VM/JavaScript and Wasm
-  suites and the golden regression self-check. API reference generation uses
-  `dart doc` and preserves the maintained class guide.
 
 ### Breaking changes
 
@@ -122,7 +122,8 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
   path; detect cycles and recover traversal state after exceptions.
 - Copy supplied batch uniform lists and preserve caller lists, groups and
   transform matrices while drawing. Clear selected framebuffer buffers once
-  per nonempty enabled pass; disabled passes perform no framebuffer work.
+  per nonempty enabled pass. Disabled passes and empty viewports skip
+  framebuffer work.
 - Add browser-independent `geometry.dart` for CPU builders, shape generators,
   and polygon algorithms, with explicit `GeometryBuilder.validate()` checks.
 - Omit the normal attribute from `wedgeGeometry(computeNormals: false)` so
@@ -134,129 +135,63 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 - Bind integer vertex attributes with integer pointers and preserve typed
   integer uploads in both JavaScript and Wasm.
 
-### Transform component
+### GPU resource lifetimes
+
+- Add repeat-safe disposal for GPU meshes, programs, textures and
+  framebuffers. Clean up owned handles when creation fails.
+- Track ownership of framebuffer attachments and external mesh attribute
+  buffers. Newly supplied external resources are borrowed by default, and
+  ownership can be transferred explicitly.
+- Add `Framebuffer.replaceAttachments` to validate and install a complete
+  attachment configuration. Replacing attachments or mesh buffers releases
+  displaced owned resources after the new configuration is installed.
+
+### Cameras, projections and transforms
 
 - Add browser-independent `Transform` through `core.dart` and `chronosgl.dart`,
   with local-to-parent TRS semantics, explicit movement/rotation spaces,
   position-preserving `lookAt`, copied state, and lossless affine matrix import.
-- Document the transition from `Spatial` and the explicit bridge to legacy
-  nodes; the legacy camera-position correction is described below.
-
-### Camera contract
-
 - Add browser-independent `Camera`, `PerspectiveCamera`, and `OrthographicCamera`
-  through `camera.dart` and `chronosgl.dart`, with a shared world-space pose,
-  inverse view matrix, position-preserving `lookAt`, and snapshot getters.
-- Add named projection parameters and atomic validation, including explicit
-  orthographic bounds with zero or negative near distances.
-
-### Reusable projections
-
+  through `camera.dart` and `chronosgl.dart`. Both camera types store a world
+  position and normalized orientation, derive the view as the inverse world
+  matrix, and preserve the eye position when aiming.
 - Add immutable, browser-independent `Projection`, `PerspectiveProjection`, and
-  `OrthographicProjection` through `camera.dart` and `chronosgl.dart`, with matrix
-  snapshots and explicit copies into caller-owned storage.
-- Delegate camera projection math to these values, preserving existing setters
-  and adding `fromProjection` constructors for safe sharing across cameras.
-- Reuse the same projection math for directional and spot-light shadows;
-  invalid shadow projection parameters now throw `ArgumentError`.
-
-### Camera pose storage
-
-- Store camera position and normalized orientation as authoritative components,
-  deriving world and view matrices without feeding matrix results back into pose.
-- Share stateless validation and `lookAt` orientation math with `Transform`.
-  Preserve the public camera API; add regression coverage
-  for interleaved edits, snapshot ownership, and recovery after view overflow.
-
-### Camera view matrix
-
-- Verify and document `viewMatrix = inverse(worldMatrix)` for both camera types,
-  including inverse rotation of the eye translation, points and directions,
-  two-sided matrix inverses, and independence from projection changes.
-- Add regression tests with an independent axis-angle reference; retain the
-  existing inversion implementation and Float32 overflow behavior.
-
-### Camera position correction
-
+  `OrthographicProjection` with matrix snapshots and `fromProjection`
+  constructors for sharing projection values between cameras.
+- Validate named projection parameters and Float32 matrices before updating a
+  camera. Orthographic bounds support signed depth distances.
+- Reuse the same projection math for directional and spot-light shadows.
+  Invalid shadow projection parameters now throw `ArgumentError`.
 - Fix legacy `Spatial.lookAt` overwriting the world position with view
-  translation. Store a pose consistently and derive its inverse for rendering;
-  preserve the eye across repeated aiming, movement, and orbit roll.
-- Supply world-space `uEyePosition` from both legacy projection adapters.
-  Align direction/movement helpers with pose columns and look/roll with local
-  axes. Direct users of the old view-valued `transform` must migrate.
-- Convert the phase 1.5 reproductions to passing regression tests, add repeated
-  aiming checks for both new camera types, and document invalid-input behavior.
-
-### Matrix access and updates
-
-- Define immediate matrix reads and independently owned snapshots, including
-  typed storage, for mathematical cameras, transforms, and projections.
+  translation. Derive the view from the pose and supply world-space
+  `uEyePosition` from both legacy projection adapters. Use pose columns for
+  movement and local axes for look and roll.
+- Return independent matrix snapshots with current values from cameras,
+  transforms and projections.
 - Add `Camera.copyWorldMatrixInto`, `copyViewMatrixInto`,
   `copyProjectionMatrixInto`, and `copyViewProjectionMatrixInto` for reusable
-  caller-owned outputs; calculation failures leave the destination unchanged.
+  caller-owned outputs. Calculation failures leave the destination unchanged.
 - Reject overlapping storage in legacy `Spatial.getViewMatrix`, including
   distinct matrix objects and typed-data views that alias the camera pose.
+- Add `CameraUniforms(camera, [name])` for `RenderProgram.draw` and
+  `RenderBatch`. It returns the current projection-times-view matrix and
+  world-space eye position in independent snapshots.
+- Cover camera invariants, projection round trips and standalone mathematical
+  imports on the VM. Verify camera uniform uploads for both camera types
+  in JavaScript and Wasm, including alternating adapters on one program.
 
-### Projection parameter contract
-
-- Specify named `fovYRadians`, `aspectRatio`, `near`, and `far` units, defaults,
-  and strict ranges for mathematical cameras and reusable projections.
-- Verify portrait/landscape frusta, independent parameter changes, signed
-  orthographic depth, and Float32 overflow/underflow through constructors and
-  camera updates. Rejected updates preserve the projection and entire pose;
-  valid updates still work afterward. Retain the existing validation logic.
-
-### Camera uniform adapter
-
-- Add `CameraUniforms(camera, [name])` through `chronosgl.dart` as a
-  `UniformGroup` accepted by existing `RenderProgram.draw` and `Scene` calls.
-- Read current projection * view and world-space eye position for either camera
-  type, returning independent map, matrix, and vector snapshots on each call.
-  Camera calculation errors propagate without changing earlier snapshots.
-- Keep mathematical imports browser-independent and legacy adapters unchanged.
-
-### VM mathematical imports
-
-- Document `core.dart` and `camera.dart` as the browser-independent entry points
-  for transformations, cameras, and projections; retain their existing exports.
-- Add a standalone kernel compilation and VM execution regression check that
-  exercises both imports without a test framework or browser dependencies.
-  Keep `chronosgl.dart` as the browser-facing aggregate.
-
-### VM camera mathematics tests
-
-- Add four regression tests for equivalent quaternion signs and full
-  world/NDC projection round trips before and after projection changes.
-  Use analytic projection references and a known camera-axis rotation for
-  both perspective and orthographic cameras.
-- Verify 83 tests across eight selected VM camera/projection suites and
-  document coverage of pose, inverses, projections, snapshots, and errors.
-  Retain existing mathematical behavior and public APIs.
-
-### Browser camera uniform tests
-
-- Add five WebGL readback tests for all matrix coefficients and world-eye
-  coordinates uploaded by `CameraUniforms`, for both camera types.
-- Verify pose/projection edits, snapshot independence, separate scene model
-  transforms, and alternating adapters on one program in JavaScript and Wasm.
-  Retain existing rendering behavior and public APIs.
-- Complete the phase 3 camera validation criteria with the selected VM math
-  suites, standalone VM import check, and browser uniform checks.
-
-### Browser support and fixes
+### Browser controls and compatibility
 
 - Add `OrbitControls` for a supplied mathematical camera and explicit browser
   event target, with frame-independent `update(deltaSeconds)`, accumulated drag
   and wheel input, enable/disable, and idempotent disposal.
 - Add `CanvasViewport` to coordinate element content size, pixel density,
   drawing buffer, viewport and perspective aspect. Support partial viewports,
-  hidden-element recovery and observer cleanup; preserve orthographic bounds.
-- Skip empty `RenderPhase` viewports without drawing or clearing the target.
-- Migrate the orbit and torus-knot camera examples to separate cameras and
-  controllers; keep the torus-knot trajectory controller in its example.
-- Replace phase 1.9 frame-rate reproductions with equal-time regression checks.
-  Legacy orbit and resize helper behavior remains available during migration.
-
+  hidden-element recovery and observer cleanup while preserving orthographic
+  bounds.
+- Test equal-time movement across different frame rates. Legacy orbit and
+  resize helpers remain available as deprecated adapters.
+- Add `dispose()` to keyboard and mouse helpers to cancel their subscriptions.
 - Migrate the engine, browser helpers, examples, and browser test harness to
   `package:web` and `dart:js_interop` for JavaScript and Wasm compilation.
 - Keep legacy DOM inputs working for JavaScript callers during migration.
@@ -270,11 +205,13 @@ API changes. See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 
 - Use the Dart CLI directly for local development and selected regression tests.
   Remove Git-aware development orchestration. Make's `presubmit` still runs
-  `tests` and `buildall`, and CI still builds the full example gallery.
+  `tests` and `buildall`.
 - Add deterministic WebGL rendering goldens, failure images, and a regression
   self-check using Chrome with SwiftShader.
-- Run the VM and JavaScript tests, Wasm browser tests, and regression self-check
-  in the Windows CI workflow, using an available Chrome for Testing build.
+- Run analysis, VM and JavaScript tests, Wasm browser tests, and the golden
+  self-check in CI. Build the full example gallery for release.
 - Configure Windows sandbox access to the downloaded CI browser.
-- Enable strict analysis and recommended Dart lints, and update the example
-  build and migration instructions.
+- Enable strict analysis and recommended Dart lints.
+- Maintain the public module and ownership guide alongside the API reference
+  generated by `dart doc`. Document camera pose, matrix snapshots and legacy DOM
+  compatibility in the migration guide.

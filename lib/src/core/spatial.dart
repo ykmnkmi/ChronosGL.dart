@@ -12,7 +12,7 @@ final int posX = 12, posY = 13, posZ = 14;
 /// for an unparented camera). [lookAt] preserves its position; [getViewMatrix]
 /// writes the inverse into separate storage. The matrix and scratch vectors
 /// remain mutable legacy APIs. Prefer `Camera` for a separate position/rotation
-/// model. See docs/3.6_CAMERA_POSITION.md for the legacy migration.
+/// model.
 class Spatial extends NamedEntity {
   Spatial(super.name);
   // position and rotation

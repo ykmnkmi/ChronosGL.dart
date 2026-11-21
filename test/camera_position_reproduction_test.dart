@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
-// Regression coverage for the phase 1.5 reproduction, fixed in phase 3.6.
+// Regression coverage for world-space eye position and legacy view matrices.
 const tolerance = 2e-5;
 
 void expectVector(vm.Vector3 actual, vm.Vector3 expected) {

@@ -25,7 +25,7 @@ starting point with explicit cleanup.
 | --- | --- |
 | `Spatial` or `OrbitCamera` as the camera | `PerspectiveCamera` or `OrthographicCamera` with a world-space pose |
 | `Perspective(orbit, near, far)` | `CameraUniforms(camera)`, with projection parameters on the camera |
-| `orbit.animate(elapsedMs)` | `controls.update(elapsedMs / 1000)` on `OrbitControls.forCamera` |
+| Per-frame `orbit.animate(...)` | `controls.update(deltaSeconds)` on `OrbitControls.forCamera` |
 | A fixed orbit increment per frame | Radians per second multiplied by elapsed seconds |
 | `PerspectiveResizeAware`, `RenderPhaseResizeAware` | `CanvasViewport.forCanvas` and an optional screen `RenderPass` |
 | `Node(...)`, `Scene`, `RenderPhase`, `MeshData` | `MeshNode`, `RenderBatch`, `RenderPass`, `GpuMesh` |
@@ -37,26 +37,32 @@ camera-local coordinates to world coordinates; `viewMatrix` is its inverse;
 orientation and preserves the world eye position. `CameraUniforms` sends that
 position as `uEyePosition`, independent of the view matrix's translation.
 
-The legacy `Spatial.lookAt` path also preserves its local/world pose now.
-If application code previously treated `spatial.transform` after `lookAt()` as
-a view matrix, call `getViewMatrix(output)` or migrate to `camera.viewMatrix`.
-The output must not alias the spatial's matrix storage. Lighting and reflections
-that relied on the previous incorrect eye position can change; do not compensate
-by moving the camera or negating the uploaded world eye.
+If application code previously used `spatial.transform` as a view matrix, read
+the view with `getViewMatrix(output)` using a separate matrix, or migrate to
+`camera.viewMatrix`. Lighting and reflections now use the preserved world eye.
+[Legacy camera position](#preserved-camera-position)
 
-New camera, projection and transform reads return independent snapshots.
-Mutating `camera.worldPosition`, `camera.worldMatrix` or `transform.matrix`
-does not edit their owners. Use `setPosition`, `setRotation`, `setProjection`,
-`lookAt` and transform setters; copy into caller-owned matrices with `copy*Into`
-methods. Legacy `Spatial.transform` remains writable for scene objects.
+Camera, projection and `Transform` getters return independent snapshots.
+Use `setPosition`, `setRotation`, `setProjection`, `lookAt` and transform
+setters to commit edits. [Matrix access and updates](#matrix-access-and-updates)
 
 Programs, GPU meshes, textures and framebuffers have explicit, repeat-safe
 `dispose()` operations. Passes, batches, nodes, programs and materials borrow
 their supplied resources. Removing a node or replacing a material does not
 dispose a shared mesh or texture. Factory-created meshes belong to the caller.
-Framebuffers created with `defaultFramebuffer`/`effect` own their attachments;
-external attachments are borrowed unless transferred explicitly. Dispose
-diagnostic visualizers before the resources they borrow.
+External mesh attribute buffers are borrowed unless supplied to
+`changeAttributeBuffer` with `takeOwnership: true`.
+Framebuffers created with `defaultFramebuffer` or `effect` own their attachments.
+Use `Framebuffer.withAttachments(..., takeOwnership: [...])` to transfer
+ownership of external textures. Dispose diagnostic visualizers before the
+resources they borrow.
+
+Assigning a framebuffer attachment now updates the GPU binding and borrows
+the newly supplied texture. Use `replaceAttachments` to set the complete
+configuration in one operation, including any ownership transfers. Omitted
+slots are cleared. Validation or setup failure preserves the previous
+configuration. A successful replacement releases displaced owned textures
+once their last slot in the framebuffer is removed.
 
 At teardown, stop animation frames and asynchronous callbacks, detach controls
 with `await controls.dispose()`, disconnect the viewport and dispose owned GPU
@@ -82,9 +88,9 @@ callbacks/promises and `package:web` throughout the application and its browser
 dependencies before selecting `dart2wasm`. CPU imports such as `core.dart` and
 `camera.dart` remain usable on the Dart VM without these browser dependencies.
 
-## Supported public API (refactoring phase 7)
+## Supported public API
 
-Import supported modules rather than implementation paths under `src/`:
+Import public modules from `package:chronosgl/`.
 
 | Import | Supported use | Runtime |
 | --- | --- | --- |
@@ -96,16 +102,15 @@ Import supported modules rather than implementation paths under `src/`:
 | `shaders.dart` | Shader descriptions, canonical names and GLSL | VM and browser |
 | `webgl.dart` | WebGL2 context, handles and numeric constants | Browser |
 | `render.dart` | Programs, GPU meshes, uniforms, materials, textures and lights | Browser |
+| `mesh.dart` | GPU meshes, geometry uploads and shape factories | Browser |
 | `scene.dart` | Nodes, batches and passes | Browser |
 | `shadows.dart` | Shadow map computation | Browser |
 | `web.dart` | Input, controls, viewport, URL loading and browser assets | Browser |
 | `debug.dart` | Statistics panels and visualizers | Browser, explicit import |
 
-`chronosgl.dart` combines the supported engine modules. It no longer exports
-panels or visualizers: add `import 'package:chronosgl/debug.dart';` where they
-are used. `mesh.dart` remains a supported focused import for GPU mesh uploads
-and factories. Public exports use explicit name lists; new internal helpers do
-not automatically become package API.
+`chronosgl.dart` combines the supported engine modules. Add
+`import 'package:chronosgl/debug.dart';` wherever you use panels or visualizers.
+Use the public entry points for application imports. [Class and architecture guide](class_glossary.md)
 
 `MidiInput`, `findBridge`, and the unfinished GPU `extractWireframe` helper are
 removed from supported exports. Use `uploadWireframeGeometry` with the source
@@ -120,12 +125,12 @@ public shape factories and scene traversal operations for supported behavior.
 ### Explicit shader stages and typed uniforms
 
 ```dart
-final vertex = ShaderObject.create(
-  name: 'generated vertex',
-  stage: ShaderStage.vertex,
-)..setBodyWithMain(['gl_Position = vec4(0.0, 0.0, 0.0, 1.0);']);
-final fragment = ShaderObject.fragment('solid fragment')
-  ..setBodyWithMain(['$oFragColor = vec4(1.0);']);
+final vertex = ShaderObject.vertex('vertex')
+  ..addAttributeVars([aPosition])
+  ..setBodyWithMain(['gl_Position = vec4($aPosition, 1.0);']);
+final fragment = ShaderObject.fragment('fragment')
+  ..addUniformVars([uColor])
+  ..setBodyWithMain(['$oFragColor = vec4($uColor, 1.0);']);
 final program = RenderProgram.create(
   name: 'solid',
   context: cgl,
@@ -139,8 +144,9 @@ material.force(UniformKeys.color, colorBlue.toVector3());
 final color = material.get(UniformKeys.color);
 ```
 
-`ShaderObject.vertex(name)` and `.fragment(name)` are convenient explicit
-constructors. Attribute-free vertex shaders now work without stage inference.
+`ShaderObject.create(name: ..., stage: ShaderStage.vertex)`,
+`.vertex(name)` and `.fragment(name)` declare the stage explicitly, including
+for attribute-free vertex shaders.
 The deprecated `ShaderObject(name)` constructor retains the previous inference
 for migration. Set interface variables before generating or assigning the body;
 subsequent edits throw `StateError`. Shader variable lists and layout maps are
@@ -186,10 +192,12 @@ half-angle); positions, near/far distances, light ranges and directional shadow
 extents use consistent application world units. Viewport sizes are framebuffer
 pixels, CSS sizes are CSS pixels, and pixel ratio converts between them. Controls
 consume elapsed seconds; FPS panels consume monotonic timestamps in
-milliseconds. Low-level animation sampling retains the clip's caller-selected
-time units: keys, sample time and duration must match. This phase does not
-normalize the existing ThreeJS and Assimp importers' time conventions. See
-[the units audit](docs/1.3_UNITS_CONVENTIONS.md) for existing importer limitations.
+milliseconds. Use consistent units for animation keys, sample time and clip
+duration. The ThreeJS importer copies key times and duration from the file.
+The Assimp importer divides key times by `tickspersecond` and leaves the
+imported `duration` in ticks. Convert that duration to seconds if you use it
+for looping over the imported key times. Each bone track holds its final
+keyframe from that key's timestamp onward.
 
 ### Errors and collection mutation
 
@@ -201,6 +209,8 @@ link failures have no stage. Public checks no longer rely on assertions or
 throw string values.
 Rendering controls and active uniform values are validated before changing
 WebGL state, including controls supplied through legacy string setters.
+Uniforms optimized out by the shader linker are skipped, including inactive
+samplers. `uninitializedInputs()` continues to report missing active inputs.
 `GpuMesh.changeFaces` requires an index buffer created by `addFaces`. Calling
 it before `addFaces`, or after `clearData()` without recreating the index buffer,
 throws `StateError` before changing mesh data or WebGL bindings.
@@ -219,10 +229,7 @@ uniform lists remain editable between draws; cycles are checked during
 traversal. CPU geometry remains editable and must pass `validate()` before
 upload.
 
-See [the public API contract](docs/7.1_PUBLIC_API.md) for the module boundaries
-and focused public-import validation.
-
-## Scene graph and geometry (refactoring phase 5)
+## Scene graph and geometry
 
 Use these names through `package:chronosgl/chronosgl.dart`:
 
@@ -272,23 +279,23 @@ Uploads validate before allocating GPU storage and release partial uploads on
 failure. CPU builders and the uploaded mesh hold independent numeric data.
 `wedgeGeometry(computeNormals: false)` now omits the normal attribute entirely,
 so geometry created without normals passes validation.
+`gridGeometry(xstrips, ystrips, xlen, ylen)` and `shapeGrid` handle independent
+subdivision counts and full side lengths. Review rectangular grids if your
+application compensated for the previous indexing or height calculation.
 
 GPU meshes and programs expose immutable `attributeLayout` snapshots. Use
 `mesh.isCompatibleWith(program)` before sharing across programs: the WebGL
 context, required attribute names, locations, types, widths, and instancing
 divisors must agree. Extra mesh bindings are allowed. An incompatible draw
-throws `ArgumentError` before changing WebGL state; compatibility does not
-replace populating the buffers or keeping resources alive. See the
-[scene graph contract](docs/5.1_SCENE_GRAPH.md),
-[CPU boundary](docs/5.7_CPU_GEOMETRY.md), and
-[GPU layout contract](docs/5.8_MESH_LAYOUT.md).
+throws `ArgumentError` before changing WebGL state. Populate the required
+buffers and keep them alive until the mesh's last draw.
 
-## Helpers and settings (refactoring phase 6)
+## Helpers and settings
 
 The aggregate import still exposes supported browser helpers. Use `mesh.dart`
 for GPU mesh factories, `shadows.dart` for shadow computation, and `debug.dart`
-for optional panels and visualizers. The former `src/misc/lib.dart` now contains
-compatibility exports only. No package module depends on `example/`.
+for optional panels and visualizers. Example-only artwork, particles and
+shaders live under `example/shared/`.
 
 | Previous use | Current use |
 | --- | --- |
@@ -354,65 +361,49 @@ Particle examples pass an explicit `math.Random` to `makeStarMesh` and
 Demo materials borrow their generated texture; example code must release that
 texture and its mesh separately when finished.
 
-## Projection parameters (refactoring step 3.8)
+## Cameras and transforms
 
-Mathematical perspective cameras and projections use named `fovYRadians`,
-`aspectRatio`, `near`, and `far`. The full vertical angle is in radians (default
-`50 * pi / 180`); aspect is width / height (default `1`). Near and far are
-required. All values must be finite, with `0 < fovYRadians < pi`,
-`aspectRatio > 0`, and `0 < near < far`. Orthographic types require all six
-ordered bounds and permit zero or negative near/far distances.
+### Mathematical imports on the VM
 
-The API introduced in steps 3.2–3.3 is unchanged. `setProjection` requires all
-named parameters, including unchanged values obtained from getters. Invalid
-ranges and nonfinite/singular Float32 matrices throw `ArgumentError` while
-preserving the previous projection object, parameters, matrices, and pose.
-Legacy `Perspective.updateFov` still takes degrees. See the
-[parameter contract and update example](docs/3.8_PROJECTION_PARAMETERS.md).
+Use these entry points for command-line tools and VM tests. `core.dart` exports
+`Transform`, `Color` and the palette. `camera.dart` exports the camera and
+projection types. Both are also available through the browser aggregate.
 
-## Matrix access and updates (refactoring step 3.7)
+```dart
+import 'package:chronosgl/core.dart';
+import 'package:chronosgl/camera.dart';
+```
 
-Mathematical `Camera`, `Transform`, and `Projection` getters return independent
-snapshots, including their typed storage. Setters take effect on the next read
-without `update()`. Existing snapshots do not refresh automatically. Use camera
-setters to edit the pose/projection, and `Transform.setMatrix(editedSnapshot)`
-to commit a matrix edit; mutating a getter result only changes that snapshot.
+Use `chronosgl.dart` or the focused browser modules for rendering and input.
+[Standalone VM example](test/support/math_imports.dart)
 
-To reuse output storage, cameras now provide `copyWorldMatrixInto(out)`,
-`copyViewMatrixInto(out)`, `copyProjectionMatrixInto(out)`, and
-`copyViewProjectionMatrixInto(out)`. They never retain the destination;
-calculation failures leave it unchanged. The existing `copyMatrixInto(out)`
-methods on transforms and projections follow the same ownership convention.
+### Transform component
 
-Legacy `Spatial.transform` remains live mutable state. Its `getViewMatrix(out)`
-now rejects any output storage overlapping that pose, including a different
-`Matrix4` wrapping the same list or buffer. Use a separate matrix for the view.
-Legacy scratch vectors and uniform maps remain borrowed working values; copy
-them explicitly when retaining them. See [the matrix access contract](docs/3.7_MATRIX_ACCESS.md).
+`Transform.matrix` maps local coordinates to parent coordinates. TRS
+composition is `translation * rotation * scale`. Use these operations to
+migrate object poses from `Spatial`.
 
-## Transform component (refactoring step 3.1)
+| Previous operation | `Transform` equivalent |
+| --- | --- |
+| `setPos`, `setPosFromVec`, `getPos` | `setPosition`, `setPositionFromVector`, `position` |
+| Move along an object's forward, right or up direction | `translateLocal(0, 0, -distance)`, `translateLocal(distance, 0, 0)` or `translateLocal(0, distance, 0)` |
+| Rotate around a local axis | `rotateLocal(axis, angleRadians)` |
+| Rotate around a parent-space axis | `rotateParent(axis, angleRadians)` |
+| Edit `spatial.transform` directly | Use component setters, or edit a matrix snapshot and pass it to `setMatrix` |
 
-`package:chronosgl/core.dart` now exports the browser-independent `Transform`.
-It is also available through `chronosgl.dart`. Its matrix always maps local
-coordinates to parent coordinates, composed as translation * rotation * scale.
-Inputs are copied and getters return snapshots; use setters or `setMatrix`
-to change state. `lookAt` preserves position and scale and points local -Z
-toward a target in parent space.
+`translate` uses parent-space axes. `lookAt(target, upHint: ...)` points local
+-Z toward a target in parent space and preserves position and scale.
+`setMatrix` copies an affine matrix with its shear or zero scale intact.
+Component operations that require a TRS decomposition throw `StateError` for
+such matrices. To use a `Transform` with an existing scene node, call
+`pose.copyMatrixInto(node.transform)` after edits and before drawing.
 
-For a legacy object node, keep a `Transform` and call
-`pose.copyMatrixInto(node.transform)` after changes and before drawing.
-Do not copy a view matrix as an object pose. Since step 3.6, legacy
-`Spatial.transform` also stores a pose; see the camera-position migration below.
-See [the Transform contract and migration table](docs/3.1_TRANSFORM.md), including
-explicit movement spaces and preservation of imported shear.
+### Camera pose and view matrix
 
-## Camera contract (refactoring step 3.2)
-
-`package:chronosgl/camera.dart` exports the browser-independent `Camera`,
-`PerspectiveCamera`, and `OrthographicCamera`; the same types are available
-through `chronosgl.dart`. Both cameras own a world-space position and rotation.
-`lookAt` preserves position, `viewMatrix` is the inverse world matrix, and
-`viewProjectionMatrix` is `projectionMatrix * viewMatrix`. Getters return copies.
+Both mathematical cameras store a world-space position and normalized
+orientation. `lookAt` points local -Z toward a world-space target and preserves
+the eye position. Moving the camera later preserves the orientation until the
+next rotation or `lookAt` call.
 
 ```dart
 import 'package:chronosgl/camera.dart';
@@ -423,65 +414,67 @@ final camera = PerspectiveCamera(near: 0.1, far: 1000, aspectRatio: 16 / 9)
 camera.lookAt(vm.Vector3.zero()); // World position remains (0, 0, 10).
 ```
 
-Use `fovYRadians` for the full vertical angle; the default is 50 degrees expressed
-in radians. Orthographic cameras require all six bounds explicitly and allow
-zero or negative `near`. Use `setProjection` with all named parameters to change
-the projection atomically. Neither camera observes canvas size or handles input.
+For an eye position `eye` and orientation `R`, the world matrix is
+`T(eye) * R` and its inverse maps a world point to `R^-1 * (point - eye)`.
+Read `worldPosition` for the eye and `viewProjectionMatrix` for
+`projectionMatrix * viewMatrix`. Invalid pose edits preserve both components.
+A view calculation can throw `StateError` for Float32 overflow while leaving
+the pose readable and editable.
 
-These mathematical types are separate from legacy `Perspective(Spatial, ...)`
-and `Orthographic(Spatial, ...)`. Use `CameraUniforms(camera)` from
-`chronosgl.dart` to pass either new camera to rendering uniform lists. See
-[the camera contract](docs/3.2_CAMERAS.md) for parameters and ownership, and
-the adapter example below for rendering.
+### Projection parameters
 
-## Reusable projections (refactoring step 3.3)
+Perspective cameras and projections take named `fovYRadians`, `aspectRatio`,
+`near` and `far` values. `fovYRadians` is the full vertical angle and defaults
+to `50 * pi / 180`. `aspectRatio` is width divided by height and defaults to
+`1`. All parameters must be finite, with `0 < fovYRadians < pi`,
+`aspectRatio > 0` and `0 < near < far`. Legacy `Perspective.updateFov` takes
+degrees. Convert those values to radians when migrating.
 
-`camera.dart` and `chronosgl.dart` now export `Projection`,
-`PerspectiveProjection`, and `OrthographicProjection`. These immutable values
-calculate view-to-clip matrices without a camera, uniforms, DOM, or GPU resources.
-`matrix` returns a snapshot; `copyMatrixInto(out)` writes into caller-owned storage.
-The parameters and validation match the corresponding cameras.
+Orthographic cameras and projections require all six bounds, with
+`left < right`, `bottom < top` and `near < far`. Near and far may be zero
+or negative.
 
-Existing camera constructors and `setProjection(...)` calls continue to work.
-Use `PerspectiveCamera.fromProjection(projection, ...)` or
-`OrthographicCamera.fromProjection(projection, ...)` to reuse an existing value.
-The camera's `projection` getter returns that immutable value; `setProjection`
-replaces it atomically without changing other cameras that share the old value.
+To change one parameter, pass the others from the camera's getters.
 
-For shadows, compose `projection.matrix..multiply(lightViewMatrix)` and pass
-the result to `ShadowMap.compute`. Directional and spot lights now use these
-projection classes internally, preserving their valid shadow matrices and cone
-padding. Invalid shadow bounds, FOV, or clipping distances now throw
-`ArgumentError` when `extractShadowProjViewMatrix()` is called. Legacy uniform
-adapters and resize helpers keep their APIs. See [the projection contract and
-shadow example](docs/3.3_PROJECTIONS.md).
+```dart
+camera.setProjection(
+  fovYRadians: camera.fovYRadians,
+  aspectRatio: 4 / 3,
+  near: camera.near,
+  far: camera.far,
+);
+```
 
-## Camera pose storage (refactoring step 3.4)
+Invalid ranges and nonfinite or singular Float32 projection matrices throw
+`ArgumentError` and preserve the existing projection and camera pose.
 
-The new cameras now store world position and normalized orientation directly.
-World and view matrices are derived snapshots; reading them never changes the
-pose. No calling-code changes are required. `lookAt` sets orientation once and
-does not retain a target: moving afterwards preserves that orientation until
-another orientation update.
+### Reusable projections
 
-Invalid pose edits leave both components intact. A view calculation that throws
-`StateError` for Float32 overflow also leaves the pose readable and editable.
-The legacy camera-position correction is described in step 3.6 below. See
-[the pose storage contract](docs/3.4_CAMERA_POSE.md) for details and tests.
+`PerspectiveProjection` and `OrthographicProjection` are immutable
+view-to-clip values. Share them through `PerspectiveCamera.fromProjection` or
+`OrthographicCamera.fromProjection`. A camera's `projection` getter returns
+the immutable value. `setProjection` replaces it on that camera only.
 
-## Camera view matrix (refactoring step 3.5)
+For custom shadows, compose `projection.matrix..multiply(lightViewMatrix)`
+and pass the result to `ShadowMap.compute`. Directional and spot lights
+use these projection classes internally. Invalid shadow bounds, field of view
+or clipping distances throw `ArgumentError` from
+`extractShadowProjViewMatrix()`.
 
-No calling-code changes are needed: the existing new-camera implementation
-already computes `viewMatrix = inverse(worldMatrix)`. For `C = T(eye) * R`,
-the view is `R^-1 * T(-eye)`, so a world point becomes `R^-1 * (point - eye)`.
-View translation is `-R^-1 * eye`; use `worldPosition` to read the eye position.
-Directions (homogeneous `w = 0`) receive only the inverse rotation.
+### Matrix access and updates
 
-Both camera types use the same calculation, independently of their projections.
-The phase adds dedicated inverse-matrix regression coverage without changing
-legacy cameras or uniforms. See [the view matrix contract](docs/3.5_VIEW_MATRIX.md).
+Camera, transform and projection getters return independent snapshots,
+including their typed storage. Setters take effect on the next read. To
+commit an edit to a transform snapshot, use `transform.setMatrix(editedMatrix)`.
+Legacy `Spatial.transform` remains writable.
 
-## Preserved camera position (refactoring step 3.6)
+Reuse caller-owned storage with `copyWorldMatrixInto(out)`,
+`copyViewMatrixInto(out)`, `copyProjectionMatrixInto(out)` and
+`copyViewProjectionMatrixInto(out)`. A failed camera calculation leaves
+the destination unchanged. Transforms and projections provide
+`copyMatrixInto(out)` with the same ownership convention.
+
+### Preserved camera position
 
 `Spatial.lookAt(target, [up])` now preserves position and stores a local-to-parent
 pose, or camera-to-world pose for an unparented camera. `getViewMatrix(out)`
@@ -490,29 +483,27 @@ therefore return `(0, 0, 10)` after `setPos(0, 0, 10)` and `lookAt(Vector3.zero(
 Repeated aiming and subsequent movement use the preserved position.
 
 Both `Perspective` and `Orthographic` supply world-space `uEyePosition` alongside
-`uPerspectiveViewMatrix = P * V`. Custom `Spatial` subclasses overriding
-`getViewMatrix` and `getEyePosition` remain supported. The new mathematical
-cameras keep their existing API and use `CameraUniforms` for rendering (3.9).
+`uPerspectiveViewMatrix = P * V`. Custom `Spatial` subclasses can still override
+`getViewMatrix` and `getEyePosition`. Update legacy call sites that depend on
+the previous behavior.
 
-This corrects legacy behavior and may change existing scenes:
-
-- Read the view through `getViewMatrix(out)`, not `transform`. When importing a
-  precomputed view matrix, invert it before copying into `transform`.
+- Read the view through `getViewMatrix(out)`. When importing a precomputed
+  view matrix, invert it before copying into `transform`.
 - Direction getters and movement now use pose columns. `lookUp/Down`,
   `lookLeft/Right`, and `rollLeft/Right` rotate around local X, Y, and Z;
   up/left rotations use positive angles. Orbit roll preserves its target.
 - A node's `lookAt` takes its target and up in parent space and preserves its
-  local position. As before, this legacy operation discards scale/shear;
-  use `Transform` to retain supported scale.
+  local position. The legacy operation discards scale and shear. Use
+  `Transform.lookAt` to preserve TRS scale.
 - Invalid `lookAt` arguments throw `ArgumentError` before changing the pose.
   A singular or nonfinite view inverse throws `StateError` without changing the
-  output. Passing `transform` itself as view output throws `ArgumentError`.
+  output. Passing any output that overlaps the pose's typed storage throws
+  `ArgumentError`.
 
-Legacy matrices and scratch vectors remain mutable. Use copies when retaining
-them; new cameras return snapshots. Camera parenting is not supported by this
-legacy view API. See [the correction and regression tests](docs/3.6_CAMERA_POSITION.md).
+Copy legacy scratch vectors if you need to keep their values. The legacy
+camera view API assumes an unparented camera. [Camera position regression tests](test/camera_position_reproduction_test.dart)
 
-## Camera uniforms (refactoring step 3.9)
+### Camera uniforms
 
 Import `package:chronosgl/chronosgl.dart` in browser rendering code and wrap
 either mathematical camera in `CameraUniforms(camera, [name])`:
@@ -523,43 +514,18 @@ final camera = PerspectiveCamera(near: 0.1, far: 1000)
 camera.lookAt(vm.Vector3.zero());
 final uniforms = CameraUniforms(camera);
 program.draw(mesh, [uniforms, material, transforms]);
-// The same adapter can be passed to Scene('scene', program, [uniforms]).
+// The same adapter can be passed to RenderBatch('objects', program, [uniforms]).
 ```
 
-The adapter borrows the camera and reads it on every draw; changing its pose or
-projection needs no adapter update. `getUniforms()` returns a fresh map with
+The adapter borrows the camera and reads its current pose and projection on
+every draw. `getUniforms()` returns a fresh map with
 independent `uPerspectiveViewMatrix = P * V` and world-space `uEyePosition`
 snapshots. The matrix name also applies to orthographic cameras. Supply object
 transforms separately as before. Camera values override inherited uniform
 setters; additional uniforms retain existing `UniformGroup` semantics.
 
-`CameraUniforms` belongs to rendering and is not exported by `camera.dart` or
-`core.dart`. Those mathematical entry points remain usable on the Dart VM.
-Existing `Perspective`/`Orthographic` integrations can keep their APIs.
-See [the adapter contract and tests](docs/3.9_CAMERA_UNIFORMS.md).
-
-## Mathematical imports on the VM (refactoring step 3.10)
-
-For command-line tools and VM tests, import the mathematical entry points:
-
-```dart
-import 'package:chronosgl/core.dart';
-import 'package:chronosgl/camera.dart';
-```
-
-`core.dart` exports `Transform`; `camera.dart` exports the camera and projection
-contracts and both perspective/orthographic implementations. Their transitive
-dependencies contain no DOM, WebGL, or rendering adapters. The existing exports
-and mathematical behavior are unchanged.
-
-Replace the aggregate `chronosgl.dart` import in mathematical VM code with these
-imports. The aggregate remains the browser entry point and includes
-`CameraUniforms`, WebGL resources, scenes, and browser helpers. The internal
-`src/core/lib.dart` is also browser-dependent; its name does not make it the
-public mathematical core. Other CPU modules are separated in later phases.
-
-A standalone kernel compilation and execution check now protects this boundary.
-See [the import contract and VM example](docs/3.10_VM_MATH_IMPORTS.md).
+`render.dart` also exports `CameraUniforms` for browser code using focused
+imports. [Camera uniform tests](test/camera_uniforms_webgl_test.dart)
 
 ## API naming changes
 
@@ -574,7 +540,7 @@ in consuming projects. The previous names have been removed.
 | --- | --- |
 | `LogInfo` | `logInfo` |
 | `CubeGeometry` | `cubeGeometry` |
-| `GeometryBuilderToMeshData` | `geometryBuilderToMeshData` |
+| `GeometryBuilderToMeshData` | `uploadGeometry` (`geometryBuilderToMeshData` is retained) |
 | `ImportGeometryFromWavefront` | `importGeometryFromWavefront` |
 | `LoadJson` | `loadJson` |
 | `GeometryBuilder.AddVertices` | `GeometryBuilder.addVertices` |
@@ -582,9 +548,9 @@ in consuming projects. The previous names have been removed.
 | `UniformGroup.SetUniform` | `UniformGroup.setUniform` |
 | `UniformGroup.GetUniforms` | `UniformGroup.getUniforms` |
 | `RenderProgram.Draw` | `RenderProgram.draw` |
-| `RenderPhase.Draw` | `RenderPhase.draw` |
+| `RenderPhase.Draw` | `RenderPass.draw` (`RenderPhase` is an alias) |
 | `Node.UpdateModelMatrix` | `Node.updateModelMatrix` |
-| `Node.Container` | `Node.container` |
+| `Node.Container` | `GroupNode` (`Node.container` is retained) |
 | `Material.Transparent` | `Material.transparent` |
 | `Material.Empty` | `Material.empty` |
 | `Framebuffer.Screen` | `Framebuffer.screen` |
@@ -598,7 +564,7 @@ in consuming projects. The previous names have been removed.
 Leading underscores on private declarations remain in place, for example
 `_JsonDouble` becomes `_jsonDouble`. Parameters such as `num_points` become
 `numPoints`; update named arguments as well as references in function bodies.
-Named constructors retain their class name, as in `Node.container`.
+Named constructors retain their class name, as in `Material.transparent`.
 
 `Framebuffer.Default` uses `defaultFramebuffer` because `default` is a Dart
 keyword. The game example's `Sprite.Break` is now `Sprite.brake`, since `break`
@@ -612,7 +578,7 @@ is also a keyword.
 | `BlendEquationMix` | `blendEquationMix` |
 | `TexturePropertiesFramebuffer` | `texturePropertiesFramebuffer` |
 | `ColorFunctions` | `colorFunctions` |
-| `RIGHTX`, `UPY`, `POSZ` | `rightX`, `upY`, `posZ` |
+| `RIGHTX`, `UPY`, `POSZ` | Use transform direction and position getters in place of internal storage indices |
 | `VM` | `vm` |
 | `Math`, `MATH` | `math` |
 | `DATA` | `data` |
@@ -644,7 +610,7 @@ Constants now use lowerCamelCase throughout the library, examples, and tests.
 | `PerlinNoiseFunctions` | `perlinNoiseFunctions` |
 | `SimplexNoiseHelpers` | `simplexNoiseHelpers` |
 | `ShadowMapShaderLib` | `shadowMapShaderLib` |
-| `NO_WEBGL_MESSAGE` | `noWebglMessage` |
+| `NO_WEBGL_MESSAGE` | Supply your own fallback message in application code |
 | `Keyboard.PAGEUP` | `Keyboard.pageUp` |
 | `Keyboard.PAGEDOWN` | `Keyboard.pageDown` |
 | `Keyboard.SPACE` | `Keyboard.space` |
@@ -661,10 +627,9 @@ The MIDI example also uses names such as `midiNoteOn` instead of `MIDI_NOTE_ON`.
 Private constants retain their leading underscore, for example
 `_SAMPLE_RATE_MS` → `_sampleRateMs`.
 
-Constant values, GLSL text, attribute/uniform names, and rendering reference
-images are unchanged. Diagnostic strings such as `"GL_RGBA"` still use the
-standard WebGL spelling. This rename applies to ChronosGL's declarations;
-constant names supplied by the Dart SDK or other dependencies are unchanged.
+The naming changes preserve WebGL numeric values and canonical GLSL attribute
+and uniform strings. Diagnostic strings such as `"GL_RGBA"` still use the
+standard WebGL spelling.
 
 ## Core WebGL bindings
 
@@ -673,8 +638,7 @@ The core wrapper now uses `package:web` and `dart:js_interop` instead of
 refer to the corresponding `package:web` WebGL types. Buffer, texture, uniform,
 and pixel APIs still accept Dart typed data, including views with byte offsets.
 
-`ChronosGL` and image textures accept browser objects from both `package:web`
-and the existing SDK browser libraries. For new core callers:
+Create a context from a typed `package:web` canvas.
 
 ```dart
 import 'package:chronosgl/chronosgl.dart';
@@ -683,7 +647,7 @@ import 'package:web/web.dart' as web;
 final canvas = web.HTMLCanvasElement()
   ..width = 640
   ..height = 480;
-final cgl = ChronosGL(canvas);
+final cgl = ChronosGL.fromCanvas(canvas);
 ```
 
 `getParameter` returns Dart scalars and lists, preserving opaque WebGL handles.
@@ -706,48 +670,59 @@ The core interop tests also run with Wasm:
 dart test -p golden_chrome -c dart2wasm test/core_web_interop_test.dart
 ```
 
-## Camera controls and canvas sizing (refactoring phase 4)
+## Camera controls and canvas sizing
 
-Use `OrbitControls(camera, eventTarget)` with a mathematical `PerspectiveCamera`
-or `OrthographicCamera` instead of combining pose and input in `OrbitCamera`.
-Both components are exported by `package:chronosgl/chronosgl.dart`. Render with
-`CameraUniforms(camera)` and call `controls.update(deltaSeconds)`, converting
-RAF timestamp differences to seconds at the application boundary. The first
-real callback has a zero delta. Automatic orbit motion in examples must also
-scale by elapsed seconds.
+Pass the same mathematical camera to `OrbitControls.forCamera`,
+`CanvasViewport.forCanvas` and `CameraUniforms`. These components are
+exported by `package:chronosgl/chronosgl.dart`.
 
-Keyboard events now come from the explicit target. For a canvas, set
-`canvas.tabIndex = 0` and focus it before typing. Disable detaches listeners and
-clears held keys and pending deltas; enable attaches fresh listeners. Dispose
-with `await controls.dispose()`. The borrowed camera remains usable afterward.
-Drag sensitivity is radians per CSS pixel; wheel input is normalized from
-pixel, line and page modes, and neither delta is multiplied by elapsed time.
+```dart
+final controls = OrbitControls.forCamera(camera: camera, eventTarget: canvas);
+final viewport = CanvasViewport.forCanvas(
+  cgl: cgl,
+  canvas: canvas,
+  camera: camera,
+  renderPass: pass,
+);
+
+// In requestAnimationFrame, use zero for the first delta.
+controls.update(deltaSeconds);
+if (viewport.update()) pass.draw();
+```
+
+Calculate `deltaSeconds` by dividing the difference between consecutive
+animation frame timestamps by 1000. Scale automatic orbit motion by elapsed
+seconds as well.
+
+Keyboard events come from the explicit target. Set `canvas.tabIndex = 0` so
+a primary click can focus the canvas, or call `canvas.focus()`.
+`disable()` detaches listeners and clears held keys and pending deltas.
+`enable()` attaches fresh listeners. Call `await controls.dispose()` at
+teardown. Drag sensitivity is in radians per CSS pixel. Wheel input is
+normalized from pixel, line and page modes. Apply elapsed time to keyboard
+motion and consume accumulated drag and wheel deltas once per update.
 
 Replace `PerspectiveResizeAware` and `RenderPhaseResizeAware` with one
-`CanvasViewport(cgl, canvas, camera, renderPhase: phase)`. Set the canvas CSS
-size explicitly and call `if (viewport.update()) phase.draw()` before drawing.
-The component observes element size and pixel density; `pixelRatio:` overrides
-device DPR. It uses actual drawing-buffer dimensions and preserves explicit
-orthographic bounds. `setViewport` accepts physical pixel coordinates for a
-partial screen viewport. Offscreen framebuffer attachments retain their own
-size and lifecycle. Call `viewport.dispose()` when finished.
+`CanvasViewport.forCanvas`. Give the canvas an explicit CSS size. The viewport
+observes element size and pixel density. Use `pixelRatio:` to override the
+device pixel ratio. It uses actual drawing-buffer dimensions and preserves
+explicit orthographic bounds. `setViewport` accepts physical pixel coordinates
+with a bottom-left origin. Manage offscreen attachment sizes separately. Call
+`viewport.dispose()` to disconnect the observers.
 
-A hidden or zero-size canvas preserves the last valid projection and reports
-not ready until restored. `RenderPhase.draw()` skips an empty viewport.
-Legacy orbit and resize classes remain available with their previous behavior;
-migrate each camera and render phase together. See the
-[controls](docs/4.1_ORBIT_CONTROLS.md),
-[viewport](docs/4.5_CANVAS_VIEWPORT.md), and
-[example trajectory](docs/4.9_EXAMPLE_CONTROLLERS.md) contracts.
+While the canvas is hidden or zero-sized, `update()` returns false and keeps
+the last valid projection. `RenderPass.draw()` skips empty viewports.
+Legacy orbit and resize classes retain their previous behavior. Migrate each
+camera and its screen pass together. [Orbit camera example](example/orbit_camera/orbit_camera.dart)
+· [Torus-knot camera example](example/torusknot_camera/torusknot_camera.dart)
 
 ## Web and miscellaneous helpers
 
 The web helpers and miscellaneous helpers now use `package:web` and
-`dart:js_interop`. No library under `lib/` imports the legacy SDK browser
-libraries. Existing DOM elements can still be passed to `Keyboard`, `Mouse`,
-`OrbitCamera`, `Stats`, `StatsFps`, `RenderPhaseResizeAware`, and
-`PerspectiveResizeAware` while applications migrate. `Keyboard(null)` and
-`Mouse(null)` continue to listen on the document.
+`dart:js_interop`. The deprecated `Keyboard(null)` and `Mouse(null)`
+constructors continue to listen on the document. Existing SDK DOM elements
+remain accepted by legacy adapters in JavaScript builds.
+[Legacy DOM compatibility](#legacy-dom-compatibility)
 
 Helpers that create elements now return the corresponding `package:web` types:
 
@@ -760,8 +735,9 @@ Helpers that create elements now return the corresponding `package:web` types:
 | `makeSolidColorCanvas`, example `createParticleCanvas` | `web.HTMLCanvasElement` |
 
 Update explicitly typed callbacks and variables to these types, or let Dart
-infer the callback parameter type. `ImageTexture` and `CubeTexture` accept these
-elements directly. Cube faces retain the order `nx`, `px`, `ny`, `py`, `nz`, `pz`.
+infer the callback parameter type. Use the matching named `ImageTexture`
+constructor for images, canvas elements and video. Pass cube images to
+`CubeTexture.fromImages` in the order `nx`, `px`, `ny`, `py`, `nz`, `pz`.
 
 `loadRaw` and `loadJson` now report HTTP and network failures through their
 returned futures. Invalid JSON also completes with an error. Failed image and
@@ -806,24 +782,15 @@ after the user selects **Connect MIDI**.
 
 ## Validate the migration
 
-From a checkout of this repository, run the VM and JavaScript suites, then the
-Wasm browser suites with the same rendering references:
+Analyze your application after changing imports and names. Build and exercise
+each browser target you ship. Check camera pose and lighting after `lookAt`,
+resize or hide and restore a canvas, and confirm that leaving a scene releases
+its input, media and GPU resources. If your application still uses legacy SDK
+DOM objects, exercise that path in a JavaScript build.
 
-```sh
-dart pub get --enforce-lockfile
-dart analyze
-dart test -P all
-dart test -P all -p golden_chrome -c dart2wasm
-dart run tool/goldens.dart --self-check
-dart run build_runner build --release --output=example:build/example
-```
-
-These are release checks for a complete migration. For routine development,
-select the affected suites as described in [README.md](README.md#tests-and-rendering-goldens).
-The self-check uses deliberately changed renders to confirm regression detection;
-it does not accept new reference images. Reference updates require a separate
-explicit decision and visual review.
-
-The legacy DOM compatibility test intentionally retains SDK browser imports
-and runs only with JavaScript. See [the golden test guide](test/goldens/README.md)
-for Chrome setup, the reference environment, and failure diagnostics.
+For engine changes, select the affected suites. The CI workflow covers
+analysis, VM and browser tests, golden regression detection and the release
+gallery build. JavaScript and Wasm render against the same reference images.
+[Targeted tests](README.md#tests-and-rendering-goldens)
+· [CI workflow](.github/workflows/tests.yml)
+· [Golden test guide](test/goldens/README.md)

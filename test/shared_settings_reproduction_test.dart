@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
-// Regressions for the Phase 1.9 shared-setting reproductions.
+// Check that editing one consumer's settings leaves other consumers unchanged.
 ChronosGL _context(web.HTMLCanvasElement canvas) {
   final cgl = ChronosGL(canvas, antialiasing: false);
   addTearDown(() {

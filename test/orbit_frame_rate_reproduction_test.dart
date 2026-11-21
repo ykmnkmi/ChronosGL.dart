@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 import 'package:web/web.dart' as web;
 
-// Phase 1.9 reproductions are now regressions for Phase 4's seconds-based API.
+// Check that equal elapsed time produces equal motion across frame rates.
 typedef _OrbitState = ({
   double azimuth,
   double polar,
