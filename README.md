@@ -431,9 +431,8 @@ cannot discover Chrome/Chromium. CI runs analysis, the configured VM/JavaScript
 and Wasm browser suites, the golden regression self-check and a release build
 of the gallery. [CI workflow](.github/workflows/tests.yml)
 
-The [class glossary](class_glossary.md) is maintained with the supported API.
-`dart doc --output=build/api` (also `make documentation`) generates API reference
-pages from source documentation.
+Generate the API reference from source with `dart doc --output=build/api`.
+For the supported API and architecture, see the [class glossary](class_glossary.md).
 
 The legacy DOM compatibility test runs only with JavaScript. The polygon tests
 use the VM compiler.

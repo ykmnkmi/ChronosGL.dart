@@ -57,10 +57,12 @@ for every facade.
 ## Transforms, cameras and projections
 
 `Transform` stores an affine local-to-parent matrix. TRS composition is
-`translation * rotation * scale`; scene traversal computes
+`translation * rotation * scale`, and scene traversal computes
 `parentWorld * local`. Matrix and component getters return independent snapshots.
-Use setters or `copyMatrixInto` to commit or copy state. General affine matrices,
-including shear, can be retained without forcing a TRS decomposition.
+Use `setMatrix()` to apply an edited matrix and `copyMatrixInto()` to copy the
+current matrix into caller-owned storage. A matrix imported with shear or a
+collapsed axis retains its affine form. Check `hasTRS` before reading or editing
+its rotation or scale, or use `setTRS()` to replace it with explicit components.
 
 `Camera` stores a world-space eye position and normalized orientation. It looks
 along local -Z with +Y up and has no scale or scene parent. `worldMatrix` maps
@@ -104,9 +106,12 @@ interface before generating the body. Canonical names use `a` for attributes,
 `RenderProgram` compiles a completed vertex/fragment pair and draws compatible
 meshes. It owns its compiled program and borrows all draw inputs. Shader failures
 throw `ShaderCompilationException`. `DrawStats` records draw counts and duration.
-`UniformGroup` stores uniforms; `Material` adds appearance and draw controls.
-Use `set`/`force` with typed keys or the retained canonical string setters.
-Uniform maps are read-only snapshots. Materials borrow textures.
+`UniformGroup` stores uniforms, and `Material` adds appearance and draw controls.
+Use `set()` and `force()` with typed keys or `setUniform()` and `forceUniform()`
+with canonical strings. `UniformGroup.getUniforms()` returns an unmodifiable
+snapshot whose values are borrowed. `CameraUniforms.getUniforms()` returns a
+fresh, mutable map with independent snapshots of the view-projection matrix and
+world eye position. Materials borrow textures.
 
 `Texture` owns one GPU texture; typed, image and cube subclasses supply data.
 Use `ImageTexture.fromCanvas`, `.fromImage` and `.fromVideo` with `package:web`
@@ -141,10 +146,14 @@ assets. Dispose the visualizer before its borrowed map.
 
 ## Animation, browser integration and diagnostics
 
-`Bone` describes the skeleton hierarchy. `AnimatedSkeleton` holds an evaluated
-pose; `BoneAnimation` contains tracks and `SkeletalAnimation` evaluates a clip.
+Each `Bone` records its parent index and local and offset transforms.
+`BoneAnimation` holds a bone's keyframes, and `SkeletalAnimation` groups the
+tracks for a clip. Call `updateAnimatedSkeleton()` to sample the clip at a given
+time and write global and skinning transforms into an `AnimatedSkeleton`. Pass
+the bones in parent-before-child order.
+
 Importers parse external models into CPU builders and skeleton data. Applications
-choose how and when to load bytes and upload resulting meshes.
+choose how and when to load bytes and upload the resulting meshes.
 
 `OrbitControls.forCamera` borrows a camera and an explicit event target. Pass
 seconds to `update`; mouse and wheel deltas are consumed once per update.

@@ -68,6 +68,9 @@ See [MIGRATION.md](MIGRATION.md) before upgrading from 4.x.
 - Replace assertion-only public contracts with runtime checks and string shader
   failures with `ShaderCompilationException`. Invalid arguments, invalid state
   and unsupported operations use distinct typed errors in all build modes.
+- Remove the Makefile. Use the Dart CLI commands in the README for dependency
+  setup, serving, builds, and tests. Generate the API reference with
+  `dart doc --output=build/api` and publish releases with `dart pub publish`.
 
 ### Supported public API
 
