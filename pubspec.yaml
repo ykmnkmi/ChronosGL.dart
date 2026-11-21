@@ -5,11 +5,11 @@ homepage: https://github.com/ykmnkmi/ChronosGL.dart
 repository: https://github.com/ykmnkmi/ChronosGL.dart
 
 environment:
-  sdk: ^3.13.5
+  sdk: ^3.14.0
 
 dependencies:
-  vector_math: ^2.4.3
-  web: ^1.1.1
+  vector_math: ^2.4.4
+  web: ^1.1.2
 
 dev_dependencies:
   args: ^2.7.0
@@ -20,5 +20,5 @@ dev_dependencies:
   http: ^1.6.0
   io: ^1.1.0
   lints: ^6.1.0
-  stream_channel: ^2.1.2
+  stream_channel: ^2.1.4
   test: ^1.33.0
